@@ -32,7 +32,15 @@ Application runtime dependencies remain limited to Apple frameworks. SwiftFormat
 
 ## Open and run
 
-Open the checked-in project and run the shared `VercelAnalyticsBar` scheme:
+Build and launch the application directly from Terminal:
+
+```sh
+make run
+```
+
+The app appears as a chart icon in the macOS menu bar and does not appear in the Dock. Use its Quit button before running the command again.
+
+To work in Xcode, open the checked-in project and run the shared `VercelAnalyticsBar` scheme:
 
 ```sh
 make open
