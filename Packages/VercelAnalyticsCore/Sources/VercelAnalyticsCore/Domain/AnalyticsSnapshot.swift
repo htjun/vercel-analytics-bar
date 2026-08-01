@@ -15,6 +15,7 @@ public struct AnalyticsSnapshot: Equatable, Sendable {
         self.refreshedAt = refreshedAt
     }
 }
+
 public struct AnalyticsMetric: Equatable, Sendable {
     public let label: String
     public let value: Int
