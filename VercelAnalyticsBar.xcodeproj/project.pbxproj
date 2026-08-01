@@ -11,6 +11,9 @@
 		A10000000000000000000002 /* VercelAnalyticsCore in Frameworks */ = {isa = PBXBuildFile; productRef = A90000000000000000000001 /* VercelAnalyticsCore */; };
 		A10000000000000000000003 /* VercelAnalyticsBarTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000002 /* VercelAnalyticsBarTests.swift */; };
 		A10000000000000000000004 /* VercelAnalyticsCore in Frameworks */ = {isa = PBXBuildFile; productRef = A90000000000000000000002 /* VercelAnalyticsCore */; };
+		A10000000000000000000005 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000009 /* AppModel.swift */; };
+		A10000000000000000000006 /* MenuBarRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000000A /* MenuBarRootView.swift */; };
+		A10000000000000000000007 /* SettingsRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000000B /* SettingsRootView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -34,6 +37,9 @@
 		A30000000000000000000006 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		A30000000000000000000007 /* Release-Direct.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Release-Direct.xcconfig"; sourceTree = "<group>"; };
 		A30000000000000000000008 /* Release-AppStore.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Release-AppStore.xcconfig"; sourceTree = "<group>"; };
+		A30000000000000000000009 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		A3000000000000000000000A /* MenuBarRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarRootView.swift; sourceTree = "<group>"; };
+		A3000000000000000000000B /* SettingsRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsRootView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,6 +76,7 @@
 			isa = PBXGroup;
 			children = (
 				A40000000000000000000012 /* App */,
+				A40000000000000000000017 /* Features */,
 				A40000000000000000000013 /* SupportingFiles */,
 			);
 			path = VercelAnalyticsBar;
@@ -79,6 +86,7 @@
 			isa = PBXGroup;
 			children = (
 				A30000000000000000000001 /* VercelAnalyticsBarApp.swift */,
+				A30000000000000000000009 /* AppModel.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -118,6 +126,31 @@
 				A20000000000000000000002 /* VercelAnalyticsBarTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000017 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				A40000000000000000000018 /* MenuBar */,
+				A40000000000000000000019 /* Settings */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000018 /* MenuBar */ = {
+			isa = PBXGroup;
+			children = (
+				A3000000000000000000000A /* MenuBarRootView.swift */,
+			);
+			path = MenuBar;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000019 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				A3000000000000000000000B /* SettingsRootView.swift */,
+			);
+			path = Settings;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -228,6 +261,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000001 /* VercelAnalyticsBarApp.swift in Sources */,
+				A10000000000000000000005 /* AppModel.swift in Sources */,
+				A10000000000000000000006 /* MenuBarRootView.swift in Sources */,
+				A10000000000000000000007 /* SettingsRootView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

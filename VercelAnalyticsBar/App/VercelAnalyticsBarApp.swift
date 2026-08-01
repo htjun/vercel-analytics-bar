@@ -1,32 +1,18 @@
-import AppKit
 import SwiftUI
 import VercelAnalyticsCore
 
 @main
 struct VercelAnalyticsBarApp: App {
+    @State private var model = AppModel(provider: FixtureAnalyticsSnapshotProvider())
+
     var body: some Scene {
         MenuBarExtra(ProductInfo.name, systemImage: "chart.line.uptrend.xyaxis") {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(ProductInfo.name)
-                    .font(.headline)
-
-                Divider()
-
-                SettingsLink {
-                    Text("Settings")
-                }
-
-                Button("Quit") {
-                    NSApplication.shared.terminate(nil)
-                }
-            }
-            .padding()
+            MenuBarRootView(model: model)
         }
         .menuBarExtraStyle(.window)
 
         Settings {
-            Text(ProductInfo.name)
-                .frame(width: 360, height: 220)
+            SettingsRootView()
         }
     }
 }
