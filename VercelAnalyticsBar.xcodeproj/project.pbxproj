@@ -1,0 +1,400 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000000000000000000001 /* VercelAnalyticsBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000001 /* VercelAnalyticsBarApp.swift */; };
+		A10000000000000000000002 /* VercelAnalyticsCore in Frameworks */ = {isa = PBXBuildFile; productRef = A90000000000000000000001 /* VercelAnalyticsCore */; };
+		A10000000000000000000003 /* VercelAnalyticsBarTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000002 /* VercelAnalyticsBarTests.swift */; };
+		A10000000000000000000004 /* VercelAnalyticsCore in Frameworks */ = {isa = PBXBuildFile; productRef = A90000000000000000000002 /* VercelAnalyticsCore */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A70000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A60000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A50000000000000000000001;
+			remoteInfo = VercelAnalyticsBar;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		A20000000000000000000001 /* VercelAnalyticsBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VercelAnalyticsBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20000000000000000000002 /* VercelAnalyticsBarTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VercelAnalyticsBarTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A30000000000000000000001 /* VercelAnalyticsBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VercelAnalyticsBarApp.swift; sourceTree = "<group>"; };
+		A30000000000000000000002 /* VercelAnalyticsBarTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VercelAnalyticsBarTests.swift; sourceTree = "<group>"; };
+		A30000000000000000000003 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A30000000000000000000004 /* VercelAnalyticsBar.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = VercelAnalyticsBar.entitlements; sourceTree = "<group>"; };
+		A30000000000000000000005 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
+		A30000000000000000000006 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+		A30000000000000000000007 /* Release-Direct.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Release-Direct.xcconfig"; sourceTree = "<group>"; };
+		A30000000000000000000008 /* Release-AppStore.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Release-AppStore.xcconfig"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A40000000000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000002 /* VercelAnalyticsCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A40000000000000000000004 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000004 /* VercelAnalyticsCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A40000000000000000000010 = {
+			isa = PBXGroup;
+			children = (
+				A40000000000000000000011 /* VercelAnalyticsBar */,
+				A40000000000000000000014 /* VercelAnalyticsBarTests */,
+				A40000000000000000000015 /* Config */,
+				A40000000000000000000016 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A40000000000000000000011 /* VercelAnalyticsBar */ = {
+			isa = PBXGroup;
+			children = (
+				A40000000000000000000012 /* App */,
+				A40000000000000000000013 /* SupportingFiles */,
+			);
+			path = VercelAnalyticsBar;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000012 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				A30000000000000000000001 /* VercelAnalyticsBarApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000013 /* SupportingFiles */ = {
+			isa = PBXGroup;
+			children = (
+				A30000000000000000000003 /* Info.plist */,
+				A30000000000000000000004 /* VercelAnalyticsBar.entitlements */,
+			);
+			path = SupportingFiles;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000014 /* VercelAnalyticsBarTests */ = {
+			isa = PBXGroup;
+			children = (
+				A30000000000000000000002 /* VercelAnalyticsBarTests.swift */,
+			);
+			path = VercelAnalyticsBarTests;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000015 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				A30000000000000000000005 /* Base.xcconfig */,
+				A30000000000000000000006 /* Debug.xcconfig */,
+				A30000000000000000000007 /* Release-Direct.xcconfig */,
+				A30000000000000000000008 /* Release-AppStore.xcconfig */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000016 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A20000000000000000000001 /* VercelAnalyticsBar.app */,
+				A20000000000000000000002 /* VercelAnalyticsBarTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A50000000000000000000001 /* VercelAnalyticsBar */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A80000000000000000000002 /* Build configuration list for PBXNativeTarget "VercelAnalyticsBar" */;
+			buildPhases = (
+				A40000000000000000000001 /* Sources */,
+				A40000000000000000000002 /* Frameworks */,
+				A40000000000000000000003 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = VercelAnalyticsBar;
+			packageProductDependencies = (
+				A90000000000000000000001 /* VercelAnalyticsCore */,
+			);
+			productName = VercelAnalyticsBar;
+			productReference = A20000000000000000000001 /* VercelAnalyticsBar.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A50000000000000000000002 /* VercelAnalyticsBarTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A80000000000000000000003 /* Build configuration list for PBXNativeTarget "VercelAnalyticsBarTests" */;
+			buildPhases = (
+				A40000000000000000000005 /* Sources */,
+				A40000000000000000000004 /* Frameworks */,
+				A40000000000000000000006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A70000000000000000000002 /* PBXTargetDependency */,
+			);
+			name = VercelAnalyticsBarTests;
+			packageProductDependencies = (
+				A90000000000000000000002 /* VercelAnalyticsCore */,
+			);
+			productName = VercelAnalyticsBarTests;
+			productReference = A20000000000000000000002 /* VercelAnalyticsBarTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A60000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1640;
+				LastUpgradeCheck = 1640;
+				TargetAttributes = {
+					A50000000000000000000001 = {
+						CreatedOnToolsVersion = 16.4;
+					};
+					A50000000000000000000002 = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = A50000000000000000000001;
+					};
+				};
+			};
+			buildConfigurationList = A80000000000000000000001 /* Build configuration list for PBXProject "VercelAnalyticsBar" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A40000000000000000000010;
+			packageReferences = (
+				A90000000000000000000003 /* XCLocalSwiftPackageReference "VercelAnalyticsCore" */,
+			);
+			productRefGroup = A40000000000000000000016 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A50000000000000000000001 /* VercelAnalyticsBar */,
+				A50000000000000000000002 /* VercelAnalyticsBarTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A40000000000000000000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A40000000000000000000006 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A40000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000001 /* VercelAnalyticsBarApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A40000000000000000000005 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000003 /* VercelAnalyticsBarTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A70000000000000000000002 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A50000000000000000000001 /* VercelAnalyticsBar */;
+			targetProxy = A70000000000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		A80000000000000000000010 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A30000000000000000000006 /* Debug.xcconfig */;
+			buildSettings = {
+			};
+			name = Debug;
+		};
+		A80000000000000000000011 /* Release-Direct */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A30000000000000000000007 /* Release-Direct.xcconfig */;
+			buildSettings = {
+			};
+			name = "Release-Direct";
+		};
+		A80000000000000000000012 /* Release-AppStore */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A30000000000000000000008 /* Release-AppStore.xcconfig */;
+			buildSettings = {
+			};
+			name = "Release-AppStore";
+		};
+		A80000000000000000000020 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A30000000000000000000006 /* Debug.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = VercelAnalyticsBar/SupportingFiles/VercelAnalyticsBar.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = VercelAnalyticsBar/SupportingFiles/Info.plist;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		A80000000000000000000021 /* Release-Direct */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A30000000000000000000007 /* Release-Direct.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = VercelAnalyticsBar/SupportingFiles/VercelAnalyticsBar.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = VercelAnalyticsBar/SupportingFiles/Info.plist;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = "Release-Direct";
+		};
+		A80000000000000000000022 /* Release-AppStore */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A30000000000000000000008 /* Release-AppStore.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = VercelAnalyticsBar/SupportingFiles/VercelAnalyticsBar.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = VercelAnalyticsBar/SupportingFiles/Info.plist;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = "Release-AppStore";
+		};
+		A80000000000000000000030 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A30000000000000000000006 /* Debug.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jasonjun.VercelAnalyticsBarTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/VercelAnalyticsBar.app/Contents/MacOS/VercelAnalyticsBar";
+			};
+			name = Debug;
+		};
+		A80000000000000000000031 /* Release-Direct */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A30000000000000000000007 /* Release-Direct.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jasonjun.VercelAnalyticsBarTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/VercelAnalyticsBar.app/Contents/MacOS/VercelAnalyticsBar";
+			};
+			name = "Release-Direct";
+		};
+		A80000000000000000000032 /* Release-AppStore */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A30000000000000000000008 /* Release-AppStore.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jasonjun.VercelAnalyticsBarTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/VercelAnalyticsBar.app/Contents/MacOS/VercelAnalyticsBar";
+			};
+			name = "Release-AppStore";
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A80000000000000000000001 /* Build configuration list for PBXProject "VercelAnalyticsBar" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A80000000000000000000010 /* Debug */,
+				A80000000000000000000011 /* Release-Direct */,
+				A80000000000000000000012 /* Release-AppStore */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = "Release-Direct";
+		};
+		A80000000000000000000002 /* Build configuration list for PBXNativeTarget "VercelAnalyticsBar" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A80000000000000000000020 /* Debug */,
+				A80000000000000000000021 /* Release-Direct */,
+				A80000000000000000000022 /* Release-AppStore */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = "Release-Direct";
+		};
+		A80000000000000000000003 /* Build configuration list for PBXNativeTarget "VercelAnalyticsBarTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A80000000000000000000030 /* Debug */,
+				A80000000000000000000031 /* Release-Direct */,
+				A80000000000000000000032 /* Release-AppStore */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = "Release-Direct";
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		A90000000000000000000003 /* XCLocalSwiftPackageReference "VercelAnalyticsCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/VercelAnalyticsCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A90000000000000000000001 /* VercelAnalyticsCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = VercelAnalyticsCore;
+		};
+		A90000000000000000000002 /* VercelAnalyticsCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = VercelAnalyticsCore;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = A60000000000000000000001 /* Project object */;
+}
