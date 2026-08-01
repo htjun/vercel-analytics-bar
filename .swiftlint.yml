@@ -1,0 +1,30 @@
+included:
+  - Packages/VercelAnalyticsCore/Sources
+  - Packages/VercelAnalyticsCore/Tests
+  - VercelAnalyticsBar
+  - VercelAnalyticsBarTests
+
+excluded:
+  - Packages/VercelAnalyticsCore/.build
+
+opt_in_rules:
+  - empty_count
+  - empty_string
+  - first_where
+  - sorted_imports
+
+line_length:
+  warning: 120
+  error: 160
+  ignores_comments: true
+  ignores_urls: true
+
+type_body_length:
+  warning: 250
+  error: 350
+
+file_length:
+  warning: 400
+  error: 600
+
+reporter: xcode

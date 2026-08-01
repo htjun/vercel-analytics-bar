@@ -1,0 +1,7 @@
+--swiftversion 6.0
+--indent 4
+--linebreaks lf
+--maxwidth 120
+--wraparguments before-first
+--wrapparameters before-first
+--exclude .build,DerivedData

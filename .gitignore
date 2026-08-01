@@ -3,9 +3,11 @@
 DerivedData/
 build/
 *.xcarchive
+*.xcresult
 *.dSYM
 *.dSYM.zip
 *.ipa
 *.xccheckout
 *.xcuserstate
 xcuserdata/
+.mint/
