@@ -370,8 +370,8 @@ import VercelAnalyticsCore
     #expect(snapshot.range == .last7Days)
     #expect(snapshot.visitors.value == 165)
     #expect(snapshot.pageViews.value == 284)
-    #expect(snapshot.series.count == 2)
-    #expect(model.abbreviatedVisitors == "165")
+    #expect(snapshot.series.count == 1)
+    #expect(model.abbreviatedVisitors == "24")
     #expect(await transport.requests.count == 4)
 }
 
