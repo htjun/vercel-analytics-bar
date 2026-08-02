@@ -58,6 +58,12 @@ enum FixtureTransportError: Error {
     case invalidResponse
 }
 
+struct AggregateFixturePoint: Sendable {
+    let timestamp: Date
+    let visitors: Int
+    let pageViews: Int
+}
+
 func queryValue(_ name: String, in request: URLRequest) -> String? {
     guard let url = request.url else { return nil }
     return URLComponents(url: url, resolvingAgainstBaseURL: false)?
@@ -73,4 +79,31 @@ func date(_ value: String) throws -> Date {
         throw FixtureTransportError.missingFixture
     }
     return date
+}
+
+func aggregateFixture(points: [AggregateFixturePoint]) throws -> FixtureResponse {
+    let payload: [String: Any] = [
+        "version": 1,
+        "query": [
+            "since": iso8601String(points[0].timestamp),
+            "until": iso8601String(points[points.count - 1].timestamp),
+            "groupBy": ["hour"],
+            "filter": "environment eq 'production'",
+        ],
+        "data": points.map { point in
+            [
+                "timestamp": iso8601String(point.timestamp),
+                "visitors": point.visitors,
+                "pageviews": point.pageViews,
+            ]
+        },
+    ]
+    let body = try JSONSerialization.data(withJSONObject: payload)
+    return FixtureResponse(statusCode: 200, headers: [:], body: body)
+}
+
+private func iso8601String(_ date: Date) -> String {
+    let formatter = ISO8601DateFormatter()
+    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    return formatter.string(from: date)
 }
