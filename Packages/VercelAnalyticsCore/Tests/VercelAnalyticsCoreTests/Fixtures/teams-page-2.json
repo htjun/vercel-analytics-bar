@@ -1,0 +1,11 @@
+{
+  "teams": [
+    {
+      "id": "team_second",
+      "name": "Second Team"
+    }
+  ],
+  "pagination": {
+    "next": null
+  }
+}

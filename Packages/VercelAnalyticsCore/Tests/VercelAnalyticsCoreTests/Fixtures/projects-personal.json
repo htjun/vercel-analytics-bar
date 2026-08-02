@@ -1,0 +1,11 @@
+{
+  "projects": [
+    {
+      "id": "prj_personal_fixture",
+      "name": "Personal Site"
+    }
+  ],
+  "pagination": {
+    "next": null
+  }
+}

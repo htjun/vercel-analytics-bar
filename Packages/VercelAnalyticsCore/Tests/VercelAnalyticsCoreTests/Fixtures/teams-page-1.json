@@ -1,0 +1,12 @@
+{
+  "teams": [
+    {
+      "id": "team_fixture",
+      "name": "Fixture Team",
+      "slug": "fixture-team"
+    }
+  ],
+  "pagination": {
+    "next": 123
+  }
+}

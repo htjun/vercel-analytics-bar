@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "query": {
+    "since": "2026-08-01T00:00:00.000Z",
+    "until": "2026-08-02T00:00:00.000Z",
+    "groupBy": ["hour"],
+    "filter": "environment eq 'production'"
+  },
+  "data": [
+    {
+      "timestamp": "2026-08-01T23:00:00.000Z",
+      "visitors": 10,
+      "pageviews": 18
+    },
+    {
+      "timestamp": "2026-08-02T00:00:00.000Z",
+      "visitors": 12,
+      "pageviews": 21
+    }
+  ]
+}

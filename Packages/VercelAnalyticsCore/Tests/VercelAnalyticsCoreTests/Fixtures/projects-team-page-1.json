@@ -1,0 +1,11 @@
+{
+  "projects": [
+    {
+      "id": "prj_team_fixture_1",
+      "name": "Team Dashboard"
+    }
+  ],
+  "pagination": {
+    "next": "cursor-two"
+  }
+}

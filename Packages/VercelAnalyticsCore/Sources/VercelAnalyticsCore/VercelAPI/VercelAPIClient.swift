@@ -331,9 +331,9 @@ private struct PaginationDTO: Decodable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        if let string = try container.decodeIfPresent(String.self, forKey: .next) {
+        if let string = try? container.decodeIfPresent(String.self, forKey: .next) {
             next = string
-        } else if let number = try container.decodeIfPresent(Int.self, forKey: .next) {
+        } else if let number = try? container.decodeIfPresent(Int.self, forKey: .next) {
             next = String(number)
         } else {
             next = nil

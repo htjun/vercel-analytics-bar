@@ -17,7 +17,8 @@ let package = Package(
         .target(name: "VercelAnalyticsCore"),
         .testTarget(
             name: "VercelAnalyticsCoreTests",
-            dependencies: ["VercelAnalyticsCore"]
+            dependencies: ["VercelAnalyticsCore"],
+            resources: [.copy("Fixtures")]
         ),
     ]
 )

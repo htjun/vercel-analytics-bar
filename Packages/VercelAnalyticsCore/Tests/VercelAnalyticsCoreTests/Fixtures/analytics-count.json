@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "query": {
+    "since": "2026-08-01T00:00:00.000Z",
+    "until": "2026-08-02T00:00:00.000Z",
+    "filter": "environment eq 'production'"
+  },
+  "data": {
+    "projectId": "prj_team_fixture_1",
+    "visitors": 165,
+    "pageviews": 284
+  }
+}
