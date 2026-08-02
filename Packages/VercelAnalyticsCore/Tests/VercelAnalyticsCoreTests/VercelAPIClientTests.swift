@@ -157,10 +157,43 @@ import VercelAnalyticsCore
     #expect(queryValue("by", in: requests[1]) == "hour")
 }
 
-@Test func snapshotProviderLoadsVisitorsForOneProductionProject() async throws {
+@Test(arguments: [
+    (VercelAnalyticsRange.last24Hours, "2026-08-01T00:00:00.000Z", "hour"),
+    (VercelAnalyticsRange.last7Days, "2026-07-26T00:00:00.000Z", "day"),
+    (VercelAnalyticsRange.last30Days, "2026-07-03T00:00:00.000Z", "day"),
+])
+func clientMapsAnalyticsRanges(
+    range: VercelAnalyticsRange,
+    expectedSince: String,
+    expectedAggregate: String
+) async throws {
     let transport = try FixtureTransport(
         responses: [
             "/v1/query/web-analytics/visits/count": [.fixture(named: "analytics-count")],
+            "/v1/query/web-analytics/visits/aggregate": [.fixture(named: "analytics-aggregate")],
+        ]
+    )
+    let client = VercelAPIClient(token: "fixture-token", transport: transport)
+    let project = VercelProject(id: "prj_fixture", name: "Fixture")
+    let now = try date("2026-08-02T00:00:00.000Z")
+
+    _ = try await client.fetchCount(for: project, range: range, now: now)
+    _ = try await client.fetchSeries(for: project, range: range, now: now)
+
+    let requests = await transport.requests
+    #expect(queryValue("since", in: requests[0]) == expectedSince)
+    #expect(queryValue("until", in: requests[0]) == "2026-08-02T00:00:00.000Z")
+    #expect(queryValue("by", in: requests[1]) == expectedAggregate)
+}
+
+@Test func snapshotProviderLoadsVisitorsForOneProductionProject() async throws {
+    let transport = try FixtureTransport(
+        responses: [
+            "/v1/query/web-analytics/visits/count": [
+                .fixture(named: "analytics-count"),
+                .fixture(named: "analytics-count"),
+            ],
+            "/v1/query/web-analytics/visits/aggregate": [.fixture(named: "analytics-aggregate")],
         ]
     )
     let project = VercelProject(
@@ -176,17 +209,33 @@ import VercelAnalyticsCore
         transport: transport
     )
 
-    let snapshot = try await provider.snapshot()
+    let snapshot = try await provider.snapshot(for: .last24Hours)
 
-    #expect(snapshot == AnalyticsSnapshot(
+    #expect(try snapshot == AnalyticsSnapshot(
         projectName: "Team Dashboard",
-        primaryMetric: AnalyticsMetric(label: "Visitors", value: 165),
+        range: .last24Hours,
+        visitors: AnalyticsMetric(label: "Visitors", value: 165, previousValue: 165),
+        pageViews: AnalyticsMetric(label: "Page Views", value: 284, previousValue: 284),
+        series: [
+            VercelAnalyticsPoint(
+                timestamp: date("2026-08-01T23:00:00.000Z"),
+                visitors: 10,
+                pageViews: 18
+            ),
+            VercelAnalyticsPoint(
+                timestamp: date("2026-08-02T00:00:00.000Z"),
+                visitors: 12,
+                pageViews: 21
+            ),
+        ],
+        last24HoursVisitors: 165,
         refreshedAt: now
     ))
     let requests = await transport.requests
-    #expect(queryValue("projectId", in: requests[0]) == "prj_team_fixture_1")
-    #expect(queryValue("teamId", in: requests[0]) == "team_fixture")
-    #expect(queryValue("filter", in: requests[0]) == "environment eq 'production'")
+    #expect(requests.count == 3)
+    #expect(requests.allSatisfy { queryValue("projectId", in: $0) == "prj_team_fixture_1" })
+    #expect(requests.allSatisfy { queryValue("teamId", in: $0) == "team_fixture" })
+    #expect(requests.allSatisfy { queryValue("filter", in: $0) == "environment eq 'production'" })
 }
 
 @Test func clientMapsAuthenticationAndRedactsResponseBody() async throws {
@@ -283,78 +332,4 @@ import VercelAnalyticsCore
         #expect(error == .malformedResponse(endpoint: "/v2/teams"))
         #expect(String(describing: error).contains("malformed-secret-response") == false)
     }
-}
-
-private actor FixtureTransport: VercelHTTPTransport {
-    private var responses: [String: [FixtureResponse]]
-    private(set) var requests: [URLRequest] = []
-
-    init(responses: [String: [FixtureResponse]]) {
-        self.responses = responses
-    }
-
-    func data(for request: URLRequest) async throws -> (Data, URLResponse) {
-        guard let path = request.url?.path, var pathResponses = responses[path], !pathResponses.isEmpty else {
-            throw FixtureTransportError.missingResponse
-        }
-
-        let response = pathResponses.removeFirst()
-        responses[path] = pathResponses
-        requests.append(request)
-
-        guard let url = request.url, let httpResponse = HTTPURLResponse(
-            url: url,
-            statusCode: response.statusCode,
-            httpVersion: nil,
-            headerFields: response.headers
-        ) else {
-            throw FixtureTransportError.invalidResponse
-        }
-
-        return (response.body, httpResponse)
-    }
-}
-
-private struct FixtureResponse: Sendable {
-    let statusCode: Int
-    let headers: [String: String]
-    let body: Data
-
-    static func fixture(named name: String) throws -> FixtureResponse {
-        guard let url = Bundle.module.url(forResource: name, withExtension: "json", subdirectory: "Fixtures") else {
-            throw FixtureTransportError.missingFixture
-        }
-        return try FixtureResponse(statusCode: 200, headers: [:], body: Data(contentsOf: url))
-    }
-
-    static func response(
-        statusCode: Int,
-        headers: [String: String] = [:],
-        body: String = "{}"
-    ) -> FixtureResponse {
-        FixtureResponse(statusCode: statusCode, headers: headers, body: Data(body.utf8))
-    }
-}
-
-private enum FixtureTransportError: Error {
-    case missingFixture
-    case missingResponse
-    case invalidResponse
-}
-
-private func queryValue(_ name: String, in request: URLRequest) -> String? {
-    guard let url = request.url else { return nil }
-    return URLComponents(url: url, resolvingAgainstBaseURL: false)?
-        .queryItems?
-        .first { $0.name == name }?
-        .value
-}
-
-private func date(_ value: String) throws -> Date {
-    let formatter = ISO8601DateFormatter()
-    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-    guard let date = formatter.date(from: value) else {
-        throw FixtureTransportError.missingFixture
-    }
-    return date
 }

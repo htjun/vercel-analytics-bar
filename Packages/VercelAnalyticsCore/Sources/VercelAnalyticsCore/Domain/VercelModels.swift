@@ -82,6 +82,17 @@ public enum VercelAnalyticsRange: String, CaseIterable, Equatable, Sendable {
         }
     }
 
+    public var title: String {
+        switch self {
+        case .last24Hours:
+            "Last 24 Hours"
+        case .last7Days:
+            "Last 7 Days"
+        case .last30Days:
+            "Last 30 Days"
+        }
+    }
+
     public var duration: TimeInterval {
         switch self {
         case .last24Hours:

@@ -7,7 +7,7 @@ public struct FixtureAnalyticsSnapshotProvider: AnalyticsSnapshotProviding {
         self.value = value
     }
 
-    public func snapshot() async throws -> AnalyticsSnapshot {
+    public func snapshot(for _: VercelAnalyticsRange) async throws -> AnalyticsSnapshot {
         value
     }
 }
@@ -17,7 +17,22 @@ public extension AnalyticsSnapshot {
 
     static let fixture = AnalyticsSnapshot(
         projectName: "Acme Storefront",
-        primaryMetric: AnalyticsMetric(label: "Visitors", value: 12847),
+        range: .last7Days,
+        visitors: AnalyticsMetric(label: "Visitors", value: 12847, previousValue: 11320),
+        pageViews: AnalyticsMetric(label: "Page Views", value: 21490, previousValue: 20115),
+        series: [
+            VercelAnalyticsPoint(
+                timestamp: Date(timeIntervalSince1970: 1_785_463_200),
+                visitors: 1720,
+                pageViews: 2950
+            ),
+            VercelAnalyticsPoint(
+                timestamp: fixtureRefreshDate,
+                visitors: 1890,
+                pageViews: 3170
+            ),
+        ],
+        last24HoursVisitors: 1890,
         refreshedAt: fixtureRefreshDate
     )
 }

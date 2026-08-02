@@ -1,3 +1,3 @@
 public protocol AnalyticsSnapshotProviding: Sendable {
-    func snapshot() async throws -> AnalyticsSnapshot
+    func snapshot(for range: VercelAnalyticsRange) async throws -> AnalyticsSnapshot
 }

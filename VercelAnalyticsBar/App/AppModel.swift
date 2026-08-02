@@ -32,6 +32,7 @@ final class AppModel {
     private(set) var accountState: AccountState = .disconnected
     private(set) var projectState: ProjectState = .idle
     private(set) var selectedProjectIDs: Set<String> = []
+    private(set) var selectedRange: VercelAnalyticsRange
     private(set) var projectSelectionError: String?
 
     private let provider: (any AnalyticsSnapshotProviding)?
@@ -58,6 +59,7 @@ final class AppModel {
         self.projectProviderFactory = projectProviderFactory
         self.analyticsProviderFactory = analyticsProviderFactory
         self.tokenValidator = tokenValidator
+        selectedRange = (try? accountDataStore.readAnalyticsRange()) ?? .last7Days
     }
 
     func load() async {
@@ -77,7 +79,7 @@ final class AppModel {
         state = .loading
 
         do {
-            let snapshot = try await provider.snapshot()
+            let snapshot = try await provider.snapshot(for: selectedRange)
             state = .loaded(snapshot)
         } catch {
             state = .failed(error.localizedDescription)
@@ -173,6 +175,19 @@ final class AppModel {
         }
     }
 
+    func selectAnalyticsRange(_ range: VercelAnalyticsRange) async {
+        guard range != selectedRange else { return }
+
+        do {
+            try accountDataStore.saveAnalyticsRange(range)
+            selectedRange = range
+            state = .idle
+            await load()
+        } catch {
+            state = .failed("The analytics range could not be saved.")
+        }
+    }
+
     func projects(matching searchQuery: String) -> [VercelProject] {
         guard case let .loaded(projects) = projectState else { return [] }
 
@@ -212,6 +227,7 @@ final class AppModel {
             accountState = .disconnected
             projectState = .idle
             selectedProjectIDs = []
+            selectedRange = .last7Days
             projectSelectionError = nil
         } else {
             accountState = .failed(.storageFailure)
@@ -283,7 +299,7 @@ extension AppModel {
 
     var abbreviatedVisitors: String? {
         guard case let .loaded(snapshot) = state else { return nil }
-        return Self.abbreviated(snapshot.primaryMetric.value)
+        return Self.abbreviated(snapshot.last24HoursVisitors)
     }
 
     private static func abbreviated(_ value: Int) -> String {

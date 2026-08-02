@@ -17,6 +17,7 @@ import VercelAnalyticsCore
     await provider.waitUntilRequested()
 
     #expect(model.state == .loading)
+    #expect(await provider.requestedRanges == [.last7Days])
 
     await provider.succeed(with: expected)
     await loadTask.value
@@ -52,7 +53,7 @@ import VercelAnalyticsCore
         provider: FixtureAnalyticsSnapshotProvider(),
         credentialStore: credentialStore,
         tokenValidator: { token in
-            try await validator.validate(token)
+            await validator.validate(token)
         }
     )
 
@@ -103,7 +104,7 @@ import VercelAnalyticsCore
         provider: FixtureAnalyticsSnapshotProvider(),
         credentialStore: credentialStore,
         tokenValidator: { token in
-            try await validator.validate(token)
+            await validator.validate(token)
         }
     )
 
@@ -195,7 +196,11 @@ import VercelAnalyticsCore
             FixtureAnalyticsSnapshotProvider(
                 value: AnalyticsSnapshot(
                     projectName: project.name,
-                    primaryMetric: AnalyticsMetric(label: "Visitors", value: 12847),
+                    range: .last7Days,
+                    visitors: AnalyticsMetric(label: "Visitors", value: 12847, previousValue: 12000),
+                    pageViews: AnalyticsMetric(label: "Page Views", value: 21490, previousValue: 20000),
+                    series: [],
+                    last24HoursVisitors: 12847,
                     refreshedAt: Date(timeIntervalSince1970: 1_785_549_600)
                 )
             )
@@ -209,10 +214,38 @@ import VercelAnalyticsCore
     #expect(model.currentProject?.id == "project-a")
     #expect(model.state == .loaded(AnalyticsSnapshot(
         projectName: "Alpha",
-        primaryMetric: AnalyticsMetric(label: "Visitors", value: 12847),
+        range: .last7Days,
+        visitors: AnalyticsMetric(label: "Visitors", value: 12847, previousValue: 12000),
+        pageViews: AnalyticsMetric(label: "Page Views", value: 21490, previousValue: 20000),
+        series: [],
+        last24HoursVisitors: 12847,
         refreshedAt: Date(timeIntervalSince1970: 1_785_549_600)
     )))
     #expect(model.abbreviatedVisitors == "12.8K")
+}
+
+@MainActor
+@Test func appModelDefaultsPersistsAndReloadsAnalyticsRange() async {
+    let accountDataStore = InMemoryAccountDataStore()
+    let provider = ControlledSnapshotProvider()
+    let model = AppModel(provider: provider, accountDataStore: accountDataStore)
+
+    #expect(model.selectedRange == .last7Days)
+
+    let selectionTask = Task {
+        await model.selectAnalyticsRange(.last30Days)
+    }
+    await provider.waitUntilRequested()
+
+    #expect(model.selectedRange == .last30Days)
+    #expect(accountDataStore.analyticsRange == .last30Days)
+    #expect(await provider.requestedRanges == [.last30Days])
+
+    await provider.succeed(with: .fixture)
+    await selectionTask.value
+
+    let restoredModel = AppModel(provider: provider, accountDataStore: accountDataStore)
+    #expect(restoredModel.selectedRange == .last30Days)
 }
 
 @MainActor
@@ -272,6 +305,9 @@ import VercelAnalyticsCore
     )
     try store.saveSelectedProjectIDs(["project-b", "project-a"])
     #expect(try store.readSelectedProjectIDs() == ["project-a", "project-b"])
+    #expect(try store.readAnalyticsRange() == .last7Days)
+    try store.saveAnalyticsRange(.last30Days)
+    #expect(try store.readAnalyticsRange() == .last30Days)
 
     try store.clear()
 
@@ -289,99 +325,5 @@ import VercelAnalyticsCore
         #expect(error.recoverySuggestion?.isEmpty == false)
         #expect(error.localizedDescription.contains(secret) == false)
         #expect(error.recoverySuggestion?.contains(secret) == false)
-    }
-}
-
-private enum SnapshotError: Error {
-    case unavailable
-}
-
-private actor ControlledSnapshotProvider: AnalyticsSnapshotProviding {
-    private var resultContinuation: CheckedContinuation<AnalyticsSnapshot, any Error>?
-    private var requestWaiters: [CheckedContinuation<Void, Never>] = []
-
-    func snapshot() async throws -> AnalyticsSnapshot {
-        try await withCheckedThrowingContinuation { continuation in
-            resultContinuation = continuation
-            requestWaiters.forEach { $0.resume() }
-            requestWaiters.removeAll()
-        }
-    }
-
-    func waitUntilRequested() async {
-        guard resultContinuation == nil else { return }
-
-        await withCheckedContinuation { continuation in
-            requestWaiters.append(continuation)
-        }
-    }
-
-    func succeed(with snapshot: AnalyticsSnapshot) {
-        resultContinuation?.resume(returning: snapshot)
-        resultContinuation = nil
-    }
-
-    func fail(with error: any Error) {
-        resultContinuation?.resume(throwing: error)
-        resultContinuation = nil
-    }
-}
-
-private actor TokenValidationRecorder {
-    private(set) var tokens: [String] = []
-
-    func validate(_ token: String) {
-        tokens.append(token)
-    }
-}
-
-private struct FixtureProjectListingProvider: VercelProjectListingProviding {
-    let projects: [VercelProject]
-
-    func listAccessibleProjects() async throws -> [VercelProject] {
-        projects
-    }
-}
-
-private final class InMemoryCredentialStore: VercelCredentialStore {
-    var token: String?
-
-    init(token: String? = nil) {
-        self.token = token
-    }
-
-    func read() throws -> String? {
-        token
-    }
-
-    func save(_ token: String) throws {
-        self.token = token
-    }
-
-    func delete() throws {
-        token = nil
-    }
-}
-
-private final class InMemoryAccountDataStore: VercelAccountDataStore {
-    var hasData: Bool
-    var selectedProjectIDs: Set<String>
-
-    init(hasData: Bool = false, selectedProjectIDs: Set<String> = []) {
-        self.hasData = hasData
-        self.selectedProjectIDs = selectedProjectIDs
-    }
-
-    func readSelectedProjectIDs() throws -> Set<String> {
-        selectedProjectIDs
-    }
-
-    func saveSelectedProjectIDs(_ projectIDs: Set<String>) throws {
-        selectedProjectIDs = projectIDs
-    }
-
-    func clear() throws {
-        hasData = false
-        selectedProjectIDs = []
     }
 }

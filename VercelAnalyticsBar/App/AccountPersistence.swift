@@ -1,5 +1,6 @@
 import Foundation
 import Security
+import VercelAnalyticsCore
 
 protocol VercelCredentialStore {
     func read() throws -> String?
@@ -108,14 +109,22 @@ struct KeychainVercelCredentialStore: VercelCredentialStore {
 protocol VercelAccountDataStore {
     func readSelectedProjectIDs() throws -> Set<String>
     func saveSelectedProjectIDs(_ projectIDs: Set<String>) throws
+    func readAnalyticsRange() throws -> VercelAnalyticsRange
+    func saveAnalyticsRange(_ range: VercelAnalyticsRange) throws
     func clear() throws
 }
 
 enum AccountDataStoreError: Error, Equatable, LocalizedError {
     case invalidSelectedProjectIDs
+    case invalidAnalyticsRange
 
     var errorDescription: String? {
-        "The saved Vercel project selection could not be read."
+        switch self {
+        case .invalidSelectedProjectIDs:
+            "The saved Vercel project selection could not be read."
+        case .invalidAnalyticsRange:
+            "The saved analytics range could not be read."
+        }
     }
 }
 
@@ -156,6 +165,22 @@ struct UserDefaultsVercelAccountDataStore: VercelAccountDataStore {
 
     func saveSelectedProjectIDs(_ projectIDs: Set<String>) throws {
         userDefaults.set(projectIDs.sorted(), forKey: Self.selectedProjectIDsKey)
+    }
+
+    func readAnalyticsRange() throws -> VercelAnalyticsRange {
+        guard let value = userDefaults.object(forKey: Self.analyticsRangeKey) else {
+            return .last7Days
+        }
+        guard let rawValue = value as? String,
+              let range = VercelAnalyticsRange(rawValue: rawValue)
+        else {
+            throw AccountDataStoreError.invalidAnalyticsRange
+        }
+        return range
+    }
+
+    func saveAnalyticsRange(_ range: VercelAnalyticsRange) throws {
+        userDefaults.set(range.rawValue, forKey: Self.analyticsRangeKey)
     }
 
     func clear() throws {

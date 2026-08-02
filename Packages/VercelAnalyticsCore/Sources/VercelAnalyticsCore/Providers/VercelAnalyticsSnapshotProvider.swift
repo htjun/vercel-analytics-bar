@@ -17,17 +17,50 @@ public struct VercelAnalyticsSnapshotProvider: AnalyticsSnapshotProviding {
         self.now = now
     }
 
-    public func snapshot() async throws -> AnalyticsSnapshot {
+    public func snapshot(for range: VercelAnalyticsRange) async throws -> AnalyticsSnapshot {
         let refreshedAt = now()
-        let count = try await client.fetchCount(
+        async let currentCount = client.fetchCount(
             for: project,
-            range: .last24Hours,
+            range: range,
+            now: refreshedAt
+        )
+        async let previousCount = client.fetchCount(
+            for: project,
+            range: range,
+            now: refreshedAt.addingTimeInterval(-range.duration)
+        )
+        async let series = client.fetchSeries(
+            for: project,
+            range: range,
             now: refreshedAt
         )
 
+        let (count, previous, points) = try await (currentCount, previousCount, series)
+        let last24HoursVisitors: Int = if range == .last24Hours {
+            count.visitors
+        } else {
+            try await client.fetchCount(
+                for: project,
+                range: .last24Hours,
+                now: refreshedAt
+            ).visitors
+        }
+
         return AnalyticsSnapshot(
             projectName: project.name,
-            primaryMetric: AnalyticsMetric(label: "Visitors", value: count.visitors),
+            range: range,
+            visitors: AnalyticsMetric(
+                label: "Visitors",
+                value: count.visitors,
+                previousValue: previous.visitors
+            ),
+            pageViews: AnalyticsMetric(
+                label: "Page Views",
+                value: count.pageViews,
+                previousValue: previous.pageViews
+            ),
+            series: points.points,
+            last24HoursVisitors: last24HoursVisitors,
             refreshedAt: refreshedAt
         )
     }
