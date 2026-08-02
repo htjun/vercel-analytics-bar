@@ -5,6 +5,8 @@ import VercelAnalyticsCore
 
 struct MenuBarRootView: View {
     let model: AppModel
+    @State private var isProjectSelectorPresented = false
+    @State private var projectSearchQuery = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -72,9 +74,13 @@ struct MenuBarRootView: View {
     private func snapshotContent(_ snapshot: AnalyticsSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 12) {
-                Text(snapshot.projectName)
-                    .font(.headline)
-                    .lineLimit(1)
+                if let currentProject = model.currentProject {
+                    projectSelectorButton(for: currentProject)
+                } else {
+                    Text(snapshot.projectName)
+                        .font(.headline)
+                        .lineLimit(1)
+                }
 
                 Spacer()
 
@@ -118,6 +124,31 @@ struct MenuBarRootView: View {
             .font(.caption)
             .foregroundStyle(.tertiary)
         }
+    }
+
+    private func projectSelectorButton(for project: VercelProject) -> some View {
+        Button {
+            projectSearchQuery = ""
+            isProjectSelectorPresented = true
+        } label: {
+            HStack(spacing: 5) {
+                Text(project.name)
+                    .font(.headline)
+                    .lineLimit(1)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .buttonStyle(.plain)
+        .popover(isPresented: $isProjectSelectorPresented, arrowEdge: .top) {
+            ProjectSelectorView(
+                model: model,
+                searchQuery: $projectSearchQuery,
+                isPresented: $isProjectSelectorPresented
+            )
+        }
+        .help("Switch project")
     }
 
     private var rangeSelection: Binding<VercelAnalyticsRange> {
@@ -199,5 +230,74 @@ private struct MetricSummaryView: View {
         case .new:
             return "New vs previous period"
         }
+    }
+}
+
+private struct ProjectSelectorView: View {
+    let model: AppModel
+    @Binding var searchQuery: String
+    @Binding var isPresented: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Projects")
+                .font(.headline)
+
+            TextField("Find Project…", text: $searchQuery)
+                .textFieldStyle(.roundedBorder)
+
+            let projects = model.selectedProjects(matching: searchQuery)
+            if projects.isEmpty {
+                Text("No selected projects match this search.")
+                    .frame(maxWidth: .infinity, minHeight: 80)
+                    .foregroundStyle(.secondary)
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 2) {
+                        ForEach(projects) { project in
+                            projectRow(project)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(12)
+        .frame(width: 300, height: 340)
+    }
+
+    private func projectRow(_ project: VercelProject) -> some View {
+        Button {
+            isPresented = false
+            Task {
+                await model.selectProject(project.id)
+            }
+        } label: {
+            HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(project.name)
+                        .lineLimit(1)
+                    if let metadata = model.teamMetadata(for: project) {
+                        Text(metadata)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Spacer()
+
+                if project.id == model.currentProjectID {
+                    Image(systemName: "checkmark")
+                        .font(.caption.weight(.semibold))
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(project.id == model.currentProjectID ? Color.primary.opacity(0.08) : .clear)
+        )
     }
 }
