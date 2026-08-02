@@ -20,19 +20,31 @@ final class AppModel {
         case failed(AccountConnectionError)
     }
 
+    enum ProjectState: Equatable {
+        case idle
+        case loading
+        case loaded([VercelProject])
+        case failed(String)
+    }
+
     private(set) var state: State = .idle
     private(set) var accountState: AccountState = .disconnected
+    private(set) var projectState: ProjectState = .idle
+    private(set) var selectedProjectIDs: Set<String> = []
+    private(set) var projectSelectionError: String?
 
     private let provider: any AnalyticsSnapshotProviding
     private let credentialStore: any VercelCredentialStore
     private let accountDataStore: any VercelAccountDataStore
     private let tokenValidator: @Sendable (String) async throws -> Void
+    private let projectProviderFactory: (@Sendable (String) -> any VercelProjectListingProviding)?
     private var didAttemptRestore = false
 
     init(
         provider: any AnalyticsSnapshotProviding,
         credentialStore: any VercelCredentialStore = KeychainVercelCredentialStore(),
         accountDataStore: any VercelAccountDataStore = UserDefaultsVercelAccountDataStore(),
+        projectProviderFactory: (@Sendable (String) -> any VercelProjectListingProviding)? = nil,
         tokenValidator: @escaping @Sendable (String) async throws -> Void = {
             try await VercelAPIClient(token: $0).validateToken()
         }
@@ -40,6 +52,7 @@ final class AppModel {
         self.provider = provider
         self.credentialStore = credentialStore
         self.accountDataStore = accountDataStore
+        self.projectProviderFactory = projectProviderFactory
         self.tokenValidator = tokenValidator
     }
 
@@ -67,6 +80,8 @@ final class AppModel {
 
             try await tokenValidator(token)
             accountState = .connected
+            restoreSelectedProjects()
+            await refreshProjects(token: token)
         } catch {
             accountState = .failed(connectionError(for: error))
         }
@@ -86,9 +101,56 @@ final class AppModel {
             try credentialStore.save(normalizedToken)
             didAttemptRestore = true
             accountState = .connected
+            restoreSelectedProjects()
+            await refreshProjects(token: normalizedToken)
         } catch {
             accountState = .failed(connectionError(for: error))
         }
+    }
+
+    func refreshProjects() async {
+        do {
+            guard let token = try credentialStore.read() else {
+                projectState = .failed("Connect a Vercel account before syncing projects.")
+                return
+            }
+            await refreshProjects(token: token)
+        } catch {
+            projectState = .failed("The Vercel project list could not be loaded.")
+        }
+    }
+
+    func setProjectSelected(_ projectID: String, selected: Bool) {
+        guard case let .loaded(projects) = projectState,
+              projects.contains(where: { $0.id == projectID })
+        else {
+            return
+        }
+
+        if selected {
+            updateSelectedProjectIDs(selectedProjectIDs.union([projectID]))
+        } else {
+            guard selectedProjectIDs.count > 1 else { return }
+            updateSelectedProjectIDs(selectedProjectIDs.subtracting([projectID]))
+        }
+    }
+
+    func projects(matching searchQuery: String) -> [VercelProject] {
+        guard case let .loaded(projects) = projectState else { return [] }
+
+        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return projects }
+        return projects.filter { project in
+            project.name.localizedCaseInsensitiveContains(query)
+                || (project.teamName?.localizedCaseInsensitiveContains(query) ?? false)
+        }
+    }
+
+    func teamMetadata(for project: VercelProject) -> String? {
+        guard case let .loaded(projects) = projectState else { return nil }
+        let matchingProjects = projects.filter { $0.name == project.name }
+        guard matchingProjects.count > 1 else { return nil }
+        return project.teamName ?? "Personal account"
     }
 
     func disconnect() {
@@ -110,8 +172,55 @@ final class AppModel {
         if failure == nil {
             state = .idle
             accountState = .disconnected
+            projectState = .idle
+            selectedProjectIDs = []
+            projectSelectionError = nil
         } else {
             accountState = .failed(.storageFailure)
+        }
+    }
+
+    private func refreshProjects(token: String) async {
+        guard let projectProviderFactory else { return }
+
+        projectState = .loading
+
+        do {
+            let projects = try await projectProviderFactory(token).listAccessibleProjects()
+            let sortedProjects = VercelProject.sorted(projects)
+            let availableProjectIDs = Set(sortedProjects.map(\.id))
+            var restoredIDs = selectedProjectIDs.intersection(availableProjectIDs)
+
+            if restoredIDs.isEmpty, let firstProject = sortedProjects.first {
+                restoredIDs = [firstProject.id]
+            }
+
+            try accountDataStore.saveSelectedProjectIDs(restoredIDs)
+            selectedProjectIDs = restoredIDs
+            projectSelectionError = nil
+            projectState = .loaded(sortedProjects)
+        } catch {
+            projectState = .failed(error.localizedDescription)
+        }
+    }
+
+    private func restoreSelectedProjects() {
+        do {
+            selectedProjectIDs = try accountDataStore.readSelectedProjectIDs()
+            projectSelectionError = nil
+        } catch {
+            selectedProjectIDs = []
+            projectSelectionError = error.localizedDescription
+        }
+    }
+
+    private func updateSelectedProjectIDs(_ projectIDs: Set<String>) {
+        do {
+            try accountDataStore.saveSelectedProjectIDs(projectIDs)
+            selectedProjectIDs = projectIDs
+            projectSelectionError = nil
+        } catch {
+            projectSelectionError = error.localizedDescription
         }
     }
 

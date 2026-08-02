@@ -106,7 +106,17 @@ struct KeychainVercelCredentialStore: VercelCredentialStore {
 }
 
 protocol VercelAccountDataStore {
+    func readSelectedProjectIDs() throws -> Set<String>
+    func saveSelectedProjectIDs(_ projectIDs: Set<String>) throws
     func clear() throws
+}
+
+enum AccountDataStoreError: Error, Equatable, LocalizedError {
+    case invalidSelectedProjectIDs
+
+    var errorDescription: String? {
+        "The saved Vercel project selection could not be read."
+    }
 }
 
 struct UserDefaultsVercelAccountDataStore: VercelAccountDataStore {
@@ -132,6 +142,20 @@ struct UserDefaultsVercelAccountDataStore: VercelAccountDataStore {
         cacheDirectoryURL = supportURL
             .appendingPathComponent("VercelAnalyticsBar", isDirectory: true)
             .appendingPathComponent("Cache", isDirectory: true)
+    }
+
+    func readSelectedProjectIDs() throws -> Set<String> {
+        guard let value = userDefaults.object(forKey: Self.selectedProjectIDsKey) else {
+            return []
+        }
+        guard let projectIDs = value as? [String] else {
+            throw AccountDataStoreError.invalidSelectedProjectIDs
+        }
+        return Set(projectIDs)
+    }
+
+    func saveSelectedProjectIDs(_ projectIDs: Set<String>) throws {
+        userDefaults.set(projectIDs.sorted(), forKey: Self.selectedProjectIDsKey)
     }
 
     func clear() throws {

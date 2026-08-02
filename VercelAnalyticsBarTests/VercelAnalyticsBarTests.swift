@@ -114,6 +114,75 @@ import VercelAnalyticsCore
 }
 
 @MainActor
+@Test func appModelLoadsAndSortsAccountWideProjectList() async {
+    let accountDataStore = InMemoryAccountDataStore()
+    let projects = [
+        VercelProject(id: "project-z", name: "Zebra", teamID: "team", teamName: "Team"),
+        VercelProject(id: "project-a", name: "Alpha"),
+    ]
+    let model = AppModel(
+        provider: FixtureAnalyticsSnapshotProvider(),
+        credentialStore: InMemoryCredentialStore(),
+        accountDataStore: accountDataStore,
+        projectProviderFactory: { _ in FixtureProjectListingProvider(projects: projects) },
+        tokenValidator: { _ in }
+    )
+
+    await model.connect(token: "valid-token")
+
+    #expect(model.projectState == .loaded([
+        VercelProject(id: "project-a", name: "Alpha"),
+        VercelProject(id: "project-z", name: "Zebra", teamID: "team", teamName: "Team"),
+    ]))
+    #expect(model.selectedProjectIDs == ["project-a"])
+    #expect(accountDataStore.selectedProjectIDs == ["project-a"])
+}
+
+@MainActor
+@Test func appModelRestoresSelectionAndKeepsOneProjectSelected() async {
+    let accountDataStore = InMemoryAccountDataStore(selectedProjectIDs: ["project-a", "project-b"])
+    let projects = [
+        VercelProject(id: "project-b", name: "Beta"),
+        VercelProject(id: "project-a", name: "Alpha"),
+    ]
+    let model = AppModel(
+        provider: FixtureAnalyticsSnapshotProvider(),
+        credentialStore: InMemoryCredentialStore(),
+        accountDataStore: accountDataStore,
+        projectProviderFactory: { _ in FixtureProjectListingProvider(projects: projects) },
+        tokenValidator: { _ in }
+    )
+
+    await model.connect(token: "valid-token")
+    model.setProjectSelected("project-a", selected: false)
+    model.setProjectSelected("project-b", selected: false)
+
+    #expect(model.selectedProjectIDs == ["project-b"])
+    #expect(accountDataStore.selectedProjectIDs == ["project-b"])
+}
+
+@MainActor
+@Test func appModelFiltersProjectsAndShowsDuplicateTeamMetadata() async {
+    let projects = [
+        VercelProject(id: "project-personal", name: "Dashboard"),
+        VercelProject(id: "project-team", name: "Dashboard", teamID: "team", teamName: "Acme"),
+        VercelProject(id: "project-other", name: "Storefront"),
+    ]
+    let model = AppModel(
+        provider: FixtureAnalyticsSnapshotProvider(),
+        credentialStore: InMemoryCredentialStore(),
+        projectProviderFactory: { _ in FixtureProjectListingProvider(projects: projects) },
+        tokenValidator: { _ in }
+    )
+
+    await model.connect(token: "valid-token")
+
+    #expect(model.projects(matching: "acme").map(\.id) == ["project-team"])
+    #expect(model.teamMetadata(for: projects[0]) == "Personal account")
+    #expect(model.teamMetadata(for: projects[1]) == "Acme")
+}
+
+@MainActor
 @Test func appModelDisconnectsCredentialAndAccountData() async {
     let credentialStore = InMemoryCredentialStore(token: "stored-token")
     let accountDataStore = InMemoryAccountDataStore(hasData: true)
@@ -149,10 +218,14 @@ import VercelAnalyticsCore
     userDefaults.set("project-id", forKey: UserDefaultsVercelAccountDataStore.currentProjectIDKey)
     userDefaults.set("last7Days", forKey: UserDefaultsVercelAccountDataStore.analyticsRangeKey)
 
-    try UserDefaultsVercelAccountDataStore(
+    let store = UserDefaultsVercelAccountDataStore(
         userDefaults: userDefaults,
         applicationSupportURL: supportURL
-    ).clear()
+    )
+    try store.saveSelectedProjectIDs(["project-b", "project-a"])
+    #expect(try store.readSelectedProjectIDs() == ["project-a", "project-b"])
+
+    try store.clear()
 
     #expect(userDefaults.object(forKey: UserDefaultsVercelAccountDataStore.selectedProjectIDsKey) == nil)
     #expect(userDefaults.object(forKey: UserDefaultsVercelAccountDataStore.currentProjectIDKey) == nil)
@@ -214,6 +287,14 @@ private actor TokenValidationRecorder {
     }
 }
 
+private struct FixtureProjectListingProvider: VercelProjectListingProviding {
+    let projects: [VercelProject]
+
+    func listAccessibleProjects() async throws -> [VercelProject] {
+        projects
+    }
+}
+
 private final class InMemoryCredentialStore: VercelCredentialStore {
     var token: String?
 
@@ -236,12 +317,23 @@ private final class InMemoryCredentialStore: VercelCredentialStore {
 
 private final class InMemoryAccountDataStore: VercelAccountDataStore {
     var hasData: Bool
+    var selectedProjectIDs: Set<String>
 
-    init(hasData: Bool = false) {
+    init(hasData: Bool = false, selectedProjectIDs: Set<String> = []) {
         self.hasData = hasData
+        self.selectedProjectIDs = selectedProjectIDs
+    }
+
+    func readSelectedProjectIDs() throws -> Set<String> {
+        selectedProjectIDs
+    }
+
+    func saveSelectedProjectIDs(_ projectIDs: Set<String>) throws {
+        selectedProjectIDs = projectIDs
     }
 
     func clear() throws {
         hasData = false
+        selectedProjectIDs = []
     }
 }

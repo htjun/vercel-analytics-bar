@@ -7,7 +7,12 @@ struct VercelAnalyticsBarApp: App {
     @State private var model: AppModel
 
     init() {
-        let model = AppModel(provider: FixtureAnalyticsSnapshotProvider())
+        let model = AppModel(
+            provider: FixtureAnalyticsSnapshotProvider(),
+            projectProviderFactory: { token in
+                VercelAPIClient(token: token)
+            }
+        )
         _model = State(initialValue: model)
 
         Task {
