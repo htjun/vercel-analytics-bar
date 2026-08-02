@@ -2,14 +2,16 @@
 
 Vercel Analytics Bar is a native macOS menu bar application for checking Vercel Analytics at a glance.
 
-The application connects directly to Vercel, discovers projects across the account, and shows the selected project's Production Visitors for the Last 24 Hours. Broader ranges, charts, switching, and refresh coordination remain later milestones.
+The application connects directly to Vercel, discovers projects across the account, and shows the selected project's Production Web Analytics. Project switching and refresh coordination remain later milestones.
 
 ## Current behavior
 
 - Runs as a menu-bar-only macOS application with no Dock icon.
 - Opens a window-style menu bar panel.
-- Displays the selected project's exact Visitors count and refresh time after a live API request.
-- Shows a chart icon and abbreviated Visitors count in the menu bar after the first successful load.
+- Displays Visitors and Page Views totals with equal-period comparisons after a live API request.
+- Switches among Last 24 Hours, Last 7 Days, and Last 30 Days, defaults to Last 7 Days, and persists the selected range.
+- Renders the selected range's Visitors trend with a native line and area chart.
+- Shows a chart icon and abbreviated Last 24 Hours Visitors count in the menu bar after the first successful load.
 - Opens a Settings window and terminates from the Quit button.
 - Connects a Vercel Personal Access Token from Settings after validating it with Vercel.
 - Restores a validated connection when the menu bar panel or Settings first opens and stores the token only in the macOS Keychain.
@@ -19,7 +21,7 @@ The application connects directly to Vercel, discovers projects across the accou
 - Refreshes the project list after account connection or an explicit Settings sync.
 - Disconnects by removing the Keychain credential, project preference keys, and analytics cache directory.
 
-The Core client is covered separately by sanitized fixture tests. It supports bearer-authenticated personal and team project discovery, pagination, alphabetical sorting, Production Visitors/Page Views count and time-series queries, a live snapshot provider for one project, and safe typed handling for authentication, permission, rate-limit, transient, and malformed-response failures. Analytics activation is currently represented as `Unknown` in the project list because the documented public discovery response does not expose that setting; live metric errors are surfaced in the menu bar as unavailable states.
+The Core client is covered separately by sanitized fixture tests. It supports bearer-authenticated personal and team project discovery, pagination, alphabetical sorting, Production Visitors/Page Views count and time-series queries, equal-period comparisons, and a live ranged snapshot provider for one project. It also provides safe typed handling for authentication, permission, rate-limit, transient, and malformed-response failures. Analytics activation is currently represented as `Unknown` in the project list because the documented public discovery response does not expose that setting; live metric errors are surfaced in the menu bar as unavailable states. Bounce Rate is omitted because the verified public API contract does not provide it.
 
 ## Requirements
 
@@ -87,7 +89,7 @@ make test
 
 The checked-in Xcode project owns the application bundle, SwiftUI lifecycle, menu bar UI, Settings scene, sandbox metadata, signing configuration, and app tests.
 
-The local `VercelAnalyticsCore` Swift package owns stable analytics domain values, the typed `VercelAPIClient`, project discovery, the live snapshot provider, and the `AnalyticsSnapshotProviding` boundary. The app injects token-based project and analytics providers into a main-actor observable model, which owns account connection, project selection, and menu-bar metric state. Fixture providers remain test-only. The API client accepts an injected HTTP transport for deterministic tests; its Vercel DTOs stay internal and tokens or response bodies are never included in client errors. The app's credential boundary uses Security Keychain APIs, while selected project IDs, account preferences, and cache cleanup use an injected account data store so disconnect behavior is testable.
+The local `VercelAnalyticsCore` Swift package owns stable analytics domain values, the typed `VercelAPIClient`, project discovery, ranged snapshots, equal-period comparison calculation, and the `AnalyticsSnapshotProviding` boundary. The app injects token-based project and analytics providers into a main-actor observable model, which owns account connection, project selection, persisted range selection, and menu-bar metric state. Fixture providers remain test-only. The API client accepts an injected HTTP transport for deterministic tests; its Vercel DTOs stay internal and tokens or response bodies are never included in client errors. The app's credential boundary uses Security Keychain APIs, while selected project IDs, account preferences, and cache cleanup use an injected account data store so disconnect behavior is testable.
 
 Build configurations are separated into Debug, direct-release, and App Store release variants. Both release variants are currently unsigned build contracts; packaging, signing, notarization, Sparkle, and App Store submission are intentionally deferred.
 
