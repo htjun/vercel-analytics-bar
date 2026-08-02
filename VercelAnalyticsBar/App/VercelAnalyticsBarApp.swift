@@ -8,21 +8,26 @@ struct VercelAnalyticsBarApp: App {
 
     init() {
         let model = AppModel(
-            provider: FixtureAnalyticsSnapshotProvider(),
             projectProviderFactory: { token in
                 VercelAPIClient(token: token)
+            },
+            analyticsProviderFactory: { token, project in
+                VercelAnalyticsSnapshotProvider(token: token, project: project)
             }
         )
         _model = State(initialValue: model)
-
-        Task {
-            await model.restoreConnection()
-        }
     }
 
     var body: some Scene {
-        MenuBarExtra(ProductInfo.name, systemImage: "chart.line.uptrend.xyaxis") {
+        MenuBarExtra {
             MenuBarRootView(model: model)
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "chart.line.uptrend.xyaxis")
+                if let abbreviatedVisitors = model.abbreviatedVisitors {
+                    Text(abbreviatedVisitors)
+                }
+            }
         }
         .menuBarExtraStyle(.window)
 

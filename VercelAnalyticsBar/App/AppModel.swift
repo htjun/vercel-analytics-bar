@@ -9,6 +9,7 @@ final class AppModel {
         case idle
         case loading
         case loaded(AnalyticsSnapshot)
+        case empty(String)
         case failed(String)
     }
 
@@ -33,18 +34,20 @@ final class AppModel {
     private(set) var selectedProjectIDs: Set<String> = []
     private(set) var projectSelectionError: String?
 
-    private let provider: any AnalyticsSnapshotProviding
+    private let provider: (any AnalyticsSnapshotProviding)?
     private let credentialStore: any VercelCredentialStore
     private let accountDataStore: any VercelAccountDataStore
     private let tokenValidator: @Sendable (String) async throws -> Void
     private let projectProviderFactory: (@Sendable (String) -> any VercelProjectListingProviding)?
+    private let analyticsProviderFactory: (@Sendable (String, VercelProject) -> any AnalyticsSnapshotProviding)?
     private var didAttemptRestore = false
 
     init(
-        provider: any AnalyticsSnapshotProviding,
+        provider: (any AnalyticsSnapshotProviding)? = nil,
         credentialStore: any VercelCredentialStore = KeychainVercelCredentialStore(),
         accountDataStore: any VercelAccountDataStore = UserDefaultsVercelAccountDataStore(),
         projectProviderFactory: (@Sendable (String) -> any VercelProjectListingProviding)? = nil,
+        analyticsProviderFactory: (@Sendable (String, VercelProject) -> any AnalyticsSnapshotProviding)? = nil,
         tokenValidator: @escaping @Sendable (String) async throws -> Void = {
             try await VercelAPIClient(token: $0).validateToken()
         }
@@ -53,10 +56,24 @@ final class AppModel {
         self.credentialStore = credentialStore
         self.accountDataStore = accountDataStore
         self.projectProviderFactory = projectProviderFactory
+        self.analyticsProviderFactory = analyticsProviderFactory
         self.tokenValidator = tokenValidator
     }
 
     func load() async {
+        if accountState == .connected {
+            await loadLiveSnapshot()
+            return
+        }
+
+        guard let provider else {
+            state = .empty("Connect a Vercel account in Settings to load analytics.")
+            return
+        }
+        await loadSnapshot(using: provider)
+    }
+
+    private func loadSnapshot(using provider: any AnalyticsSnapshotProviding) async {
         state = .loading
 
         do {
@@ -64,6 +81,27 @@ final class AppModel {
             state = .loaded(snapshot)
         } catch {
             state = .failed(error.localizedDescription)
+        }
+    }
+
+    private func loadLiveSnapshot() async {
+        guard let analyticsProviderFactory else {
+            state = .empty("Live analytics is not configured.")
+            return
+        }
+        guard let project = currentProject else {
+            state = .empty("Select a Vercel project in Settings to load analytics.")
+            return
+        }
+
+        do {
+            guard let token = try credentialStore.read() else {
+                state = .empty("Connect a Vercel account in Settings to load analytics.")
+                return
+            }
+            await loadSnapshot(using: analyticsProviderFactory(token, project))
+        } catch {
+            state = .failed("The Vercel account could not be read securely.")
         }
     }
 
@@ -198,6 +236,7 @@ final class AppModel {
             try accountDataStore.saveSelectedProjectIDs(restoredIDs)
             selectedProjectIDs = restoredIDs
             projectSelectionError = nil
+            state = .idle
             projectState = .loaded(sortedProjects)
         } catch {
             projectState = .failed(error.localizedDescription)
@@ -219,6 +258,7 @@ final class AppModel {
             try accountDataStore.saveSelectedProjectIDs(projectIDs)
             selectedProjectIDs = projectIDs
             projectSelectionError = nil
+            state = .idle
         } catch {
             projectSelectionError = error.localizedDescription
         }
@@ -232,6 +272,30 @@ final class AppModel {
             return .storageFailure
         }
         return .unknown
+    }
+}
+
+extension AppModel {
+    var currentProject: VercelProject? {
+        guard case let .loaded(projects) = projectState else { return nil }
+        return projects.first { selectedProjectIDs.contains($0.id) }
+    }
+
+    var abbreviatedVisitors: String? {
+        guard case let .loaded(snapshot) = state else { return nil }
+        return Self.abbreviated(snapshot.primaryMetric.value)
+    }
+
+    private static func abbreviated(_ value: Int) -> String {
+        if value >= 1_000_000 {
+            return "\(value / 1_000_000)M"
+        }
+        if value >= 1000 {
+            let whole = value / 1000
+            let tenth = (value % 1000) / 100
+            return tenth == 0 ? "\(whole)K" : "\(whole).\(tenth)K"
+        }
+        return value.formatted(.number)
     }
 }
 

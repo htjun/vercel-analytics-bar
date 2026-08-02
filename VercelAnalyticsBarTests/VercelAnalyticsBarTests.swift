@@ -183,6 +183,54 @@ import VercelAnalyticsCore
 }
 
 @MainActor
+@Test func appModelLoadsLiveSnapshotForCurrentSelectedProject() async {
+    let projects = [
+        VercelProject(id: "project-z", name: "Zebra"),
+        VercelProject(id: "project-a", name: "Alpha"),
+    ]
+    let model = AppModel(
+        credentialStore: InMemoryCredentialStore(),
+        projectProviderFactory: { _ in FixtureProjectListingProvider(projects: projects) },
+        analyticsProviderFactory: { _, project in
+            FixtureAnalyticsSnapshotProvider(
+                value: AnalyticsSnapshot(
+                    projectName: project.name,
+                    primaryMetric: AnalyticsMetric(label: "Visitors", value: 12847),
+                    refreshedAt: Date(timeIntervalSince1970: 1_785_549_600)
+                )
+            )
+        },
+        tokenValidator: { _ in }
+    )
+
+    await model.connect(token: "valid-token")
+    await model.load()
+
+    #expect(model.currentProject?.id == "project-a")
+    #expect(model.state == .loaded(AnalyticsSnapshot(
+        projectName: "Alpha",
+        primaryMetric: AnalyticsMetric(label: "Visitors", value: 12847),
+        refreshedAt: Date(timeIntervalSince1970: 1_785_549_600)
+    )))
+    #expect(model.abbreviatedVisitors == "12.8K")
+}
+
+@MainActor
+@Test func appModelShowsEmptyStateWhenNoProjectIsSelected() async {
+    let model = AppModel(
+        credentialStore: InMemoryCredentialStore(),
+        projectProviderFactory: { _ in FixtureProjectListingProvider(projects: []) },
+        analyticsProviderFactory: { _, _ in FixtureAnalyticsSnapshotProvider() },
+        tokenValidator: { _ in }
+    )
+
+    await model.connect(token: "valid-token")
+    await model.load()
+
+    #expect(model.state == .empty("Select a Vercel project in Settings to load analytics."))
+}
+
+@MainActor
 @Test func appModelDisconnectsCredentialAndAccountData() async {
     let credentialStore = InMemoryCredentialStore(token: "stored-token")
     let accountDataStore = InMemoryAccountDataStore(hasData: true)

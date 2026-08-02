@@ -42,6 +42,14 @@ struct MenuBarRootView: View {
                 Text("Loading analytics…")
             }
 
+        case let .empty(message):
+            VStack(alignment: .leading, spacing: 10) {
+                Label("No analytics data", systemImage: "chart.line.uptrend.xyaxis")
+                    .font(.headline)
+                Text(message)
+                    .foregroundStyle(.secondary)
+            }
+
         case let .loaded(snapshot):
             snapshotContent(snapshot)
 
