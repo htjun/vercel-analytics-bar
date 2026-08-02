@@ -8,13 +8,16 @@ This document records the public API contract that Vercel Analytics Bar may use.
 
 | Need | Public endpoint | Required parameters |
 | --- | --- | --- |
-| Validate access token | `GET /v2/user` | None |
+| Validate access token and discover scopes | `GET /v2/teams` | None |
+| Read the current user when available | `GET /v2/user` | None |
 | Discover teams | `GET /v2/teams` | None |
 | Discover projects | `GET /v9/projects` | `teamId` for team-owned projects |
 | Summary totals | `GET /v1/query/web-analytics/visits/count` | `projectId`; optional `since`, `until`, `teamId` |
 | Time series | `GET /v1/query/web-analytics/visits/aggregate` | `projectId`, `since`, `until`, `by`; optional `teamId` |
 
 The API uses bearer authentication. Personal projects omit team scope; team projects include `teamId` or `slug`.
+
+The live probe treats successful access to the required team-list endpoint as token validation. A newly created scoped PAT returned `404 not_found` from `GET /v2/user` while a deliberately invalid token returned `403 forbidden`, so the optional user endpoint is recorded for diagnosis but does not gate the required project and Analytics queries.
 
 ## Analytics model
 

@@ -73,6 +73,10 @@ def request_summary(response)
   }.compact
 end
 
+def successful?(response)
+  response.fetch("status").between?(200, 299)
+end
+
 def paginated_values(path, key, query, token)
   values = []
   cursors = []
@@ -82,7 +86,7 @@ def paginated_values(path, key, query, token)
     page_query = query.merge("limit" => 100)
     page_query["until"] = cursor if cursor
     response = request(path, page_query, token)
-    break [values, cursors, request_summary(response)] unless response.fetch("status").between?(200, 299)
+    break [values, cursors, request_summary(response)] unless successful?(response)
 
     body = response.fetch("body")
     values.concat(Array(body[key]))
@@ -203,8 +207,8 @@ def query_analytics(project, token)
         "count" => analytics_summary(count),
         "aggregate" => analytics_summary(aggregate),
         "explicitProductionMatchesDefault" =>
-          count.fetch("status").between?(200, 299) &&
-          production.fetch("status").between?(200, 299) &&
+          successful?(count) &&
+          successful?(production) &&
           count.fetch("body")["data"] == production.fetch("body")["data"],
       },
     ]
@@ -222,7 +226,7 @@ token = prompt_for_token
 abort "A Vercel access token is required." if token.empty?
 
 record = {
-  "schemaVersion" => 1,
+  "schemaVersion" => 2,
   "generatedAt" => Time.now.utc.iso8601,
   "apiBaseURL" => API_BASE_URL,
   "privateDashboardEndpointsUsed" => false,
@@ -238,15 +242,16 @@ record = {
   },
 }
 
-user = request("/v2/user", {}, token)
-record["tokenValidation"] = request_summary(user)
-unless user.fetch("status").between?(200, 299)
-  record["invalidTokenProbe"] = request_summary(request("/v2/user", {}, "invalid"))
+validation = request("/v2/teams", { "limit" => 1 }, token)
+record["tokenValidation"] = request_summary(validation).merge("endpoint" => "/v2/teams")
+record["currentUserProbe"] = request_summary(request("/v2/user", {}, token))
+unless successful?(validation)
+  record["invalidTokenProbe"] = request_summary(request("/v2/teams", { "limit" => 1 }, "invalid"))
   write_record(record)
   abort "Token validation failed. The sanitized result was recorded."
 end
 
-record["invalidTokenProbe"] = request_summary(request("/v2/user", {}, "invalid"))
+record["invalidTokenProbe"] = request_summary(request("/v2/teams", { "limit" => 1 }, "invalid"))
 scopes = scopes_for(token, record)
 projects = projects_for(scopes, token, record)
 project = select_project(projects)
