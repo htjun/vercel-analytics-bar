@@ -130,6 +130,36 @@ import VercelAnalyticsCore
     #expect(accountDataStore.hasData == false)
 }
 
+@Test func accountDataStoreClearsPreferencesAndCache() throws {
+    let suiteName = "VercelAnalyticsBarTests.\(UUID().uuidString)"
+    let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+    let supportURL = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+        .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    let cacheURL = supportURL
+        .appendingPathComponent("VercelAnalyticsBar", isDirectory: true)
+        .appendingPathComponent("Cache", isDirectory: true)
+
+    defer {
+        userDefaults.removePersistentDomain(forName: suiteName)
+        try? FileManager.default.removeItem(at: supportURL)
+    }
+
+    try FileManager.default.createDirectory(at: cacheURL, withIntermediateDirectories: true)
+    userDefaults.set(["project-id"], forKey: UserDefaultsVercelAccountDataStore.selectedProjectIDsKey)
+    userDefaults.set("project-id", forKey: UserDefaultsVercelAccountDataStore.currentProjectIDKey)
+    userDefaults.set("last7Days", forKey: UserDefaultsVercelAccountDataStore.analyticsRangeKey)
+
+    try UserDefaultsVercelAccountDataStore(
+        userDefaults: userDefaults,
+        applicationSupportURL: supportURL
+    ).clear()
+
+    #expect(userDefaults.object(forKey: UserDefaultsVercelAccountDataStore.selectedProjectIDsKey) == nil)
+    #expect(userDefaults.object(forKey: UserDefaultsVercelAccountDataStore.currentProjectIDKey) == nil)
+    #expect(userDefaults.object(forKey: UserDefaultsVercelAccountDataStore.analyticsRangeKey) == nil)
+    #expect(FileManager.default.fileExists(atPath: cacheURL.path) == false)
+}
+
 private enum SnapshotError: Error {
     case unavailable
 }
