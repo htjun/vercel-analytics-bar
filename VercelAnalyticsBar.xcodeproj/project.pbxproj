@@ -22,6 +22,8 @@
 		A10000000000000000000011 /* RefreshCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000011 /* RefreshCoordinatorTests.swift */; };
 		A10000000000000000000012 /* ConnectionErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000012 /* ConnectionErrorTests.swift */; };
 		A10000000000000000000013 /* AppModelEdgeCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000013 /* AppModelEdgeCaseTests.swift */; };
+		A10000000000000000000014 /* LaunchAtLogin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000014 /* LaunchAtLogin.swift */; };
+		A10000000000000000000015 /* NativeIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000015 /* NativeIntegrationTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -56,6 +58,8 @@
 		A30000000000000000000011 /* RefreshCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefreshCoordinatorTests.swift; sourceTree = "<group>"; };
 		A30000000000000000000012 /* ConnectionErrorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionErrorTests.swift; sourceTree = "<group>"; };
 		A30000000000000000000013 /* AppModelEdgeCaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModelEdgeCaseTests.swift; sourceTree = "<group>"; };
+		A30000000000000000000014 /* LaunchAtLogin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLogin.swift; sourceTree = "<group>"; };
+		A30000000000000000000015 /* NativeIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeIntegrationTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -107,6 +111,7 @@
 				A3000000000000000000000E /* AppModelSupport.swift */,
 				A3000000000000000000000F /* AnalyticsSnapshotCache.swift */,
 				A30000000000000000000010 /* AppModelRefresh.swift */,
+				A30000000000000000000014 /* LaunchAtLogin.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -128,6 +133,7 @@
 				A30000000000000000000011 /* RefreshCoordinatorTests.swift */,
 				A30000000000000000000012 /* ConnectionErrorTests.swift */,
 				A30000000000000000000013 /* AppModelEdgeCaseTests.swift */,
+				A30000000000000000000015 /* NativeIntegrationTests.swift */,
 			);
 			path = VercelAnalyticsBarTests;
 			sourceTree = "<group>";
@@ -290,6 +296,7 @@
 				A1000000000000000000000E /* AppModelSupport.swift in Sources */,
 				A1000000000000000000000F /* AnalyticsSnapshotCache.swift in Sources */,
 				A10000000000000000000010 /* AppModelRefresh.swift in Sources */,
+				A10000000000000000000014 /* LaunchAtLogin.swift in Sources */,
 				A10000000000000000000006 /* MenuBarRootView.swift in Sources */,
 				A10000000000000000000007 /* SettingsRootView.swift in Sources */,
 			);
@@ -304,6 +311,7 @@
 				A10000000000000000000011 /* RefreshCoordinatorTests.swift in Sources */,
 				A10000000000000000000012 /* ConnectionErrorTests.swift in Sources */,
 				A10000000000000000000013 /* AppModelEdgeCaseTests.swift in Sources */,
+				A10000000000000000000015 /* NativeIntegrationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

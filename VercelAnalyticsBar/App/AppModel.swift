@@ -46,6 +46,7 @@ final class AppModel {
     private let tokenValidator: @Sendable (String) async throws -> Void
     let projectProviderFactory: (@Sendable (String) -> any VercelProjectListingProviding)?
     let analyticsProviderFactory: (@Sendable (String, VercelProject) -> any AnalyticsSnapshotProviding)?
+    let launchAtLoginManager: any LaunchAtLoginManaging
     let now: @Sendable () -> Date
     let sleep: @Sendable (Duration) async throws -> Void
     var snapshotCache: [SnapshotCacheKey: AnalyticsSnapshot] = [:]
@@ -56,6 +57,8 @@ final class AppModel {
     var manualRetryCount = 0
     var manualRetryWindowEndsAt: Date?
     var nextRefreshAllowedAt: Date?
+    private(set) var launchAtLoginStatus: LaunchAtLoginStatus
+    private(set) var launchAtLoginError: String?
     private var didAttemptRestore = false
 
     init(
@@ -65,6 +68,7 @@ final class AppModel {
         snapshotCacheStore: any AnalyticsSnapshotCacheStore = FileAnalyticsSnapshotCacheStore(),
         projectProviderFactory: (@Sendable (String) -> any VercelProjectListingProviding)? = nil,
         analyticsProviderFactory: (@Sendable (String, VercelProject) -> any AnalyticsSnapshotProviding)? = nil,
+        launchAtLoginManager: any LaunchAtLoginManaging = SystemLaunchAtLoginManager(),
         now: @escaping @Sendable () -> Date = Date.init,
         sleep: @escaping @Sendable (Duration) async throws -> Void = {
             try await Task.sleep(for: $0)
@@ -79,12 +83,14 @@ final class AppModel {
         self.snapshotCacheStore = snapshotCacheStore
         self.projectProviderFactory = projectProviderFactory
         self.analyticsProviderFactory = analyticsProviderFactory
+        self.launchAtLoginManager = launchAtLoginManager
         self.now = now
         self.sleep = sleep
         self.tokenValidator = tokenValidator
         currentProjectID = try? accountDataStore.readCurrentProjectID()
         selectedRange = (try? accountDataStore.readAnalyticsRange()) ?? .last7Days
         snapshotCache = Self.cacheDictionary(from: (try? snapshotCacheStore.read()) ?? [])
+        launchAtLoginStatus = launchAtLoginManager.status
     }
 
     func restoreConnection() async {
@@ -149,6 +155,23 @@ extension AppModel {
             await refreshProjects(token: token)
         } catch {
             projectState = .failed("The Vercel project list could not be loaded.")
+        }
+    }
+
+    func syncNow() async {
+        await refreshProjects()
+        guard case .loaded = projectState else { return }
+        await load(trigger: .manual)
+    }
+
+    func setLaunchAtLogin(enabled: Bool) {
+        do {
+            try launchAtLoginManager.setEnabled(enabled)
+            launchAtLoginStatus = launchAtLoginManager.status
+            launchAtLoginError = nil
+        } catch {
+            launchAtLoginStatus = launchAtLoginManager.status
+            launchAtLoginError = error.localizedDescription
         }
     }
 

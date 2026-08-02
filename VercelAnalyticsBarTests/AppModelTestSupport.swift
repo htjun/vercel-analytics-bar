@@ -146,6 +146,22 @@ final class InMemorySnapshotCacheStore: AnalyticsSnapshotCacheStore {
     }
 }
 
+final class InMemoryLaunchAtLoginManager: LaunchAtLoginManaging {
+    var status: LaunchAtLoginStatus
+    var failure: LaunchAtLoginError?
+
+    init(status: LaunchAtLoginStatus = .disabled) {
+        self.status = status
+    }
+
+    func setEnabled(_ enabled: Bool) throws {
+        if let failure {
+            throw failure
+        }
+        status = enabled ? .enabled : .disabled
+    }
+}
+
 final class MutableDateClock: @unchecked Sendable {
     private(set) var date: Date
 
