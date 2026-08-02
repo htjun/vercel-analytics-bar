@@ -122,17 +122,30 @@ struct MenuBarRootView: View {
                 }
             }
 
-            HStack {
-                Text(snapshot.range.title)
-                    .foregroundStyle(.secondary)
-
-                Spacer()
-
-                Text(updatedText(for: snapshot))
-            }
-            .font(.caption)
-            .foregroundStyle(.tertiary)
+            snapshotFooter(snapshot)
         }
+    }
+
+    private func snapshotFooter(_ snapshot: AnalyticsSnapshot) -> some View {
+        let dashboardURL = model.currentProject?.analyticsDashboardURL(for: snapshot.range)
+
+        return HStack {
+            Text(snapshot.range.title)
+                .foregroundStyle(.secondary)
+
+            if let dashboardURL {
+                Link(destination: dashboardURL) {
+                    Label("View in Vercel", systemImage: "arrow.up.right.square")
+                }
+                .help("Open this project's analytics in Vercel")
+            }
+
+            Spacer()
+
+            Text(updatedText(for: snapshot))
+        }
+        .font(.caption)
+        .foregroundStyle(.tertiary)
     }
 
     private func updatedText(for snapshot: AnalyticsSnapshot) -> String {

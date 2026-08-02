@@ -70,6 +70,7 @@ import VercelAnalyticsCore
 @Test func clientListsAllAccessibleProjectsWithTeamMetadataAndSorting() async throws {
     let transport = try FixtureTransport(
         responses: [
+            "/v2/user": [.fixture(named: "authenticated-user")],
             "/v2/teams": [
                 .fixture(named: "teams-page-1"),
                 .fixture(named: "teams-page-2"),
@@ -88,32 +89,53 @@ import VercelAnalyticsCore
 
     #expect(projects == [
         VercelProject(
-            id: "prj_personal_duplicate",
-            name: "Team Dashboard"
-        ),
-        VercelProject(
             id: "prj_team_fixture_1",
             name: "Team Dashboard",
             teamID: "team_fixture",
-            teamName: "Fixture Team"
+            teamName: "Fixture Team",
+            scopeSlug: "fixture-team"
         ),
         VercelProject(
             id: "prj_team_fixture_2",
             name: "Team Landing",
             teamID: "team_fixture",
-            teamName: "Fixture Team"
+            teamName: "Fixture Team",
+            scopeSlug: "fixture-team"
         ),
         VercelProject(
             id: "prj_personal_fixture",
-            name: "Zebra Site"
+            name: "Zebra Site",
+            scopeSlug: "fixture-user"
         ),
     ])
     #expect(projects.allSatisfy { $0.analyticsAvailability == .unknown })
 
     let requests = await transport.requests
-    #expect(requests.count == 6)
-    #expect(queryValue("teamId", in: requests[3]) == "team_fixture")
-    #expect(queryValue("teamId", in: requests[5]) == "team_second")
+    #expect(requests.count == 7)
+    #expect(queryValue("teamId", in: requests[4]) == "team_fixture")
+    #expect(queryValue("teamId", in: requests[6]) == "team_second")
+}
+
+@Test(arguments: [
+    (VercelAnalyticsRange.last24Hours, "24h"),
+    (VercelAnalyticsRange.last7Days, "7d"),
+    (VercelAnalyticsRange.last30Days, "30d"),
+])
+func projectBuildsAnalyticsDashboardURL(range: VercelAnalyticsRange, period: String) throws {
+    let project = VercelProject(
+        id: "prj_fixture",
+        name: "fixture-project",
+        scopeSlug: "fixture-team"
+    )
+
+    let url = try #require(project.analyticsDashboardURL(for: range))
+    #expect(url.absoluteString == "https://vercel.com/fixture-team/fixture-project/analytics?period=\(period)")
+}
+
+@Test func projectWithoutScopeDoesNotBuildAnalyticsDashboardURL() {
+    let project = VercelProject(id: "prj_fixture", name: "fixture-project")
+
+    #expect(project.analyticsDashboardURL(for: .last24Hours) == nil)
 }
 
 @Test func clientMapsCountAndSeriesAndSendsProductionQuery() async throws {

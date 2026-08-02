@@ -17,6 +17,7 @@ public struct VercelProject: Equatable, Identifiable, Sendable {
     public let name: String
     public let teamID: String?
     public let teamName: String?
+    public let scopeSlug: String?
     public let analyticsAvailability: VercelAnalyticsAvailability
 
     public init(
@@ -24,12 +25,14 @@ public struct VercelProject: Equatable, Identifiable, Sendable {
         name: String,
         teamID: String? = nil,
         teamName: String? = nil,
+        scopeSlug: String? = nil,
         analyticsAvailability: VercelAnalyticsAvailability = .unknown
     ) {
         self.id = id
         self.name = name
         self.teamID = teamID
         self.teamName = teamName
+        self.scopeSlug = scopeSlug
         self.analyticsAvailability = analyticsAvailability
     }
 }
@@ -48,6 +51,17 @@ public extension VercelProject {
             }
             return lhs.id < rhs.id
         }
+    }
+
+    func analyticsDashboardURL(for range: VercelAnalyticsRange) -> URL? {
+        guard let scopeSlug, !scopeSlug.isEmpty, !name.isEmpty else { return nil }
+
+        var components = URLComponents()
+        components.scheme = "https"
+        components.host = "vercel.com"
+        components.path = "/\(scopeSlug)/\(name)/analytics"
+        components.queryItems = [URLQueryItem(name: "period", value: range.dashboardPeriod)]
+        return components.url
     }
 }
 
@@ -101,6 +115,17 @@ public enum VercelAnalyticsRange: String, CaseIterable, Codable, Equatable, Hash
             7 * 24 * 60 * 60
         case .last30Days:
             30 * 24 * 60 * 60
+        }
+    }
+
+    fileprivate var dashboardPeriod: String {
+        switch self {
+        case .last24Hours:
+            "24h"
+        case .last7Days:
+            "7d"
+        case .last30Days:
+            "30d"
         }
     }
 }

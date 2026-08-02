@@ -20,6 +20,7 @@ The application connects directly to Vercel, discovers projects across the accou
 - Shows duplicate project names with their team or personal-account metadata and an explicit Analytics status.
 - Persists selected project IDs locally, selects the first accessible project when no selection exists, and prevents clearing the final selection.
 - Opens a searchable menu-bar project selector containing only selected projects, persists the current project, and shows a cached snapshot immediately while the new project refreshes.
+- Links the current project and selected range to its detailed Vercel Analytics dashboard.
 - Refreshes the current project every five minutes, skips popover-open requests while data is under one minute old, and coalesces duplicate refreshes.
 - Persists versioned snapshots under Application Support, keeps stale data visible through transient failures, and applies Vercel rate-limit backoff with bounded manual retries.
 - Refreshes the project list after account connection or an explicit Settings sync.

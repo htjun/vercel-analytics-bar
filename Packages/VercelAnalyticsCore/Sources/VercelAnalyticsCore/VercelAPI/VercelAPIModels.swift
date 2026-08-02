@@ -1,5 +1,13 @@
 import Foundation
 
+struct AuthenticatedUserResponseDTO: Decodable {
+    let user: AuthenticatedUserDTO
+}
+
+struct AuthenticatedUserDTO: Decodable {
+    let username: String?
+}
+
 struct TeamsResponseDTO: Decodable {
     let teams: [TeamDTO]
     let pagination: PaginationDTO
