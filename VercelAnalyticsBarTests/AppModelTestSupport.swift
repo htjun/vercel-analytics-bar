@@ -242,3 +242,37 @@ func makeAnalyticsSnapshot(
     #expect(userDefaults.object(forKey: UserDefaultsVercelAccountDataStore.analyticsRangeKey) == nil)
     #expect(FileManager.default.fileExists(atPath: cacheURL.path) == false)
 }
+
+@Test func snapshotCacheStoreIsVersionedAndKeepsProjectRangeKeysSeparate() throws {
+    let supportURL = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+        .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    let store = FileAnalyticsSnapshotCacheStore(applicationSupportURL: supportURL)
+    let refreshedAt = Date(timeIntervalSince1970: 1_785_549_600)
+    let last7Days = makeAnalyticsSnapshot(
+        projectName: "Alpha", visitors: 100, pageViews: 200, last24HoursVisitors: 11, refreshedAt: refreshedAt
+    )
+    let last30Days = AnalyticsSnapshot(
+        projectName: "Alpha",
+        range: .last30Days,
+        visitors: AnalyticsMetric(label: "Visitors", value: 300, previousValue: 270),
+        pageViews: AnalyticsMetric(label: "Page Views", value: 500, previousValue: 450),
+        series: [],
+        last24HoursVisitors: 22,
+        refreshedAt: refreshedAt
+    )
+    let entries = [
+        SnapshotCacheEntry(projectID: "project-alpha", snapshot: last7Days),
+        SnapshotCacheEntry(projectID: "project-alpha", snapshot: last30Days),
+    ]
+
+    defer {
+        try? FileManager.default.removeItem(at: supportURL)
+    }
+
+    try store.write(entries)
+    #expect(try store.read() == entries)
+
+    try Data(#"{"version":999,"entries":[]}"#.utf8).write(to: store.fileURL, options: .atomic)
+    #expect(try store.read() == [])
+    #expect(FileManager.default.fileExists(atPath: store.fileURL.path) == false)
+}

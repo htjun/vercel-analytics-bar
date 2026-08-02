@@ -1,6 +1,6 @@
 import Foundation
 
-public struct AnalyticsSnapshot: Equatable, Sendable {
+public struct AnalyticsSnapshot: Codable, Equatable, Sendable {
     public let projectName: String
     public let range: VercelAnalyticsRange
     public let visitors: AnalyticsMetric
@@ -28,7 +28,7 @@ public struct AnalyticsSnapshot: Equatable, Sendable {
     }
 }
 
-public struct AnalyticsMetric: Equatable, Sendable {
+public struct AnalyticsMetric: Codable, Equatable, Sendable {
     public let label: String
     public let value: Int
     public let previousValue: Int

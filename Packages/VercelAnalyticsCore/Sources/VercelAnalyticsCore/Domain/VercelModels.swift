@@ -68,7 +68,7 @@ public enum VercelAnalyticsAvailability: String, Equatable, Sendable {
     }
 }
 
-public enum VercelAnalyticsRange: String, CaseIterable, Equatable, Hashable, Sendable {
+public enum VercelAnalyticsRange: String, CaseIterable, Codable, Equatable, Hashable, Sendable {
     case last24Hours
     case last7Days
     case last30Days
@@ -127,7 +127,7 @@ public struct VercelAnalyticsCount: Equatable, Sendable {
     }
 }
 
-public struct VercelAnalyticsPoint: Equatable, Sendable {
+public struct VercelAnalyticsPoint: Codable, Equatable, Sendable {
     public let timestamp: Date
     public let visitors: Int
     public let pageViews: Int

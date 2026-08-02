@@ -17,6 +17,7 @@
 		A10000000000000000000008 /* AccountPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000000C /* AccountPersistence.swift */; };
 		A10000000000000000000009 /* AppModelTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000000D /* AppModelTestSupport.swift */; };
 		A1000000000000000000000E /* AppModelSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000000E /* AppModelSupport.swift */; };
+		A1000000000000000000000F /* AnalyticsSnapshotCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000000F /* AnalyticsSnapshotCache.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -46,6 +47,7 @@
 		A3000000000000000000000C /* AccountPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountPersistence.swift; sourceTree = "<group>"; };
 		A3000000000000000000000D /* AppModelTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModelTestSupport.swift; sourceTree = "<group>"; };
 		A3000000000000000000000E /* AppModelSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModelSupport.swift; sourceTree = "<group>"; };
+		A3000000000000000000000F /* AnalyticsSnapshotCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsSnapshotCache.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -95,6 +97,7 @@
 				A30000000000000000000009 /* AppModel.swift */,
 				A3000000000000000000000C /* AccountPersistence.swift */,
 				A3000000000000000000000E /* AppModelSupport.swift */,
+				A3000000000000000000000F /* AnalyticsSnapshotCache.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -273,6 +276,7 @@
 				A10000000000000000000005 /* AppModel.swift in Sources */,
 				A10000000000000000000008 /* AccountPersistence.swift in Sources */,
 				A1000000000000000000000E /* AppModelSupport.swift in Sources */,
+				A1000000000000000000000F /* AnalyticsSnapshotCache.swift in Sources */,
 				A10000000000000000000006 /* MenuBarRootView.swift in Sources */,
 				A10000000000000000000007 /* SettingsRootView.swift in Sources */,
 			);
