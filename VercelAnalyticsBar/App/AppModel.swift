@@ -28,29 +28,47 @@ final class AppModel {
         case failed(String)
     }
 
-    private(set) var state: State = .idle
+    var state: State = .idle
     private(set) var accountState: AccountState = .disconnected
     private(set) var projectState: ProjectState = .idle
     private(set) var selectedProjectIDs: Set<String> = []
     private(set) var currentProjectID: String?
     private(set) var selectedRange: VercelAnalyticsRange
     private(set) var projectSelectionError: String?
+    var snapshotFreshness: SnapshotFreshness = .fresh
+    var refreshMessage: String?
+    var retryAvailableAt: Date?
 
-    private let provider: (any AnalyticsSnapshotProviding)?
-    private let credentialStore: any VercelCredentialStore
-    private let accountDataStore: any VercelAccountDataStore
+    let provider: (any AnalyticsSnapshotProviding)?
+    let credentialStore: any VercelCredentialStore
+    let accountDataStore: any VercelAccountDataStore
+    let snapshotCacheStore: any AnalyticsSnapshotCacheStore
     private let tokenValidator: @Sendable (String) async throws -> Void
-    private let projectProviderFactory: (@Sendable (String) -> any VercelProjectListingProviding)?
-    private let analyticsProviderFactory: (@Sendable (String, VercelProject) -> any AnalyticsSnapshotProviding)?
-    private var snapshotCache: [SnapshotCacheKey: AnalyticsSnapshot] = [:]
+    let projectProviderFactory: (@Sendable (String) -> any VercelProjectListingProviding)?
+    let analyticsProviderFactory: (@Sendable (String, VercelProject) -> any AnalyticsSnapshotProviding)?
+    let now: @Sendable () -> Date
+    let sleep: @Sendable (Duration) async throws -> Void
+    var snapshotCache: [SnapshotCacheKey: AnalyticsSnapshot] = [:]
+    var activeRefreshID: UUID?
+    var activeRefreshKey: RefreshRequestKey?
+    var activeRefreshTask: Task<Void, Never>?
+    var refreshLoopTask: Task<Void, Never>?
+    var manualRetryCount = 0
+    var manualRetryWindowEndsAt: Date?
+    var nextRefreshAllowedAt: Date?
     private var didAttemptRestore = false
 
     init(
         provider: (any AnalyticsSnapshotProviding)? = nil,
         credentialStore: any VercelCredentialStore = KeychainVercelCredentialStore(),
         accountDataStore: any VercelAccountDataStore = UserDefaultsVercelAccountDataStore(),
+        snapshotCacheStore: any AnalyticsSnapshotCacheStore = FileAnalyticsSnapshotCacheStore(),
         projectProviderFactory: (@Sendable (String) -> any VercelProjectListingProviding)? = nil,
         analyticsProviderFactory: (@Sendable (String, VercelProject) -> any AnalyticsSnapshotProviding)? = nil,
+        now: @escaping @Sendable () -> Date = Date.init,
+        sleep: @escaping @Sendable (Duration) async throws -> Void = {
+            try await Task.sleep(for: $0)
+        },
         tokenValidator: @escaping @Sendable (String) async throws -> Void = {
             try await VercelAPIClient(token: $0).validateToken()
         }
@@ -58,81 +76,15 @@ final class AppModel {
         self.provider = provider
         self.credentialStore = credentialStore
         self.accountDataStore = accountDataStore
+        self.snapshotCacheStore = snapshotCacheStore
         self.projectProviderFactory = projectProviderFactory
         self.analyticsProviderFactory = analyticsProviderFactory
+        self.now = now
+        self.sleep = sleep
         self.tokenValidator = tokenValidator
         currentProjectID = try? accountDataStore.readCurrentProjectID()
         selectedRange = (try? accountDataStore.readAnalyticsRange()) ?? .last7Days
-    }
-
-    func load() async {
-        if accountState == .connected {
-            await loadLiveSnapshot(showLoading: true)
-            return
-        }
-
-        guard let provider else {
-            state = .empty("Connect a Vercel account in Settings to load analytics.")
-            return
-        }
-        await loadSnapshot(using: provider, showLoading: true)
-    }
-
-    private func loadSnapshot(
-        using provider: any AnalyticsSnapshotProviding,
-        projectID: String? = nil,
-        showLoading: Bool
-    ) async {
-        let requestedRange = selectedRange
-        let requestedProjectID = projectID ?? currentProjectID
-        if showLoading {
-            state = .loading
-        }
-
-        do {
-            let snapshot = try await provider.snapshot(for: requestedRange)
-            guard requestedRange == selectedRange,
-                  requestedProjectID == currentProjectID
-            else {
-                return
-            }
-            if let requestedProjectID {
-                snapshotCache[SnapshotCacheKey(projectID: requestedProjectID, range: requestedRange)] = snapshot
-            }
-            state = .loaded(snapshot)
-        } catch {
-            guard requestedRange == selectedRange,
-                  requestedProjectID == currentProjectID
-            else {
-                return
-            }
-            state = .failed(error.localizedDescription)
-        }
-    }
-
-    private func loadLiveSnapshot(showLoading: Bool) async {
-        guard let analyticsProviderFactory else {
-            state = .empty("Live analytics is not configured.")
-            return
-        }
-        guard let project = currentProject else {
-            state = .empty("Select a Vercel project in Settings to load analytics.")
-            return
-        }
-
-        do {
-            guard let token = try credentialStore.read() else {
-                state = .empty("Connect a Vercel account in Settings to load analytics.")
-                return
-            }
-            await loadSnapshot(
-                using: analyticsProviderFactory(token, project),
-                projectID: project.id,
-                showLoading: showLoading
-            )
-        } catch {
-            state = .failed("The Vercel account could not be read securely.")
-        }
+        snapshotCache = Self.cacheDictionary(from: (try? snapshotCacheStore.read()) ?? [])
     }
 
     func restoreConnection() async {
@@ -243,12 +195,7 @@ extension AppModel {
             return
         }
 
-        let cacheKey = SnapshotCacheKey(projectID: projectID, range: selectedRange)
-        let hasCachedSnapshot = snapshotCache[cacheKey] != nil
-        if let cachedSnapshot = snapshotCache[cacheKey] {
-            state = .loaded(cachedSnapshot)
-        }
-        await loadLiveSnapshot(showLoading: !hasCachedSnapshot)
+        await loadLiveSnapshot(trigger: .projectSwitch)
     }
 
     func selectAnalyticsRange(_ range: VercelAnalyticsRange) async {
@@ -258,7 +205,7 @@ extension AppModel {
             try accountDataStore.saveAnalyticsRange(range)
             selectedRange = range
             state = .idle
-            await load()
+            await load(trigger: .rangeChanged)
         } catch {
             state = .failed("The analytics range could not be saved.")
         }
@@ -297,6 +244,15 @@ extension AppModel {
             failure = failure ?? error
         }
 
+        do {
+            try snapshotCacheStore.clear()
+        } catch {
+            failure = failure ?? error
+        }
+
+        activeRefreshTask?.cancel()
+        activeRefreshTask = nil
+        activeRefreshID = nil
         didAttemptRestore = true
         if failure == nil {
             state = .idle
@@ -305,6 +261,12 @@ extension AppModel {
             selectedProjectIDs = []
             currentProjectID = nil
             snapshotCache.removeAll()
+            snapshotFreshness = .fresh
+            refreshMessage = nil
+            retryAvailableAt = nil
+            nextRefreshAllowedAt = nil
+            manualRetryCount = 0
+            manualRetryWindowEndsAt = nil
             selectedRange = .last7Days
             projectSelectionError = nil
         } else {

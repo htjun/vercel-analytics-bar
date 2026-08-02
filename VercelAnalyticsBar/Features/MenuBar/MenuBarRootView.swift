@@ -62,9 +62,14 @@ struct MenuBarRootView: View {
                     .font(.headline)
                 Text(message)
                     .foregroundStyle(.secondary)
+                if let refreshMessage = model.refreshMessage, refreshMessage != message {
+                    Text(refreshMessage)
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
                 Button("Retry") {
                     Task {
-                        await model.load()
+                        await model.retryRefresh()
                     }
                 }
             }
@@ -95,6 +100,10 @@ struct MenuBarRootView: View {
                 .fixedSize()
             }
 
+            if model.snapshotFreshness == .stale {
+                staleRefreshContent
+            }
+
             HStack(alignment: .top, spacing: 12) {
                 MetricSummaryView(metric: snapshot.visitors)
                 MetricSummaryView(metric: snapshot.pageViews)
@@ -119,11 +128,35 @@ struct MenuBarRootView: View {
 
                 Spacer()
 
-                Text("Updated \(snapshot.refreshedAt.formatted(date: .omitted, time: .shortened))")
+                Text(updatedText(for: snapshot))
             }
             .font(.caption)
             .foregroundStyle(.tertiary)
         }
+    }
+
+    private func updatedText(for snapshot: AnalyticsSnapshot) -> String {
+        let timestamp = snapshot.refreshedAt.formatted(date: .omitted, time: .shortened)
+        return model.snapshotFreshness == .stale ? "Stale · Updated \(timestamp)" : "Updated \(timestamp)"
+    }
+
+    private var staleRefreshContent: some View {
+        HStack(spacing: 8) {
+            Label("Stale data", systemImage: "clock.badge.exclamationmark")
+            if let refreshMessage = model.refreshMessage {
+                Text(refreshMessage)
+                    .lineLimit(1)
+            }
+            Spacer()
+            Button("Retry") {
+                Task {
+                    await model.retryRefresh()
+                }
+            }
+            .buttonStyle(.link)
+        }
+        .font(.caption)
+        .foregroundStyle(.orange)
     }
 
     private func projectSelectorButton(for project: VercelProject) -> some View {

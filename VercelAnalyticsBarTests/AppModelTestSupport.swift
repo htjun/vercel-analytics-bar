@@ -126,6 +126,72 @@ final class InMemoryAccountDataStore: VercelAccountDataStore {
     }
 }
 
+final class InMemorySnapshotCacheStore: AnalyticsSnapshotCacheStore {
+    var entries: [SnapshotCacheEntry]
+
+    init(entries: [SnapshotCacheEntry] = []) {
+        self.entries = entries
+    }
+
+    func read() throws -> [SnapshotCacheEntry] {
+        entries
+    }
+
+    func write(_ entries: [SnapshotCacheEntry]) throws {
+        self.entries = entries
+    }
+
+    func clear() throws {
+        entries = []
+    }
+}
+
+final class MutableDateClock: @unchecked Sendable {
+    private(set) var date: Date
+
+    init(date: Date) {
+        self.date = date
+    }
+
+    func now() -> Date {
+        date
+    }
+
+    func advance(by interval: TimeInterval) {
+        date = date.addingTimeInterval(interval)
+    }
+}
+
+actor ManualRefreshSleeper {
+    private var continuation: CheckedContinuation<Void, Never>?
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+    private(set) var durations: [Duration] = []
+    private var isSleeping = false
+
+    func sleep(for duration: Duration) async throws {
+        durations.append(duration)
+        isSleeping = true
+        waiters.forEach { $0.resume() }
+        waiters.removeAll()
+        await withCheckedContinuation { continuation in
+            self.continuation = continuation
+        }
+        isSleeping = false
+    }
+
+    func waitUntilSleeping() async {
+        guard !isSleeping else { return }
+        await withCheckedContinuation { continuation in
+            waiters.append(continuation)
+        }
+    }
+
+    func release() {
+        continuation?.resume()
+        continuation = nil
+    }
+}
+
 actor StaticAnalyticsTransport: VercelHTTPTransport {
     private(set) var requests: [URLRequest] = []
 

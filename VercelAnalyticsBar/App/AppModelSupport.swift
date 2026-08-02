@@ -6,7 +6,23 @@ struct SnapshotCacheKey: Hashable {
     let range: VercelAnalyticsRange
 }
 
+struct RefreshRequestKey: Hashable {
+    let projectID: String?
+    let range: VercelAnalyticsRange
+}
+
+enum SnapshotFreshness: Equatable {
+    case fresh
+    case stale
+}
+
 extension AppModel {
+    static func cacheDictionary(from entries: [SnapshotCacheEntry]) -> [SnapshotCacheKey: AnalyticsSnapshot] {
+        entries.reduce(into: [:]) { result, entry in
+            result[entry.key] = entry.snapshot
+        }
+    }
+
     var currentProject: VercelProject? {
         guard case let .loaded(projects) = projectState else { return nil }
         if let currentProjectID {

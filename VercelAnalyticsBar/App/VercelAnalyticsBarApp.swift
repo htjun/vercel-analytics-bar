@@ -15,6 +15,7 @@ struct VercelAnalyticsBarApp: App {
                 VercelAnalyticsSnapshotProvider(token: token, project: project)
             }
         )
+        model.startRefreshLoop()
         _model = State(initialValue: model)
     }
 

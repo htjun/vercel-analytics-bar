@@ -18,7 +18,9 @@ The application connects directly to Vercel, discovers projects across the accou
 - Loads personal and team projects into one searchable, alphabetically sorted Settings list.
 - Shows duplicate project names with their team or personal-account metadata and an explicit Analytics status.
 - Persists selected project IDs locally, selects the first accessible project when no selection exists, and prevents clearing the final selection.
-- Opens a searchable menu-bar project selector containing only selected projects, persists the current project, and shows an in-memory cached snapshot immediately while the new project refreshes.
+- Opens a searchable menu-bar project selector containing only selected projects, persists the current project, and shows a cached snapshot immediately while the new project refreshes.
+- Refreshes the current project every five minutes, skips popover-open requests while data is under one minute old, and coalesces duplicate refreshes.
+- Persists versioned snapshots under Application Support, keeps stale data visible through transient failures, and applies Vercel rate-limit backoff with bounded manual retries.
 - Refreshes the project list after account connection or an explicit Settings sync.
 - Disconnects by removing the Keychain credential, project preference keys, and analytics cache directory.
 
@@ -90,7 +92,7 @@ make test
 
 The checked-in Xcode project owns the application bundle, SwiftUI lifecycle, menu bar UI, Settings scene, sandbox metadata, signing configuration, and app tests.
 
-The local `VercelAnalyticsCore` Swift package owns stable analytics domain values, the typed `VercelAPIClient`, project discovery, ranged snapshots, equal-period comparison calculation, and the `AnalyticsSnapshotProviding` boundary. The app injects token-based project and analytics providers into a main-actor observable model, which owns account connection, project selection, current-project switching, persisted range selection, and menu-bar metric state. Fixture providers remain test-only. The API client accepts an injected HTTP transport for deterministic tests; its Vercel DTOs stay internal and tokens or response bodies are never included in client errors. The app's credential boundary uses Security Keychain APIs, while selected project IDs, the current project, account preferences, and cache cleanup use an injected account data store so disconnect behavior is testable. The current-project cache is in-memory and keyed by project and analytics range; durable cache coordination is deferred to the refresh milestone.
+The local `VercelAnalyticsCore` Swift package owns stable analytics domain values, the typed `VercelAPIClient`, project discovery, ranged snapshots, equal-period comparison calculation, and the `AnalyticsSnapshotProviding` boundary. The app injects token-based project and analytics providers into a main-actor observable model, which owns account connection, project selection, current-project switching, persisted range selection, refresh coordination, and menu-bar metric state. Fixture providers remain test-only. The API client accepts an injected HTTP transport for deterministic tests; its Vercel DTOs stay internal and tokens or response bodies are never included in client errors. The app's credential boundary uses Security Keychain APIs, while selected project IDs, the current project, account preferences, and versioned snapshot cache use injected stores so disconnect and recovery behavior are testable. Snapshot cache entries are keyed by project and analytics range and are persisted under Application Support; corrupt or incompatible files are discarded.
 
 Build configurations are separated into Debug, direct-release, and App Store release variants. Both release variants are currently unsigned build contracts; packaging, signing, notarization, Sparkle, and App Store submission are intentionally deferred.
 

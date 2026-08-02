@@ -7,7 +7,11 @@ import VercelAnalyticsCore
 @Test func appModelLoadsSnapshotThroughInjectedProvider() async {
     let expected = AnalyticsSnapshot.fixture
     let provider = ControlledSnapshotProvider()
-    let model = AppModel(provider: provider, accountDataStore: InMemoryAccountDataStore())
+    let model = AppModel(
+        provider: provider,
+        accountDataStore: InMemoryAccountDataStore(),
+        snapshotCacheStore: InMemorySnapshotCacheStore()
+    )
 
     #expect(model.state == .idle)
 
@@ -28,7 +32,11 @@ import VercelAnalyticsCore
 @MainActor
 @Test func appModelExposesProviderFailure() async {
     let provider = ControlledSnapshotProvider()
-    let model = AppModel(provider: provider, accountDataStore: InMemoryAccountDataStore())
+    let model = AppModel(
+        provider: provider,
+        accountDataStore: InMemoryAccountDataStore(),
+        snapshotCacheStore: InMemorySnapshotCacheStore()
+    )
 
     let loadTask = Task {
         await model.load()
@@ -53,6 +61,7 @@ import VercelAnalyticsCore
         provider: FixtureAnalyticsSnapshotProvider(),
         credentialStore: credentialStore,
         accountDataStore: InMemoryAccountDataStore(),
+        snapshotCacheStore: InMemorySnapshotCacheStore(),
         tokenValidator: { token in
             await validator.validate(token)
         }
@@ -72,6 +81,7 @@ import VercelAnalyticsCore
         provider: FixtureAnalyticsSnapshotProvider(),
         credentialStore: credentialStore,
         accountDataStore: InMemoryAccountDataStore(),
+        snapshotCacheStore: InMemorySnapshotCacheStore(),
         tokenValidator: { _ in
             throw VercelAPIError.authentication(status: 403)
         }
@@ -89,6 +99,7 @@ import VercelAnalyticsCore
         provider: FixtureAnalyticsSnapshotProvider(),
         credentialStore: InMemoryCredentialStore(),
         accountDataStore: InMemoryAccountDataStore(),
+        snapshotCacheStore: InMemorySnapshotCacheStore(),
         tokenValidator: { _ in
             throw VercelAPIError.permissionDenied(status: 403)
         }
@@ -107,6 +118,7 @@ import VercelAnalyticsCore
         provider: FixtureAnalyticsSnapshotProvider(),
         credentialStore: credentialStore,
         accountDataStore: InMemoryAccountDataStore(),
+        snapshotCacheStore: InMemorySnapshotCacheStore(),
         tokenValidator: { token in
             await validator.validate(token)
         }
@@ -129,6 +141,7 @@ import VercelAnalyticsCore
         provider: FixtureAnalyticsSnapshotProvider(),
         credentialStore: InMemoryCredentialStore(),
         accountDataStore: accountDataStore,
+        snapshotCacheStore: InMemorySnapshotCacheStore(),
         projectProviderFactory: { _ in FixtureProjectListingProvider(projects: projects) },
         tokenValidator: { _ in }
     )
@@ -156,6 +169,7 @@ import VercelAnalyticsCore
         provider: FixtureAnalyticsSnapshotProvider(),
         credentialStore: InMemoryCredentialStore(),
         accountDataStore: accountDataStore,
+        snapshotCacheStore: InMemorySnapshotCacheStore(),
         projectProviderFactory: { _ in FixtureProjectListingProvider(projects: projects) },
         tokenValidator: { _ in }
     )
@@ -181,6 +195,7 @@ import VercelAnalyticsCore
         provider: FixtureAnalyticsSnapshotProvider(),
         credentialStore: InMemoryCredentialStore(),
         accountDataStore: InMemoryAccountDataStore(),
+        snapshotCacheStore: InMemorySnapshotCacheStore(),
         projectProviderFactory: { _ in FixtureProjectListingProvider(projects: projects) },
         tokenValidator: { _ in }
     )
@@ -216,6 +231,7 @@ import VercelAnalyticsCore
     let model = AppModel(
         credentialStore: InMemoryCredentialStore(),
         accountDataStore: accountDataStore,
+        snapshotCacheStore: InMemorySnapshotCacheStore(),
         projectProviderFactory: { _ in FixtureProjectListingProvider(projects: projects) },
         analyticsProviderFactory: { _, project in
             project.id == "project-alpha" ? alphaProvider : betaProvider
@@ -261,6 +277,7 @@ import VercelAnalyticsCore
     let model = AppModel(
         credentialStore: InMemoryCredentialStore(),
         accountDataStore: InMemoryAccountDataStore(),
+        snapshotCacheStore: InMemorySnapshotCacheStore(),
         projectProviderFactory: { _ in FixtureProjectListingProvider(projects: projects) },
         analyticsProviderFactory: { _, project in
             FixtureAnalyticsSnapshotProvider(
@@ -298,7 +315,11 @@ import VercelAnalyticsCore
 @Test func appModelDefaultsPersistsAndReloadsAnalyticsRange() async {
     let accountDataStore = InMemoryAccountDataStore()
     let provider = ControlledSnapshotProvider()
-    let model = AppModel(provider: provider, accountDataStore: accountDataStore)
+    let model = AppModel(
+        provider: provider,
+        accountDataStore: accountDataStore,
+        snapshotCacheStore: InMemorySnapshotCacheStore()
+    )
 
     #expect(model.selectedRange == .last7Days)
 
@@ -325,6 +346,7 @@ import VercelAnalyticsCore
     let model = AppModel(
         credentialStore: InMemoryCredentialStore(),
         accountDataStore: InMemoryAccountDataStore(),
+        snapshotCacheStore: InMemorySnapshotCacheStore(),
         projectProviderFactory: { _ in FixtureProjectListingProvider(projects: [project]) },
         analyticsProviderFactory: { token, selectedProject in
             VercelAnalyticsSnapshotProvider(
@@ -354,29 +376,14 @@ import VercelAnalyticsCore
 }
 
 @MainActor
-@Test func appModelShowsEmptyStateWhenNoProjectIsSelected() async {
-    let model = AppModel(
-        credentialStore: InMemoryCredentialStore(),
-        accountDataStore: InMemoryAccountDataStore(),
-        projectProviderFactory: { _ in FixtureProjectListingProvider(projects: []) },
-        analyticsProviderFactory: { _, _ in FixtureAnalyticsSnapshotProvider() },
-        tokenValidator: { _ in }
-    )
-
-    await model.connect(token: "valid-token")
-    await model.load()
-
-    #expect(model.state == .empty("Select a Vercel project in Settings to load analytics."))
-}
-
-@MainActor
 @Test func appModelDisconnectsCredentialAndAccountData() async {
     let credentialStore = InMemoryCredentialStore(token: "stored-token")
     let accountDataStore = InMemoryAccountDataStore(hasData: true)
     let model = AppModel(
         provider: FixtureAnalyticsSnapshotProvider(),
         credentialStore: credentialStore,
-        accountDataStore: accountDataStore
+        accountDataStore: accountDataStore,
+        snapshotCacheStore: InMemorySnapshotCacheStore()
     )
 
     model.disconnect()
@@ -384,15 +391,4 @@ import VercelAnalyticsCore
     #expect(model.accountState == .disconnected)
     #expect(credentialStore.token == nil)
     #expect(accountDataStore.hasData == false)
-}
-
-@Test func accountConnectionErrorsProvideSafeRecoveryCopy() {
-    let secret = "vercel-secret-token"
-
-    for error in [AccountConnectionError.invalidToken, .insufficientPermissions] {
-        #expect(error.localizedDescription.isEmpty == false)
-        #expect(error.recoverySuggestion?.isEmpty == false)
-        #expect(error.localizedDescription.contains(secret) == false)
-        #expect(error.recoverySuggestion?.contains(secret) == false)
-    }
 }

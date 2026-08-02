@@ -18,6 +18,10 @@
 		A10000000000000000000009 /* AppModelTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000000D /* AppModelTestSupport.swift */; };
 		A1000000000000000000000E /* AppModelSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000000E /* AppModelSupport.swift */; };
 		A1000000000000000000000F /* AnalyticsSnapshotCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000000F /* AnalyticsSnapshotCache.swift */; };
+		A10000000000000000000010 /* AppModelRefresh.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000010 /* AppModelRefresh.swift */; };
+		A10000000000000000000011 /* RefreshCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000011 /* RefreshCoordinatorTests.swift */; };
+		A10000000000000000000012 /* ConnectionErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000012 /* ConnectionErrorTests.swift */; };
+		A10000000000000000000013 /* AppModelEdgeCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000013 /* AppModelEdgeCaseTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -48,6 +52,10 @@
 		A3000000000000000000000D /* AppModelTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModelTestSupport.swift; sourceTree = "<group>"; };
 		A3000000000000000000000E /* AppModelSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModelSupport.swift; sourceTree = "<group>"; };
 		A3000000000000000000000F /* AnalyticsSnapshotCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsSnapshotCache.swift; sourceTree = "<group>"; };
+		A30000000000000000000010 /* AppModelRefresh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModelRefresh.swift; sourceTree = "<group>"; };
+		A30000000000000000000011 /* RefreshCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefreshCoordinatorTests.swift; sourceTree = "<group>"; };
+		A30000000000000000000012 /* ConnectionErrorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionErrorTests.swift; sourceTree = "<group>"; };
+		A30000000000000000000013 /* AppModelEdgeCaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModelEdgeCaseTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -98,6 +106,7 @@
 				A3000000000000000000000C /* AccountPersistence.swift */,
 				A3000000000000000000000E /* AppModelSupport.swift */,
 				A3000000000000000000000F /* AnalyticsSnapshotCache.swift */,
+				A30000000000000000000010 /* AppModelRefresh.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -116,6 +125,9 @@
 			children = (
 				A30000000000000000000002 /* VercelAnalyticsBarTests.swift */,
 				A3000000000000000000000D /* AppModelTestSupport.swift */,
+				A30000000000000000000011 /* RefreshCoordinatorTests.swift */,
+				A30000000000000000000012 /* ConnectionErrorTests.swift */,
+				A30000000000000000000013 /* AppModelEdgeCaseTests.swift */,
 			);
 			path = VercelAnalyticsBarTests;
 			sourceTree = "<group>";
@@ -277,6 +289,7 @@
 				A10000000000000000000008 /* AccountPersistence.swift in Sources */,
 				A1000000000000000000000E /* AppModelSupport.swift in Sources */,
 				A1000000000000000000000F /* AnalyticsSnapshotCache.swift in Sources */,
+				A10000000000000000000010 /* AppModelRefresh.swift in Sources */,
 				A10000000000000000000006 /* MenuBarRootView.swift in Sources */,
 				A10000000000000000000007 /* SettingsRootView.swift in Sources */,
 			);
@@ -288,6 +301,9 @@
 			files = (
 				A10000000000000000000003 /* VercelAnalyticsBarTests.swift in Sources */,
 				A10000000000000000000009 /* AppModelTestSupport.swift in Sources */,
+				A10000000000000000000011 /* RefreshCoordinatorTests.swift in Sources */,
+				A10000000000000000000012 /* ConnectionErrorTests.swift in Sources */,
+				A10000000000000000000013 /* AppModelEdgeCaseTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
