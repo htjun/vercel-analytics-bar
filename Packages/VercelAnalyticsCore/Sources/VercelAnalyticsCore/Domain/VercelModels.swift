@@ -68,7 +68,7 @@ public enum VercelAnalyticsAvailability: String, Equatable, Sendable {
     }
 }
 
-public enum VercelAnalyticsRange: String, CaseIterable, Equatable, Sendable {
+public enum VercelAnalyticsRange: String, CaseIterable, Equatable, Hashable, Sendable {
     case last24Hours
     case last7Days
     case last30Days

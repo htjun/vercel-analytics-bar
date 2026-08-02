@@ -32,6 +32,7 @@ final class AppModel {
     private(set) var accountState: AccountState = .disconnected
     private(set) var projectState: ProjectState = .idle
     private(set) var selectedProjectIDs: Set<String> = []
+    private(set) var currentProjectID: String?
     private(set) var selectedRange: VercelAnalyticsRange
     private(set) var projectSelectionError: String?
 
@@ -41,6 +42,7 @@ final class AppModel {
     private let tokenValidator: @Sendable (String) async throws -> Void
     private let projectProviderFactory: (@Sendable (String) -> any VercelProjectListingProviding)?
     private let analyticsProviderFactory: (@Sendable (String, VercelProject) -> any AnalyticsSnapshotProviding)?
+    private var snapshotCache: [SnapshotCacheKey: AnalyticsSnapshot] = [:]
     private var didAttemptRestore = false
 
     init(
@@ -59,12 +61,13 @@ final class AppModel {
         self.projectProviderFactory = projectProviderFactory
         self.analyticsProviderFactory = analyticsProviderFactory
         self.tokenValidator = tokenValidator
+        currentProjectID = try? accountDataStore.readCurrentProjectID()
         selectedRange = (try? accountDataStore.readAnalyticsRange()) ?? .last7Days
     }
 
     func load() async {
         if accountState == .connected {
-            await loadLiveSnapshot()
+            await loadLiveSnapshot(showLoading: true)
             return
         }
 
@@ -72,24 +75,42 @@ final class AppModel {
             state = .empty("Connect a Vercel account in Settings to load analytics.")
             return
         }
-        await loadSnapshot(using: provider)
+        await loadSnapshot(using: provider, showLoading: true)
     }
 
-    private func loadSnapshot(using provider: any AnalyticsSnapshotProviding) async {
+    private func loadSnapshot(
+        using provider: any AnalyticsSnapshotProviding,
+        projectID: String? = nil,
+        showLoading: Bool
+    ) async {
         let requestedRange = selectedRange
-        state = .loading
+        let requestedProjectID = projectID ?? currentProjectID
+        if showLoading {
+            state = .loading
+        }
 
         do {
             let snapshot = try await provider.snapshot(for: requestedRange)
-            guard requestedRange == selectedRange else { return }
+            guard requestedRange == selectedRange,
+                  requestedProjectID == currentProjectID
+            else {
+                return
+            }
+            if let requestedProjectID {
+                snapshotCache[SnapshotCacheKey(projectID: requestedProjectID, range: requestedRange)] = snapshot
+            }
             state = .loaded(snapshot)
         } catch {
-            guard requestedRange == selectedRange else { return }
+            guard requestedRange == selectedRange,
+                  requestedProjectID == currentProjectID
+            else {
+                return
+            }
             state = .failed(error.localizedDescription)
         }
     }
 
-    private func loadLiveSnapshot() async {
+    private func loadLiveSnapshot(showLoading: Bool) async {
         guard let analyticsProviderFactory else {
             state = .empty("Live analytics is not configured.")
             return
@@ -104,7 +125,11 @@ final class AppModel {
                 state = .empty("Connect a Vercel account in Settings to load analytics.")
                 return
             }
-            await loadSnapshot(using: analyticsProviderFactory(token, project))
+            await loadSnapshot(
+                using: analyticsProviderFactory(token, project),
+                projectID: project.id,
+                showLoading: showLoading
+            )
         } catch {
             state = .failed("The Vercel account could not be read securely.")
         }
@@ -171,11 +196,47 @@ final class AppModel {
         }
 
         if selected {
-            updateSelectedProjectIDs(selectedProjectIDs.union([projectID]))
+            updateProjectSelection(
+                selectedProjectIDs.union([projectID]),
+                currentProjectID: currentProjectID ?? projectID
+            )
         } else {
             guard selectedProjectIDs.count > 1 else { return }
-            updateSelectedProjectIDs(selectedProjectIDs.subtracting([projectID]))
+            let nextSelectedProjectIDs = selectedProjectIDs.subtracting([projectID])
+            let nextCurrentProjectID = currentProjectID == projectID
+                ? nextSelectedProjectIDs.sorted().first
+                : currentProjectID
+            updateProjectSelection(
+                nextSelectedProjectIDs,
+                currentProjectID: nextCurrentProjectID
+            )
         }
+    }
+
+    func selectProject(_ projectID: String) async {
+        guard case let .loaded(projects) = projectState,
+              selectedProjectIDs.contains(projectID),
+              projects.contains(where: { $0.id == projectID })
+        else {
+            return
+        }
+
+        guard projectID != currentProjectID else { return }
+
+        do {
+            try accountDataStore.saveCurrentProjectID(projectID)
+            currentProjectID = projectID
+        } catch {
+            projectSelectionError = error.localizedDescription
+            return
+        }
+
+        let cacheKey = SnapshotCacheKey(projectID: projectID, range: selectedRange)
+        let hasCachedSnapshot = snapshotCache[cacheKey] != nil
+        if let cachedSnapshot = snapshotCache[cacheKey] {
+            state = .loaded(cachedSnapshot)
+        }
+        await loadLiveSnapshot(showLoading: !hasCachedSnapshot)
     }
 
     func selectAnalyticsRange(_ range: VercelAnalyticsRange) async {
@@ -230,6 +291,8 @@ final class AppModel {
             accountState = .disconnected
             projectState = .idle
             selectedProjectIDs = []
+            currentProjectID = nil
+            snapshotCache.removeAll()
             selectedRange = .last7Days
             projectSelectionError = nil
         } else {
@@ -252,8 +315,15 @@ final class AppModel {
                 restoredIDs = [firstProject.id]
             }
 
+            let nextCurrentProjectID = if let currentProjectID, restoredIDs.contains(currentProjectID) {
+                currentProjectID
+            } else {
+                restoredIDs.sorted().first
+            }
+            try accountDataStore.saveCurrentProjectID(nextCurrentProjectID)
             try accountDataStore.saveSelectedProjectIDs(restoredIDs)
             selectedProjectIDs = restoredIDs
+            currentProjectID = nextCurrentProjectID
             projectSelectionError = nil
             state = .idle
             projectState = .loaded(sortedProjects)
@@ -265,17 +335,21 @@ final class AppModel {
     private func restoreSelectedProjects() {
         do {
             selectedProjectIDs = try accountDataStore.readSelectedProjectIDs()
+            currentProjectID = try accountDataStore.readCurrentProjectID()
             projectSelectionError = nil
         } catch {
             selectedProjectIDs = []
+            currentProjectID = nil
             projectSelectionError = error.localizedDescription
         }
     }
 
-    private func updateSelectedProjectIDs(_ projectIDs: Set<String>) {
+    private func updateProjectSelection(_ projectIDs: Set<String>, currentProjectID: String?) {
         do {
             try accountDataStore.saveSelectedProjectIDs(projectIDs)
+            try accountDataStore.saveCurrentProjectID(currentProjectID)
             selectedProjectIDs = projectIDs
+            self.currentProjectID = currentProjectID
             projectSelectionError = nil
             state = .idle
         } catch {
@@ -297,7 +371,17 @@ final class AppModel {
 extension AppModel {
     var currentProject: VercelProject? {
         guard case let .loaded(projects) = projectState else { return nil }
+        if let currentProjectID,
+           selectedProjectIDs.contains(currentProjectID),
+           let currentProject = projects.first(where: { $0.id == currentProjectID })
+        {
+            return currentProject
+        }
         return projects.first { selectedProjectIDs.contains($0.id) }
+    }
+
+    func selectedProjects(matching searchQuery: String) -> [VercelProject] {
+        projects(matching: searchQuery).filter { selectedProjectIDs.contains($0.id) }
     }
 
     var abbreviatedVisitors: String? {
@@ -316,6 +400,11 @@ extension AppModel {
         }
         return value.formatted(.number)
     }
+}
+
+private struct SnapshotCacheKey: Hashable {
+    let projectID: String
+    let range: VercelAnalyticsRange
 }
 
 enum AccountConnectionError: Equatable, LocalizedError {

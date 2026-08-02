@@ -7,7 +7,7 @@ import VercelAnalyticsCore
 @Test func appModelLoadsSnapshotThroughInjectedProvider() async {
     let expected = AnalyticsSnapshot.fixture
     let provider = ControlledSnapshotProvider()
-    let model = AppModel(provider: provider)
+    let model = AppModel(provider: provider, accountDataStore: InMemoryAccountDataStore())
 
     #expect(model.state == .idle)
 
@@ -28,7 +28,7 @@ import VercelAnalyticsCore
 @MainActor
 @Test func appModelExposesProviderFailure() async {
     let provider = ControlledSnapshotProvider()
-    let model = AppModel(provider: provider)
+    let model = AppModel(provider: provider, accountDataStore: InMemoryAccountDataStore())
 
     let loadTask = Task {
         await model.load()
@@ -52,6 +52,7 @@ import VercelAnalyticsCore
     let model = AppModel(
         provider: FixtureAnalyticsSnapshotProvider(),
         credentialStore: credentialStore,
+        accountDataStore: InMemoryAccountDataStore(),
         tokenValidator: { token in
             await validator.validate(token)
         }
@@ -70,6 +71,7 @@ import VercelAnalyticsCore
     let model = AppModel(
         provider: FixtureAnalyticsSnapshotProvider(),
         credentialStore: credentialStore,
+        accountDataStore: InMemoryAccountDataStore(),
         tokenValidator: { _ in
             throw VercelAPIError.authentication(status: 403)
         }
@@ -86,6 +88,7 @@ import VercelAnalyticsCore
     let model = AppModel(
         provider: FixtureAnalyticsSnapshotProvider(),
         credentialStore: InMemoryCredentialStore(),
+        accountDataStore: InMemoryAccountDataStore(),
         tokenValidator: { _ in
             throw VercelAPIError.permissionDenied(status: 403)
         }
@@ -103,6 +106,7 @@ import VercelAnalyticsCore
     let model = AppModel(
         provider: FixtureAnalyticsSnapshotProvider(),
         credentialStore: credentialStore,
+        accountDataStore: InMemoryAccountDataStore(),
         tokenValidator: { token in
             await validator.validate(token)
         }
@@ -136,7 +140,9 @@ import VercelAnalyticsCore
         VercelProject(id: "project-z", name: "Zebra", teamID: "team", teamName: "Team"),
     ]))
     #expect(model.selectedProjectIDs == ["project-a"])
+    #expect(model.currentProjectID == "project-a")
     #expect(accountDataStore.selectedProjectIDs == ["project-a"])
+    #expect(accountDataStore.currentProjectID == "project-a")
 }
 
 @MainActor
@@ -159,7 +165,9 @@ import VercelAnalyticsCore
     model.setProjectSelected("project-b", selected: false)
 
     #expect(model.selectedProjectIDs == ["project-b"])
+    #expect(model.currentProjectID == "project-b")
     #expect(accountDataStore.selectedProjectIDs == ["project-b"])
+    #expect(accountDataStore.currentProjectID == "project-b")
 }
 
 @MainActor
@@ -172,6 +180,7 @@ import VercelAnalyticsCore
     let model = AppModel(
         provider: FixtureAnalyticsSnapshotProvider(),
         credentialStore: InMemoryCredentialStore(),
+        accountDataStore: InMemoryAccountDataStore(),
         projectProviderFactory: { _ in FixtureProjectListingProvider(projects: projects) },
         tokenValidator: { _ in }
     )
@@ -179,8 +188,84 @@ import VercelAnalyticsCore
     await model.connect(token: "valid-token")
 
     #expect(model.projects(matching: "acme").map(\.id) == ["project-team"])
+    #expect(model.selectedProjects(matching: "").map(\.id) == ["project-personal"])
     #expect(model.teamMetadata(for: projects[0]) == "Personal account")
     #expect(model.teamMetadata(for: projects[1]) == "Acme")
+}
+
+@MainActor
+@Test func appModelSwitchesProjectsWithCachedFirstRefresh() async {
+    let projects = [
+        VercelProject(id: "project-alpha", name: "Alpha"),
+        VercelProject(id: "project-beta", name: "Beta"),
+    ]
+    let accountDataStore = InMemoryAccountDataStore()
+    let alphaProvider = ControlledSnapshotProvider()
+    let betaProvider = ControlledSnapshotProvider()
+    let alphaSnapshot = AnalyticsSnapshot(
+        projectName: "Alpha",
+        range: .last7Days,
+        visitors: AnalyticsMetric(label: "Visitors", value: 100, previousValue: 90),
+        pageViews: AnalyticsMetric(label: "Page Views", value: 200, previousValue: 180),
+        series: [],
+        last24HoursVisitors: 11,
+        refreshedAt: Date(timeIntervalSince1970: 1_785_549_600)
+    )
+    let refreshedAlphaSnapshot = AnalyticsSnapshot(
+        projectName: "Alpha",
+        range: .last7Days,
+        visitors: AnalyticsMetric(label: "Visitors", value: 101, previousValue: 90),
+        pageViews: AnalyticsMetric(label: "Page Views", value: 202, previousValue: 180),
+        series: [],
+        last24HoursVisitors: 12,
+        refreshedAt: Date(timeIntervalSince1970: 1_785_549_660)
+    )
+    let betaSnapshot = AnalyticsSnapshot(
+        projectName: "Beta",
+        range: .last7Days,
+        visitors: AnalyticsMetric(label: "Visitors", value: 300, previousValue: 270),
+        pageViews: AnalyticsMetric(label: "Page Views", value: 500, previousValue: 450),
+        series: [],
+        last24HoursVisitors: 22,
+        refreshedAt: Date(timeIntervalSince1970: 1_785_549_600)
+    )
+    let model = AppModel(
+        credentialStore: InMemoryCredentialStore(),
+        accountDataStore: accountDataStore,
+        projectProviderFactory: { _ in FixtureProjectListingProvider(projects: projects) },
+        analyticsProviderFactory: { _, project in
+            project.id == "project-alpha" ? alphaProvider : betaProvider
+        },
+        tokenValidator: { _ in }
+    )
+
+    await model.connect(token: "valid-token")
+    model.setProjectSelected("project-beta", selected: true)
+
+    let alphaLoadTask = Task { await model.load() }
+    await alphaProvider.waitUntilRequested()
+    await alphaProvider.succeed(with: alphaSnapshot)
+    await alphaLoadTask.value
+
+    let betaSwitchTask = Task { await model.selectProject("project-beta") }
+    await betaProvider.waitUntilRequested()
+    #expect(model.currentProjectID == "project-beta")
+    #expect(model.state == .loading)
+    await betaProvider.succeed(with: betaSnapshot)
+    await betaSwitchTask.value
+
+    let alphaSwitchTask = Task { await model.selectProject("project-alpha") }
+    await alphaProvider.waitUntilRequested()
+    #expect(model.currentProjectID == "project-alpha")
+    #expect(model.state == .loaded(alphaSnapshot))
+    #expect(model.abbreviatedVisitors == "11")
+
+    await alphaProvider.succeed(with: refreshedAlphaSnapshot)
+    await alphaSwitchTask.value
+
+    #expect(model.state == .loaded(refreshedAlphaSnapshot))
+    #expect(model.abbreviatedVisitors == "12")
+    #expect(accountDataStore.currentProjectID == "project-alpha")
 }
 
 @MainActor
@@ -191,6 +276,7 @@ import VercelAnalyticsCore
     ]
     let model = AppModel(
         credentialStore: InMemoryCredentialStore(),
+        accountDataStore: InMemoryAccountDataStore(),
         projectProviderFactory: { _ in FixtureProjectListingProvider(projects: projects) },
         analyticsProviderFactory: { _, project in
             FixtureAnalyticsSnapshotProvider(
@@ -254,6 +340,7 @@ import VercelAnalyticsCore
     let project = VercelProject(id: "project-a", name: "Alpha")
     let model = AppModel(
         credentialStore: InMemoryCredentialStore(),
+        accountDataStore: InMemoryAccountDataStore(),
         projectProviderFactory: { _ in FixtureProjectListingProvider(projects: [project]) },
         analyticsProviderFactory: { token, selectedProject in
             VercelAnalyticsSnapshotProvider(
@@ -286,6 +373,7 @@ import VercelAnalyticsCore
 @Test func appModelShowsEmptyStateWhenNoProjectIsSelected() async {
     let model = AppModel(
         credentialStore: InMemoryCredentialStore(),
+        accountDataStore: InMemoryAccountDataStore(),
         projectProviderFactory: { _ in FixtureProjectListingProvider(projects: []) },
         analyticsProviderFactory: { _, _ in FixtureAnalyticsSnapshotProvider() },
         tokenValidator: { _ in }
@@ -339,6 +427,8 @@ import VercelAnalyticsCore
     )
     try store.saveSelectedProjectIDs(["project-b", "project-a"])
     #expect(try store.readSelectedProjectIDs() == ["project-a", "project-b"])
+    try store.saveCurrentProjectID("project-b")
+    #expect(try store.readCurrentProjectID() == "project-b")
     #expect(try store.readAnalyticsRange() == .last7Days)
     try store.saveAnalyticsRange(.last30Days)
     #expect(try store.readAnalyticsRange() == .last30Days)

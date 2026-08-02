@@ -78,15 +78,18 @@ final class InMemoryCredentialStore: VercelCredentialStore {
 final class InMemoryAccountDataStore: VercelAccountDataStore {
     var hasData: Bool
     var selectedProjectIDs: Set<String>
+    var currentProjectID: String?
     var analyticsRange: VercelAnalyticsRange
 
     init(
         hasData: Bool = false,
         selectedProjectIDs: Set<String> = [],
+        currentProjectID: String? = nil,
         analyticsRange: VercelAnalyticsRange = .last7Days
     ) {
         self.hasData = hasData
         self.selectedProjectIDs = selectedProjectIDs
+        self.currentProjectID = currentProjectID
         self.analyticsRange = analyticsRange
     }
 
@@ -96,6 +99,14 @@ final class InMemoryAccountDataStore: VercelAccountDataStore {
 
     func saveSelectedProjectIDs(_ projectIDs: Set<String>) throws {
         selectedProjectIDs = projectIDs
+    }
+
+    func readCurrentProjectID() throws -> String? {
+        currentProjectID
+    }
+
+    func saveCurrentProjectID(_ projectID: String?) throws {
+        currentProjectID = projectID
     }
 
     func readAnalyticsRange() throws -> VercelAnalyticsRange {
@@ -109,6 +120,7 @@ final class InMemoryAccountDataStore: VercelAccountDataStore {
     func clear() throws {
         hasData = false
         selectedProjectIDs = []
+        currentProjectID = nil
         analyticsRange = .last7Days
     }
 }
