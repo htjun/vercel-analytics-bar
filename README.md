@@ -2,7 +2,7 @@
 
 Vercel Analytics Bar is a native macOS menu bar application for checking Vercel Analytics at a glance.
 
-The current foundation uses fixture data. It establishes the menu bar experience, a testable data-provider boundary, and repository automation before real Vercel account connection is added.
+The current application still uses fixture data, while the Core package now contains a typed client for the verified public Vercel API. Account connection and app composition remain the next milestone.
 
 ## Current behavior
 
@@ -11,6 +11,8 @@ The current foundation uses fixture data. It establishes the menu bar experience
 - Displays a fixture project name, visitor count, and refresh time.
 - Opens a Settings window and terminates from the Quit button.
 - Performs no network request and stores no credential.
+
+The Core client is covered separately by sanitized fixture tests. It supports bearer-authenticated team and project discovery, pagination, Production Visitors/Page Views count and time-series queries, and safe typed handling for authentication, permission, rate-limit, transient, and malformed-response failures. It is not connected to the application UI yet.
 
 ## Requirements
 
@@ -78,7 +80,7 @@ make test
 
 The checked-in Xcode project owns the application bundle, SwiftUI lifecycle, menu bar UI, Settings scene, sandbox metadata, signing configuration, and app tests.
 
-The local `VercelAnalyticsCore` Swift package owns stable analytics domain values and the `AnalyticsSnapshotProviding` boundary. The app injects a fixture provider into a main-actor observable model. A future Vercel API client can replace that provider without changing the menu bar views.
+The local `VercelAnalyticsCore` Swift package owns stable analytics domain values, the typed `VercelAPIClient`, and the `AnalyticsSnapshotProviding` boundary. The app currently injects a fixture provider into a main-actor observable model. The API client accepts an injected HTTP transport for deterministic tests; its Vercel DTOs stay internal and tokens or response bodies are never included in client errors.
 
 Build configurations are separated into Debug, direct-release, and App Store release variants. Both release variants are currently unsigned build contracts; packaging, signing, notarization, Sparkle, and App Store submission are intentionally deferred.
 
@@ -86,7 +88,7 @@ Build configurations are separated into Debug, direct-release, and App Store rel
 
 ```text
 Config/                         Shared Xcode build settings
-Packages/VercelAnalyticsCore/  Domain models, providers, and Core tests
+Packages/VercelAnalyticsCore/  Domain models, API client, providers, and Core tests
 Scripts/                        Bootstrap and verification entry points
 VercelAnalyticsBar/             Application composition and SwiftUI features
 VercelAnalyticsBarTests/        Main-actor application behavior tests
