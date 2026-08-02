@@ -14,6 +14,7 @@
 		A10000000000000000000005 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000009 /* AppModel.swift */; };
 		A10000000000000000000006 /* MenuBarRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000000A /* MenuBarRootView.swift */; };
 		A10000000000000000000007 /* SettingsRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000000B /* SettingsRootView.swift */; };
+		A10000000000000000000008 /* AccountPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000000C /* AccountPersistence.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -40,6 +41,7 @@
 		A30000000000000000000009 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		A3000000000000000000000A /* MenuBarRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarRootView.swift; sourceTree = "<group>"; };
 		A3000000000000000000000B /* SettingsRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsRootView.swift; sourceTree = "<group>"; };
+		A3000000000000000000000C /* AccountPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountPersistence.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,6 +89,7 @@
 			children = (
 				A30000000000000000000001 /* VercelAnalyticsBarApp.swift */,
 				A30000000000000000000009 /* AppModel.swift */,
+				A3000000000000000000000C /* AccountPersistence.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -262,6 +265,7 @@
 			files = (
 				A10000000000000000000001 /* VercelAnalyticsBarApp.swift in Sources */,
 				A10000000000000000000005 /* AppModel.swift in Sources */,
+				A10000000000000000000008 /* AccountPersistence.swift in Sources */,
 				A10000000000000000000006 /* MenuBarRootView.swift in Sources */,
 				A10000000000000000000007 /* SettingsRootView.swift in Sources */,
 			);

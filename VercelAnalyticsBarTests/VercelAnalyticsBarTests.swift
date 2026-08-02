@@ -44,6 +44,92 @@ import VercelAnalyticsCore
     #expect(message == SnapshotError.unavailable.localizedDescription)
 }
 
+@MainActor
+@Test func appModelStoresOnlyValidatedToken() async {
+    let credentialStore = InMemoryCredentialStore()
+    let validator = TokenValidationRecorder()
+    let model = AppModel(
+        provider: FixtureAnalyticsSnapshotProvider(),
+        credentialStore: credentialStore,
+        tokenValidator: { token in
+            try await validator.validate(token)
+        }
+    )
+
+    await model.connect(token: "  valid-token  ")
+
+    #expect(model.accountState == .connected)
+    #expect(credentialStore.token == "valid-token")
+    #expect(await validator.tokens == ["valid-token"])
+}
+
+@MainActor
+@Test func appModelDoesNotStoreInvalidToken() async {
+    let credentialStore = InMemoryCredentialStore()
+    let model = AppModel(
+        provider: FixtureAnalyticsSnapshotProvider(),
+        credentialStore: credentialStore,
+        tokenValidator: { _ in
+            throw VercelAPIError.authentication(status: 403)
+        }
+    )
+
+    await model.connect(token: "invalid-token")
+
+    #expect(model.accountState == .failed(.invalidToken))
+    #expect(credentialStore.token == nil)
+}
+
+@MainActor
+@Test func appModelExposesInsufficientPermissionState() async {
+    let model = AppModel(
+        provider: FixtureAnalyticsSnapshotProvider(),
+        credentialStore: InMemoryCredentialStore(),
+        tokenValidator: { _ in
+            throw VercelAPIError.permissionDenied(status: 403)
+        }
+    )
+
+    await model.connect(token: "limited-token")
+
+    #expect(model.accountState == .failed(.insufficientPermissions))
+}
+
+@MainActor
+@Test func appModelRestoresValidatedTokenFromCredentialStore() async {
+    let credentialStore = InMemoryCredentialStore(token: "stored-token")
+    let validator = TokenValidationRecorder()
+    let model = AppModel(
+        provider: FixtureAnalyticsSnapshotProvider(),
+        credentialStore: credentialStore,
+        tokenValidator: { token in
+            try await validator.validate(token)
+        }
+    )
+
+    await model.restoreConnection()
+
+    #expect(model.accountState == .connected)
+    #expect(await validator.tokens == ["stored-token"])
+}
+
+@MainActor
+@Test func appModelDisconnectsCredentialAndAccountData() async {
+    let credentialStore = InMemoryCredentialStore(token: "stored-token")
+    let accountDataStore = InMemoryAccountDataStore(hasData: true)
+    let model = AppModel(
+        provider: FixtureAnalyticsSnapshotProvider(),
+        credentialStore: credentialStore,
+        accountDataStore: accountDataStore
+    )
+
+    model.disconnect()
+
+    #expect(model.accountState == .disconnected)
+    #expect(credentialStore.token == nil)
+    #expect(accountDataStore.hasData == false)
+}
+
 private enum SnapshotError: Error {
     case unavailable
 }
@@ -76,5 +162,45 @@ private actor ControlledSnapshotProvider: AnalyticsSnapshotProviding {
     func fail(with error: any Error) {
         resultContinuation?.resume(throwing: error)
         resultContinuation = nil
+    }
+}
+
+private actor TokenValidationRecorder {
+    private(set) var tokens: [String] = []
+
+    func validate(_ token: String) {
+        tokens.append(token)
+    }
+}
+
+private final class InMemoryCredentialStore: VercelCredentialStore {
+    var token: String?
+
+    init(token: String? = nil) {
+        self.token = token
+    }
+
+    func read() throws -> String? {
+        token
+    }
+
+    func save(_ token: String) throws {
+        self.token = token
+    }
+
+    func delete() throws {
+        token = nil
+    }
+}
+
+private final class InMemoryAccountDataStore: VercelAccountDataStore {
+    var hasData: Bool
+
+    init(hasData: Bool = false) {
+        self.hasData = hasData
+    }
+
+    func clear() throws {
+        hasData = false
     }
 }
