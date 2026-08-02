@@ -121,7 +121,7 @@ struct SettingsRootView: View {
             )
             .disabled(model.launchAtLoginStatus == .unavailable)
 
-            Text("Login Item: (model.launchAtLoginStatus.label)")
+            Text("Login Item: \(model.launchAtLoginStatus.label)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -157,7 +157,7 @@ struct SettingsRootView: View {
         .foregroundStyle(.secondary)
     }
 
-    private func analyticsLoadedStatus(_: AnalyticsSnapshot) -> some View {
+    private func analyticsLoadedStatus(_ snapshot: AnalyticsSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             if model.snapshotFreshness == .stale {
                 Label("Showing stale analytics", systemImage: "clock.badge.exclamationmark")
@@ -166,7 +166,7 @@ struct SettingsRootView: View {
                 Label("Analytics up to date", systemImage: "checkmark.circle")
             }
 
-            Text("Updated (snapshot.refreshedAt.formatted(date: .abbreviated, time: .shortened))")
+            Text("Updated \(snapshot.refreshedAt.formatted(date: .abbreviated, time: .shortened))")
                 .font(.caption)
 
             if let refreshMessage = model.refreshMessage {
