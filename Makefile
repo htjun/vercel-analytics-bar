@@ -5,7 +5,7 @@ DERIVED_DATA_PATH := .build/DerivedData
 DEBUG_APP_PATH := $(DERIVED_DATA_PATH)/Build/Products/Debug/VercelAnalyticsBar.app
 XCODEBUILD := xcodebuild -project $(PROJECT) -scheme $(SCHEME) -destination 'platform=macOS,arch=$(HOST_ARCHITECTURE)' CODE_SIGNING_ALLOWED=NO
 
-.PHONY: bootstrap format open run test verify
+.PHONY: bootstrap format open probe run test verify
 
 bootstrap:
 	Scripts/bootstrap.sh
@@ -15,6 +15,9 @@ format:
 
 open:
 	open $(PROJECT)
+
+probe:
+	ruby Scripts/probe_vercel_analytics_api.rb
 
 run:
 	$(XCODEBUILD) -configuration Debug -derivedDataPath $(DERIVED_DATA_PATH) build

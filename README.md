@@ -48,6 +48,16 @@ make open
 
 The Debug configuration uses the temporary development bundle identifier `com.jasonjun.VercelAnalyticsBar`. A final identifier and Apple Developer Team are required only before distribution.
 
+## Probe the public API
+
+Before enabling live analytics in the app, verify the public Vercel API contract with a local account:
+
+```sh
+make probe
+```
+
+The command uses a Vercel access token from `VERCEL_TOKEN` when available, or prompts with hidden terminal input. It does not persist the token, raw API responses, project identifiers, names, or metric values. The resulting sanitized capability record is written to `.build/vercel-api-probe.json`.
+
 ## Verify
 
 Run the complete local quality gate:
