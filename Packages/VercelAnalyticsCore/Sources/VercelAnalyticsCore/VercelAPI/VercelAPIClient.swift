@@ -4,6 +4,10 @@ public protocol VercelHTTPTransport: Sendable {
     func data(for request: URLRequest) async throws -> (Data, URLResponse)
 }
 
+public protocol VercelProjectListingProviding: Sendable {
+    func listAccessibleProjects() async throws -> [VercelProject]
+}
+
 public struct URLSessionVercelHTTPTransport: VercelHTTPTransport {
     private let session: URLSession
 
@@ -73,7 +77,7 @@ public enum VercelAPIError: Error, Equatable, LocalizedError, Sendable {
     }
 }
 
-public struct VercelAPIClient: Sendable {
+public struct VercelAPIClient: Sendable, VercelProjectListingProviding {
     public static let defaultBaseURL = URL(string: "https://api.vercel.com")!
 
     private let token: String
@@ -120,7 +124,7 @@ public struct VercelAPIClient: Sendable {
         }
     }
 
-    public func listProjects(teamID: String? = nil) async throws -> [VercelProject] {
+    public func listProjects(teamID: String? = nil, teamName: String? = nil) async throws -> [VercelProject] {
         var projects: [VercelProject] = []
         var cursor: String?
         var seenCursors = Set<String>()
@@ -136,7 +140,7 @@ public struct VercelAPIClient: Sendable {
 
             let response = try await request(ProjectsResponseDTO.self, path: "/v9/projects", query: query)
             projects.append(contentsOf: response.projects.map {
-                VercelProject(id: $0.id, name: $0.name, teamID: teamID)
+                VercelProject(id: $0.id, name: $0.name, teamID: teamID, teamName: teamName)
             })
 
             guard let next = response.pagination.next else {
@@ -147,6 +151,23 @@ public struct VercelAPIClient: Sendable {
             }
             cursor = next
         }
+    }
+
+    public func listAccessibleProjects() async throws -> [VercelProject] {
+        let teams = try await listTeams()
+        var projects = try await listProjects()
+
+        for team in teams {
+            try await projects.append(contentsOf: listProjects(teamID: team.id, teamName: team.name))
+        }
+
+        var uniqueProjects: [VercelProject] = []
+        var seenProjectIDs = Set<String>()
+        for project in projects where seenProjectIDs.insert(project.id).inserted {
+            uniqueProjects.append(project)
+        }
+
+        return VercelProject.sorted(uniqueProjects)
     }
 
     public func fetchCount(

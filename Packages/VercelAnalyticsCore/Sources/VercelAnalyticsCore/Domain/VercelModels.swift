@@ -16,11 +16,55 @@ public struct VercelProject: Equatable, Identifiable, Sendable {
     public let id: String
     public let name: String
     public let teamID: String?
+    public let teamName: String?
+    public let analyticsAvailability: VercelAnalyticsAvailability
 
-    public init(id: String, name: String, teamID: String? = nil) {
+    public init(
+        id: String,
+        name: String,
+        teamID: String? = nil,
+        teamName: String? = nil,
+        analyticsAvailability: VercelAnalyticsAvailability = .unknown
+    ) {
         self.id = id
         self.name = name
         self.teamID = teamID
+        self.teamName = teamName
+        self.analyticsAvailability = analyticsAvailability
+    }
+}
+
+public extension VercelProject {
+    static func sorted(_ projects: [VercelProject]) -> [VercelProject] {
+        projects.sorted { lhs, rhs in
+            let nameOrder = lhs.name.localizedCaseInsensitiveCompare(rhs.name)
+            if nameOrder != .orderedSame {
+                return nameOrder == .orderedAscending
+            }
+
+            let teamOrder = (lhs.teamName ?? "").localizedCaseInsensitiveCompare(rhs.teamName ?? "")
+            if teamOrder != .orderedSame {
+                return teamOrder == .orderedAscending
+            }
+            return lhs.id < rhs.id
+        }
+    }
+}
+
+public enum VercelAnalyticsAvailability: String, Equatable, Sendable {
+    case available
+    case unavailable
+    case unknown
+
+    public var label: String {
+        switch self {
+        case .available:
+            "Available"
+        case .unavailable:
+            "Unavailable"
+        case .unknown:
+            "Unknown"
+        }
     }
 }
 

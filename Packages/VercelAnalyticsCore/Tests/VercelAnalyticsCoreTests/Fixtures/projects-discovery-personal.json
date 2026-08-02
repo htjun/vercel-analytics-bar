@@ -1,0 +1,15 @@
+{
+  "projects": [
+    {
+      "id": "prj_personal_duplicate",
+      "name": "Team Dashboard"
+    },
+    {
+      "id": "prj_personal_fixture",
+      "name": "Zebra Site"
+    }
+  ],
+  "pagination": {
+    "next": null
+  }
+}

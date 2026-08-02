@@ -51,12 +51,69 @@ import VercelAnalyticsCore
     let teamProjects = try await teamClient.listProjects(teamID: "team_fixture")
 
     #expect(teamProjects == [
-        VercelProject(id: "prj_team_fixture_1", name: "Team Dashboard", teamID: "team_fixture"),
-        VercelProject(id: "prj_team_fixture_2", name: "Team Landing", teamID: "team_fixture"),
+        VercelProject(
+            id: "prj_team_fixture_1",
+            name: "Team Dashboard",
+            teamID: "team_fixture"
+        ),
+        VercelProject(
+            id: "prj_team_fixture_2",
+            name: "Team Landing",
+            teamID: "team_fixture"
+        ),
     ])
     let teamRequests = await teamTransport.requests
     #expect(queryValue("teamId", in: teamRequests[0]) == "team_fixture")
     #expect(queryValue("until", in: teamRequests[1]) == "cursor-two")
+}
+
+@Test func clientListsAllAccessibleProjectsWithTeamMetadataAndSorting() async throws {
+    let transport = try FixtureTransport(
+        responses: [
+            "/v2/teams": [
+                .fixture(named: "teams-page-1"),
+                .fixture(named: "teams-page-2"),
+            ],
+            "/v9/projects": [
+                .fixture(named: "projects-discovery-personal"),
+                .fixture(named: "projects-team-page-1"),
+                .fixture(named: "projects-team-page-2"),
+                .fixture(named: "projects-team-second-empty"),
+            ],
+        ]
+    )
+    let client = VercelAPIClient(token: "fixture-token", transport: transport)
+
+    let projects = try await client.listAccessibleProjects()
+
+    #expect(projects == [
+        VercelProject(
+            id: "prj_personal_duplicate",
+            name: "Team Dashboard"
+        ),
+        VercelProject(
+            id: "prj_team_fixture_1",
+            name: "Team Dashboard",
+            teamID: "team_fixture",
+            teamName: "Fixture Team"
+        ),
+        VercelProject(
+            id: "prj_team_fixture_2",
+            name: "Team Landing",
+            teamID: "team_fixture",
+            teamName: "Fixture Team"
+        ),
+        VercelProject(
+            id: "prj_personal_fixture",
+            name: "Zebra Site"
+        ),
+    ])
+    #expect(projects.allSatisfy { $0.analyticsAvailability == .unknown })
+
+    let requests = await transport.requests
+    #expect(requests.count == 6)
+    #expect(queryValue("teamId", in: requests[3]) == "team_fixture")
+    #expect(queryValue("teamId", in: requests[5]) == "team_second")
 }
 
 @Test func clientMapsCountAndSeriesAndSendsProductionQuery() async throws {
