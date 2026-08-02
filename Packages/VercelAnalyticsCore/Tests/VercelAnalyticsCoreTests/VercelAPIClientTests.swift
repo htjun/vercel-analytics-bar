@@ -157,6 +157,38 @@ import VercelAnalyticsCore
     #expect(queryValue("by", in: requests[1]) == "hour")
 }
 
+@Test func snapshotProviderLoadsVisitorsForOneProductionProject() async throws {
+    let transport = try FixtureTransport(
+        responses: [
+            "/v1/query/web-analytics/visits/count": [.fixture(named: "analytics-count")],
+        ]
+    )
+    let project = VercelProject(
+        id: "prj_team_fixture_1",
+        name: "Team Dashboard",
+        teamID: "team_fixture"
+    )
+    let now = try date("2026-08-02T00:00:00.000Z")
+    let provider = VercelAnalyticsSnapshotProvider(
+        token: "fixture-token",
+        project: project,
+        now: { now },
+        transport: transport
+    )
+
+    let snapshot = try await provider.snapshot()
+
+    #expect(snapshot == AnalyticsSnapshot(
+        projectName: "Team Dashboard",
+        primaryMetric: AnalyticsMetric(label: "Visitors", value: 165),
+        refreshedAt: now
+    ))
+    let requests = await transport.requests
+    #expect(queryValue("projectId", in: requests[0]) == "prj_team_fixture_1")
+    #expect(queryValue("teamId", in: requests[0]) == "team_fixture")
+    #expect(queryValue("filter", in: requests[0]) == "environment eq 'production'")
+}
+
 @Test func clientMapsAuthenticationAndRedactsResponseBody() async throws {
     let transport = FixtureTransport(
         responses: [
