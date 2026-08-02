@@ -76,12 +76,15 @@ final class AppModel {
     }
 
     private func loadSnapshot(using provider: any AnalyticsSnapshotProviding) async {
+        let requestedRange = selectedRange
         state = .loading
 
         do {
-            let snapshot = try await provider.snapshot(for: selectedRange)
+            let snapshot = try await provider.snapshot(for: requestedRange)
+            guard requestedRange == selectedRange else { return }
             state = .loaded(snapshot)
         } catch {
+            guard requestedRange == selectedRange else { return }
             state = .failed(error.localizedDescription)
         }
     }

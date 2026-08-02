@@ -9,7 +9,7 @@ import VercelAnalyticsCore
 
     #expect(snapshot == expected)
     #expect(snapshot.projectName == "Acme Storefront")
-    #expect(snapshot.primaryMetric.value == 12847)
+    #expect(snapshot.visitors.value == 12847)
     #expect(snapshot.pageViews.value == 21490)
     guard case let .percentage(change) = snapshot.visitors.comparison else {
         Issue.record("Expected a percentage comparison")

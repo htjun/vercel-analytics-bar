@@ -26,10 +26,6 @@ public struct AnalyticsSnapshot: Equatable, Sendable {
         self.last24HoursVisitors = last24HoursVisitors
         self.refreshedAt = refreshedAt
     }
-
-    public var primaryMetric: AnalyticsMetric {
-        visitors
-    }
 }
 
 public struct AnalyticsMetric: Equatable, Sendable {

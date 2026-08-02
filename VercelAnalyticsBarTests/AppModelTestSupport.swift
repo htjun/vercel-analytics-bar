@@ -112,3 +112,63 @@ final class InMemoryAccountDataStore: VercelAccountDataStore {
         analyticsRange = .last7Days
     }
 }
+
+actor StaticAnalyticsTransport: VercelHTTPTransport {
+    private(set) var requests: [URLRequest] = []
+
+    func data(for request: URLRequest) async throws -> (Data, URLResponse) {
+        requests.append(request)
+
+        let body: String
+        switch request.url?.path {
+        case "/v1/query/web-analytics/visits/count":
+            body = """
+            {
+              "query": {
+                "since": "2026-07-26T00:00:00.000Z",
+                "until": "2026-08-02T00:00:00.000Z"
+              },
+              "data": {
+                "visitors": 165,
+                "pageviews": 284
+              }
+            }
+            """
+        case "/v1/query/web-analytics/visits/aggregate":
+            body = """
+            {
+              "query": {
+                "since": "2026-07-26T00:00:00.000Z",
+                "until": "2026-08-02T00:00:00.000Z"
+              },
+              "data": [
+                {
+                  "timestamp": "2026-08-01T00:00:00.000Z",
+                  "visitors": 20,
+                  "pageviews": 34
+                },
+                {
+                  "timestamp": "2026-08-02T00:00:00.000Z",
+                  "visitors": 24,
+                  "pageviews": 41
+                }
+              ]
+            }
+            """
+        default:
+            throw StaticAnalyticsTransportError.unhandledRequest
+        }
+
+        guard let url = request.url,
+              let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)
+        else {
+            throw StaticAnalyticsTransportError.invalidResponse
+        }
+        return (Data(body.utf8), response)
+    }
+}
+
+enum StaticAnalyticsTransportError: Error {
+    case unhandledRequest
+    case invalidResponse
+}

@@ -200,7 +200,7 @@ import VercelAnalyticsCore
                     visitors: AnalyticsMetric(label: "Visitors", value: 12847, previousValue: 12000),
                     pageViews: AnalyticsMetric(label: "Page Views", value: 21490, previousValue: 20000),
                     series: [],
-                    last24HoursVisitors: 12847,
+                    last24HoursVisitors: 1890,
                     refreshedAt: Date(timeIntervalSince1970: 1_785_549_600)
                 )
             )
@@ -218,10 +218,10 @@ import VercelAnalyticsCore
         visitors: AnalyticsMetric(label: "Visitors", value: 12847, previousValue: 12000),
         pageViews: AnalyticsMetric(label: "Page Views", value: 21490, previousValue: 20000),
         series: [],
-        last24HoursVisitors: 12847,
+        last24HoursVisitors: 1890,
         refreshedAt: Date(timeIntervalSince1970: 1_785_549_600)
     )))
-    #expect(model.abbreviatedVisitors == "12.8K")
+    #expect(model.abbreviatedVisitors == "1.8K")
 }
 
 @MainActor
@@ -246,6 +246,40 @@ import VercelAnalyticsCore
 
     let restoredModel = AppModel(provider: provider, accountDataStore: accountDataStore)
     #expect(restoredModel.selectedRange == .last30Days)
+}
+
+@MainActor
+@Test func appModelLoadsRenderedAnalyticsContentThroughFixtureTransport() async {
+    let transport = StaticAnalyticsTransport()
+    let project = VercelProject(id: "project-a", name: "Alpha")
+    let model = AppModel(
+        credentialStore: InMemoryCredentialStore(),
+        projectProviderFactory: { _ in FixtureProjectListingProvider(projects: [project]) },
+        analyticsProviderFactory: { token, selectedProject in
+            VercelAnalyticsSnapshotProvider(
+                token: token,
+                project: selectedProject,
+                now: { Date(timeIntervalSince1970: 1_785_628_800) },
+                transport: transport
+            )
+        },
+        tokenValidator: { _ in }
+    )
+
+    await model.connect(token: "fixture-token")
+    await model.load()
+
+    guard case let .loaded(snapshot) = model.state else {
+        Issue.record("Expected loaded analytics content")
+        return
+    }
+    #expect(snapshot.projectName == "Alpha")
+    #expect(snapshot.range == .last7Days)
+    #expect(snapshot.visitors.value == 165)
+    #expect(snapshot.pageViews.value == 284)
+    #expect(snapshot.series.count == 2)
+    #expect(model.abbreviatedVisitors == "165")
+    #expect(await transport.requests.count == 4)
 }
 
 @MainActor
