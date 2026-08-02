@@ -23,7 +23,7 @@ The live probe treats successful access to the required team-list endpoint as to
 
 The documented visits endpoints expose `pageviews` and `visitors`. Count responses return one total, while aggregate responses can group by one time dimension: `hour`, `day`, `week`, `month`, or `year`.
 
-`since` and `until` accept date strings or millisecond timestamps. Vercel includes both ends of the requested interval, then adjusts them to the requested aggregate granularity. The app must use the response's echoed query values as the authoritative range semantics.
+`since` and `until` accept date strings or millisecond timestamps. Vercel includes both ends of the requested interval, then adjusts aggregate results to the requested granularity. The client therefore defines every product range as an explicit half-open UTC interval, sends `endExclusive` to count queries, sends `endExclusive - 1 ms` to aggregate queries, and discards returned points outside `[start, endExclusive)`. The response's echoed query is retained for compatibility, but it must not widen the logical interval used by cards or charts.
 
 Production is the default for visits queries. The probe additionally sends `filter=environment eq 'production'` and records whether it matches the default response without storing metric values.
 
@@ -42,15 +42,19 @@ The API does not return a comparison value. V1 obtains the previous period throu
 
 ### Range normalization
 
-The probe supplied rolling ISO 8601 timestamps in UTC. Vercel normalized the returned query windows according to endpoint and grouping granularity:
+The product ranges are calculated from the current time in UTC, independent of the Mac's locale or timezone:
 
-| Product range | Count query | Aggregate query | Observed rows |
+| Product range | Logical interval | Aggregate grouping | Expected points |
 | --- | --- | --- | --- |
-| Last 24 Hours | Current UTC day boundaries | Hour boundaries covering the rolling window | 25 hourly rows |
-| Last 7 Days | Seven-day UTC interval ending at the current day boundary | Day boundaries including the current partial day | 8 daily rows |
-| Last 30 Days | Thirty-day UTC interval ending at the current day boundary | Day boundaries including the current partial day | 31 daily rows |
+| Last 24 Hours | Current UTC hour plus the preceding 23 hours | `hour` | Exactly 24 hourly buckets |
+| Last 7 Days | The previous seven completed UTC days | `day` | Exactly 7 daily buckets |
+| Last 30 Days | The previous 30 completed UTC days | `day` | Exactly 30 daily buckets |
 
-The typed client must preserve Vercel's echoed `since` and `until` values rather than assume that the requested timestamps are returned unchanged. The menu-bar metric uses the count endpoint's current UTC-day Visitors total, matching the product's “today” requirement. The popover's Last 24 Hours chart uses the hourly aggregate endpoint and its rolling window.
+The current period's previous comparison is the immediately preceding interval of the same length. Last 24 Hours totals and comparisons are sums of the current and previous hourly series. Last 7/30 Days use count responses as the authoritative card totals, while the chart is filtered to the same completed-day interval. The menu-bar Visitors value always comes from the aligned Last 24 Hours hourly series. Empty series are valid and produce zero aggregate totals.
+
+The public aggregate API can round an inclusive boundary outward, so a request may still return an extra row even after the end is sent one millisecond before `endExclusive`. Filtering timestamps in the client is required to keep the series at exactly 24, 7, or 30 points.
+
+The dashboard's private `/web-analytics/v2` endpoints are deliberately unsupported. They are not part of the public PAT contract and may change without notice; the app uses the documented public endpoints even though 7-day and 30-day values may not exactly match the dashboard.
 
 ## Deliberate v1 omissions
 
