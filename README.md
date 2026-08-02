@@ -2,7 +2,7 @@
 
 Vercel Analytics Bar is a native macOS menu bar application for checking Vercel Analytics at a glance.
 
-The application connects directly to Vercel, discovers projects across the account, and shows the selected project's Production Web Analytics. The current project can be switched from the menu bar; periodic refresh coordination remains a later milestone.
+The application connects directly to Vercel, discovers projects across the account, and shows the selected project's Production Web Analytics. The current project can be switched from the menu bar.
 
 ## Current behavior
 
@@ -13,6 +13,7 @@ The application connects directly to Vercel, discovers projects across the accou
 - Renders the selected range's Visitors trend with a native line and area chart.
 - Shows a chart icon and abbreviated Last 24 Hours Visitors count in the menu bar after the first successful load.
 - Opens a Settings window and terminates from the Quit button.
+- Includes an independent chart app icon and a monochrome chart menu-bar icon.
 - Connects a Vercel Personal Access Token from Settings after validating it with Vercel.
 - Restores a validated connection when the menu bar panel or Settings first opens and stores the token only in the macOS Keychain.
 - Loads personal and team projects into one searchable, alphabetically sorted Settings list.
@@ -23,6 +24,8 @@ The application connects directly to Vercel, discovers projects across the accou
 - Persists versioned snapshots under Application Support, keeps stale data visible through transient failures, and applies Vercel rate-limit backoff with bounded manual retries.
 - Refreshes the project list after account connection or an explicit Settings sync.
 - Disconnects by removing the Keychain credential, project preference keys, and analytics cache directory.
+- Offers an off-by-default Open at login setting through macOS Login Items.
+- States that the app is independent and not affiliated with Vercel; credentials are sent directly to Vercel and are not operated by a hosted Vercel Analytics Bar service.
 
 The Core client is covered separately by sanitized fixture tests. It supports bearer-authenticated personal and team project discovery, pagination, alphabetical sorting, Production Visitors/Page Views count and time-series queries, equal-period comparisons, and a live ranged snapshot provider for one project. It also provides safe typed handling for authentication, permission, rate-limit, transient, and malformed-response failures. Analytics activation is currently represented as `Unknown` in the project list because the documented public discovery response does not expose that setting; live metric errors are surfaced in the menu bar as unavailable states. Bounce Rate is omitted because the verified public API contract does not provide it.
 
@@ -90,7 +93,7 @@ make test
 
 ## Architecture
 
-The checked-in Xcode project owns the application bundle, SwiftUI lifecycle, menu bar UI, Settings scene, sandbox metadata, signing configuration, and app tests.
+The checked-in Xcode project owns the application bundle, SwiftUI lifecycle, menu bar UI, Settings scene, Login Items integration, asset catalog, sandbox metadata, signing configuration, and app tests.
 
 The local `VercelAnalyticsCore` Swift package owns stable analytics domain values, the typed `VercelAPIClient`, project discovery, ranged snapshots, equal-period comparison calculation, and the `AnalyticsSnapshotProviding` boundary. The app injects token-based project and analytics providers into a main-actor observable model, which owns account connection, project selection, current-project switching, persisted range selection, refresh coordination, and menu-bar metric state. Fixture providers remain test-only. The API client accepts an injected HTTP transport for deterministic tests; its Vercel DTOs stay internal and tokens or response bodies are never included in client errors. The app's credential boundary uses Security Keychain APIs, while selected project IDs, the current project, account preferences, and versioned snapshot cache use injected stores so disconnect and recovery behavior are testable. Snapshot cache entries are keyed by project and analytics range and are persisted under Application Support; corrupt or incompatible files are discarded.
 

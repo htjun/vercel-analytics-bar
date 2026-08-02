@@ -24,7 +24,11 @@ struct VercelAnalyticsBarApp: App {
             MenuBarRootView(model: model)
         } label: {
             HStack(spacing: 4) {
-                Image(systemName: "chart.line.uptrend.xyaxis")
+                Image("MenuBarChart")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 16, height: 16)
+                    .accessibilityLabel("Visitors")
                 if let abbreviatedVisitors = model.abbreviatedVisitors {
                     Text(abbreviatedVisitors)
                 }

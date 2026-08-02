@@ -24,6 +24,7 @@
 		A10000000000000000000013 /* AppModelEdgeCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000013 /* AppModelEdgeCaseTests.swift */; };
 		A10000000000000000000014 /* LaunchAtLogin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000014 /* LaunchAtLogin.swift */; };
 		A10000000000000000000015 /* NativeIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000015 /* NativeIntegrationTests.swift */; };
+		A10000000000000000000016 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000016 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -60,6 +61,7 @@
 		A30000000000000000000013 /* AppModelEdgeCaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModelEdgeCaseTests.swift; sourceTree = "<group>"; };
 		A30000000000000000000014 /* LaunchAtLogin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLogin.swift; sourceTree = "<group>"; };
 		A30000000000000000000015 /* NativeIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeIntegrationTests.swift; sourceTree = "<group>"; };
+		A30000000000000000000016 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -97,6 +99,7 @@
 			children = (
 				A40000000000000000000012 /* App */,
 				A40000000000000000000017 /* Features */,
+				A4000000000000000000001A /* Resources */,
 				A40000000000000000000013 /* SupportingFiles */,
 			);
 			path = VercelAnalyticsBar;
@@ -181,6 +184,14 @@
 				A3000000000000000000000B /* SettingsRootView.swift */,
 			);
 			path = Settings;
+			sourceTree = "<group>";
+		};
+		A4000000000000000000001A /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A30000000000000000000016 /* Assets.xcassets */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -273,6 +284,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A10000000000000000000016 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -351,6 +363,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = A30000000000000000000006 /* Debug.xcconfig */;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = VercelAnalyticsBar/SupportingFiles/VercelAnalyticsBar.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				INFOPLIST_FILE = VercelAnalyticsBar/SupportingFiles/Info.plist;
@@ -362,6 +375,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = A30000000000000000000007 /* Release-Direct.xcconfig */;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = VercelAnalyticsBar/SupportingFiles/VercelAnalyticsBar.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				INFOPLIST_FILE = VercelAnalyticsBar/SupportingFiles/Info.plist;
@@ -373,6 +387,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = A30000000000000000000008 /* Release-AppStore.xcconfig */;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = VercelAnalyticsBar/SupportingFiles/VercelAnalyticsBar.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				INFOPLIST_FILE = VercelAnalyticsBar/SupportingFiles/Info.plist;
