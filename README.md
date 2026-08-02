@@ -14,7 +14,7 @@ The application still uses fixture analytics data, while account connection now 
 - Restores a validated connection at app launch and stores the token only in the macOS Keychain.
 - Disconnects by removing the Keychain credential, project preference keys, and analytics cache directory.
 
-The Core client is covered separately by sanitized fixture tests. It supports bearer-authenticated team and project discovery, pagination, Production Visitors/Page Views count and time-series queries, and safe typed handling for authentication, permission, rate-limit, transient, and malformed-response failures. It is not connected to the application UI yet.
+The Core client is covered separately by sanitized fixture tests. It supports bearer-authenticated team and project discovery, pagination, Production Visitors/Page Views count and time-series queries, and safe typed handling for authentication, permission, rate-limit, transient, and malformed-response failures. Account validation uses this client today; project discovery and live analytics presentation are still deferred.
 
 ## Requirements
 
