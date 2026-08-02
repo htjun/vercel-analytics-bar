@@ -2,7 +2,7 @@
 
 Vercel Analytics Bar is a native macOS menu bar application for checking Vercel Analytics at a glance.
 
-The application still uses fixture analytics data, while account connection now uses the typed client and local Keychain-backed onboarding. Project discovery and live analytics composition remain the next milestones.
+The application still uses fixture analytics data, while account connection and account-wide project selection use the typed client and local Keychain-backed onboarding. Live analytics composition remains the next milestone.
 
 ## Current behavior
 
@@ -12,9 +12,13 @@ The application still uses fixture analytics data, while account connection now 
 - Opens a Settings window and terminates from the Quit button.
 - Connects a Vercel Personal Access Token from Settings after validating it with Vercel.
 - Restores a validated connection at app launch and stores the token only in the macOS Keychain.
+- Loads personal and team projects into one searchable, alphabetically sorted Settings list.
+- Shows duplicate project names with their team or personal-account metadata and an explicit Analytics status.
+- Persists selected project IDs locally, selects the first accessible project when no selection exists, and prevents clearing the final selection.
+- Refreshes the project list after account connection or an explicit Settings sync.
 - Disconnects by removing the Keychain credential, project preference keys, and analytics cache directory.
 
-The Core client is covered separately by sanitized fixture tests. It supports bearer-authenticated team and project discovery, pagination, Production Visitors/Page Views count and time-series queries, and safe typed handling for authentication, permission, rate-limit, transient, and malformed-response failures. Account validation uses this client today; project discovery and live analytics presentation are still deferred.
+The Core client is covered separately by sanitized fixture tests. It supports bearer-authenticated personal and team project discovery, pagination, alphabetical sorting, Production Visitors/Page Views count and time-series queries, and safe typed handling for authentication, permission, rate-limit, transient, and malformed-response failures. Analytics activation is currently represented as `Unknown` in the project list because the documented public discovery response does not expose that setting; live metric loading will resolve the project-specific state in a later milestone.
 
 ## Requirements
 
@@ -82,7 +86,7 @@ make test
 
 The checked-in Xcode project owns the application bundle, SwiftUI lifecycle, menu bar UI, Settings scene, sandbox metadata, signing configuration, and app tests.
 
-The local `VercelAnalyticsCore` Swift package owns stable analytics domain values, the typed `VercelAPIClient`, and the `AnalyticsSnapshotProviding` boundary. The app injects a fixture provider into a main-actor observable model and owns the account connection lifecycle. The API client accepts an injected HTTP transport for deterministic tests; its Vercel DTOs stay internal and tokens or response bodies are never included in client errors. The app's credential boundary uses Security Keychain APIs, while account preferences and cache cleanup use separate injected stores so disconnect behavior is testable.
+The local `VercelAnalyticsCore` Swift package owns stable analytics domain values, the typed `VercelAPIClient`, project discovery, and the `AnalyticsSnapshotProviding` boundary. The app injects fixture analytics and a token-based project provider into a main-actor observable model, which owns account connection and project selection state. The API client accepts an injected HTTP transport for deterministic tests; its Vercel DTOs stay internal and tokens or response bodies are never included in client errors. The app's credential boundary uses Security Keychain APIs, while selected project IDs, account preferences, and cache cleanup use an injected account data store so disconnect behavior is testable.
 
 Build configurations are separated into Debug, direct-release, and App Store release variants. Both release variants are currently unsigned build contracts; packaging, signing, notarization, Sparkle, and App Store submission are intentionally deferred.
 
