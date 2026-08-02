@@ -91,7 +91,7 @@ struct APIDate: Decodable {
             return
         }
         if let milliseconds = try? container.decode(Double.self) {
-            value = Date(timeIntervalSince1970: milliseconds / 1_000)
+            value = Date(timeIntervalSince1970: milliseconds / 1000)
             return
         }
         throw DecodingError.dataCorruptedError(in: container, debugDescription: "Expected an API date")

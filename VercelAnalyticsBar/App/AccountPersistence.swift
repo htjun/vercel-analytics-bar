@@ -50,7 +50,8 @@ struct KeychainVercelCredentialStore: VercelCredentialStore {
         case errSecSuccess:
             guard let data = result as? Data,
                   let token = String(data: data, encoding: .utf8),
-                  !token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                  !token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            else {
                 throw CredentialStoreError.invalidStoredValue
             }
             return token

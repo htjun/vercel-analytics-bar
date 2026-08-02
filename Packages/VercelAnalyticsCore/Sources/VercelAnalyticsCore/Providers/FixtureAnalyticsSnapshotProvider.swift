@@ -17,7 +17,7 @@ public extension AnalyticsSnapshot {
 
     static let fixture = AnalyticsSnapshot(
         projectName: "Acme Storefront",
-        primaryMetric: AnalyticsMetric(label: "Visitors", value: 12_847),
+        primaryMetric: AnalyticsMetric(label: "Visitors", value: 12847),
         refreshedAt: fixtureRefreshDate
     )
 }

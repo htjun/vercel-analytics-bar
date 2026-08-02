@@ -26,4 +26,7 @@ file_length:
   warning: 400
   error: 600
 
+trailing_comma:
+  mandatory_comma: true
+
 reporter: xcode

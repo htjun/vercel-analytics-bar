@@ -47,7 +47,8 @@ final class AppModel {
         state = .loading
 
         do {
-            state = .loaded(try await provider.snapshot())
+            let snapshot = try await provider.snapshot()
+            state = .loaded(snapshot)
         } catch {
             state = .failed(error.localizedDescription)
         }

@@ -89,7 +89,7 @@ public struct VercelAPIClient: Sendable {
         self.token = token
         self.baseURL = baseURL
         self.transport = transport
-        self.decoder = JSONDecoder()
+        decoder = JSONDecoder()
     }
 
     public func validateToken() async throws {
@@ -248,7 +248,7 @@ public struct VercelAPIClient: Sendable {
             throw VercelAPIError.rateLimited(metadata: rateLimitMetadata(from: response))
         case 404:
             throw VercelAPIError.resourceNotFound(status: response.statusCode)
-        case 408, 425, 500...599:
+        case 408, 425, 500 ... 599:
             throw VercelAPIError.transient(status: response.statusCode, requestID: requestID(from: response))
         default:
             throw VercelAPIError.requestRejected(status: response.statusCode)
@@ -291,7 +291,7 @@ public struct VercelAPIClient: Sendable {
         guard let value = response.value(forHTTPHeaderField: name), let timestamp = Double(value) else {
             return nil
         }
-        let seconds = timestamp > 10_000_000_000 ? timestamp / 1_000 : timestamp
+        let seconds = timestamp > 10_000_000_000 ? timestamp / 1000 : timestamp
         return Date(timeIntervalSince1970: seconds)
     }
 

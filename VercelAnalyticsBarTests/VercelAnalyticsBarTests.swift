@@ -1,7 +1,7 @@
 import Foundation
 import Testing
-import VercelAnalyticsCore
 @testable import VercelAnalyticsBar
+import VercelAnalyticsCore
 
 @MainActor
 @Test func appModelLoadsSnapshotThroughInjectedProvider() async {

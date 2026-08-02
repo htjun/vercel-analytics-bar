@@ -9,5 +9,5 @@ import VercelAnalyticsCore
 
     #expect(snapshot == expected)
     #expect(snapshot.projectName == "Acme Storefront")
-    #expect(snapshot.primaryMetric.value == 12_847)
+    #expect(snapshot.primaryMetric.value == 12847)
 }

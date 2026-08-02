@@ -75,18 +75,18 @@ import VercelAnalyticsCore
 
     #expect(count.visitors == 165)
     #expect(count.pageViews == 284)
-    #expect(count.window == VercelAnalyticsWindow(
-        since: try date("2026-08-01T00:00:00.000Z"),
-        until: try date("2026-08-02T00:00:00.000Z")
+    #expect(try count.window == VercelAnalyticsWindow(
+        since: date("2026-08-01T00:00:00.000Z"),
+        until: date("2026-08-02T00:00:00.000Z")
     ))
-    #expect(series.points == [
+    #expect(try series.points == [
         VercelAnalyticsPoint(
-            timestamp: try date("2026-08-01T23:00:00.000Z"),
+            timestamp: date("2026-08-01T23:00:00.000Z"),
             visitors: 10,
             pageViews: 18
         ),
         VercelAnalyticsPoint(
-            timestamp: try date("2026-08-02T00:00:00.000Z"),
+            timestamp: date("2026-08-02T00:00:00.000Z"),
             visitors: 12,
             pageViews: 21
         ),
@@ -118,7 +118,7 @@ import VercelAnalyticsCore
     }
 }
 
-@Test func clientMapsPermissionRateLimitAndTransientFailures() async throws {
+@Test func clientMapsPermissionFailure() async throws {
     let permissionTransport = FixtureTransport(
         responses: [
             "/v9/projects": [.response(statusCode: 403, body: "private-response")],
@@ -130,7 +130,9 @@ import VercelAnalyticsCore
     } catch let error as VercelAPIError {
         #expect(error == .permissionDenied(status: 403))
     }
+}
 
+@Test func clientMapsRateLimitFailure() async throws {
     let rateLimitTransport = FixtureTransport(
         responses: [
             "/v2/teams": [
@@ -161,7 +163,9 @@ import VercelAnalyticsCore
         #expect(metadata.retryAfter == 30)
         #expect(metadata.requestID == "fixture-request-id")
     }
+}
 
+@Test func clientMapsTransientFailure() async throws {
     let transientTransport = FixtureTransport(
         responses: [
             "/v2/teams": [.response(statusCode: 503, headers: ["X-Vercel-Id": "fixture-request-id"])],
@@ -231,7 +235,7 @@ private struct FixtureResponse: Sendable {
         guard let url = Bundle.module.url(forResource: name, withExtension: "json", subdirectory: "Fixtures") else {
             throw FixtureTransportError.missingFixture
         }
-        return FixtureResponse(statusCode: 200, headers: [:], body: try Data(contentsOf: url))
+        return try FixtureResponse(statusCode: 200, headers: [:], body: Data(contentsOf: url))
     }
 
     static func response(
