@@ -134,10 +134,10 @@ public struct VercelAPIClient: Sendable {
                 query["until"] = cursor
             }
 
-        let response = try await request(ProjectsResponseDTO.self, path: "/v9/projects", query: query)
-        projects.append(contentsOf: response.projects.map {
-            VercelProject(id: $0.id, name: $0.name, teamID: teamID)
-        })
+            let response = try await request(ProjectsResponseDTO.self, path: "/v9/projects", query: query)
+            projects.append(contentsOf: response.projects.map {
+                VercelProject(id: $0.id, name: $0.name, teamID: teamID)
+            })
 
             guard let next = response.pagination.next else {
                 return projects
@@ -303,121 +303,4 @@ public struct VercelAPIClient: Sendable {
     private func requestID(from response: HTTPURLResponse) -> String? {
         response.value(forHTTPHeaderField: "X-Vercel-Id")
     }
-}
-
-private struct TeamsResponseDTO: Decodable {
-    let teams: [TeamDTO]
-    let pagination: PaginationDTO
-}
-
-private struct TeamDTO: Decodable {
-    let id: String
-    let name: String
-    let slug: String?
-}
-
-private struct ProjectsResponseDTO: Decodable {
-    let projects: [ProjectDTO]
-    let pagination: PaginationDTO
-}
-
-private struct ProjectDTO: Decodable {
-    let id: String
-    let name: String
-}
-
-private struct PaginationDTO: Decodable {
-    let next: String?
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        if let string = try? container.decodeIfPresent(String.self, forKey: .next) {
-            next = string
-        } else if let number = try? container.decodeIfPresent(Int.self, forKey: .next) {
-            next = String(number)
-        } else {
-            next = nil
-        }
-    }
-
-    private enum CodingKeys: String, CodingKey {
-        case next
-    }
-}
-
-private struct AnalyticsCountResponseDTO: Decodable {
-    let data: AnalyticsMetricsDTO
-    let query: AnalyticsQueryDTO
-}
-
-private struct AnalyticsSeriesResponseDTO: Decodable {
-    let data: [AnalyticsPointDTO]
-    let query: AnalyticsQueryDTO
-}
-
-private struct AnalyticsMetricsDTO: Decodable {
-    let visitors: Int
-    let pageViews: Int
-
-    private enum CodingKeys: String, CodingKey {
-        case visitors
-        case pageViews = "pageviews"
-    }
-}
-
-private struct AnalyticsPointDTO: Decodable {
-    let timestamp: APIDate
-    let visitors: Int
-    let pageViews: Int
-
-    private enum CodingKeys: String, CodingKey {
-        case timestamp
-        case visitors
-        case pageViews = "pageviews"
-    }
-}
-
-private struct AnalyticsQueryDTO: Decodable {
-    let since: APIDate
-    let until: APIDate
-
-    var window: VercelAnalyticsWindow {
-        VercelAnalyticsWindow(since: since.value, until: until.value)
-    }
-}
-
-private struct APIDate: Decodable {
-    let value: Date
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        if let string = try? container.decode(String.self) {
-            if let date = Self.parse(string) {
-                value = date
-                return
-            }
-        }
-        if let milliseconds = try? container.decode(Double.self) {
-            value = Date(timeIntervalSince1970: milliseconds / 1_000)
-            return
-        }
-        throw DecodingError.dataCorruptedError(in: container, debugDescription: "Expected an API date")
-    }
-
-    private static func parse(_ string: String) -> Date? {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let date = formatter.date(from: string) {
-            return date
-        }
-
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter.date(from: string)
-    }
-}
-
-private func formatDate(_ date: Date) -> String {
-    let formatter = ISO8601DateFormatter()
-    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-    return formatter.string(from: date)
 }
