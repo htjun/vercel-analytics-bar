@@ -1,4 +1,5 @@
 import Foundation
+import Testing
 @testable import VercelAnalyticsBar
 import VercelAnalyticsCore
 
@@ -183,4 +184,61 @@ actor StaticAnalyticsTransport: VercelHTTPTransport {
 enum StaticAnalyticsTransportError: Error {
     case unhandledRequest
     case invalidResponse
+}
+
+func makeAnalyticsSnapshot(
+    projectName: String,
+    visitors: Int,
+    pageViews: Int,
+    last24HoursVisitors: Int,
+    refreshedAt: Date
+) -> AnalyticsSnapshot {
+    AnalyticsSnapshot(
+        projectName: projectName,
+        range: .last7Days,
+        visitors: AnalyticsMetric(label: "Visitors", value: visitors, previousValue: visitors * 9 / 10),
+        pageViews: AnalyticsMetric(label: "Page Views", value: pageViews, previousValue: pageViews * 9 / 10),
+        series: [],
+        last24HoursVisitors: last24HoursVisitors,
+        refreshedAt: refreshedAt
+    )
+}
+
+@Test func accountDataStoreClearsPreferencesAndCache() throws {
+    let suiteName = "VercelAnalyticsBarTests.\(UUID().uuidString)"
+    let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+    let supportURL = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+        .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    let cacheURL = supportURL
+        .appendingPathComponent("VercelAnalyticsBar", isDirectory: true)
+        .appendingPathComponent("Cache", isDirectory: true)
+
+    defer {
+        userDefaults.removePersistentDomain(forName: suiteName)
+        try? FileManager.default.removeItem(at: supportURL)
+    }
+
+    try FileManager.default.createDirectory(at: cacheURL, withIntermediateDirectories: true)
+    userDefaults.set(["project-id"], forKey: UserDefaultsVercelAccountDataStore.selectedProjectIDsKey)
+    userDefaults.set("project-id", forKey: UserDefaultsVercelAccountDataStore.currentProjectIDKey)
+    userDefaults.set("last7Days", forKey: UserDefaultsVercelAccountDataStore.analyticsRangeKey)
+
+    let store = UserDefaultsVercelAccountDataStore(
+        userDefaults: userDefaults,
+        applicationSupportURL: supportURL
+    )
+    try store.saveSelectedProjectIDs(["project-b", "project-a"])
+    #expect(try store.readSelectedProjectIDs() == ["project-a", "project-b"])
+    try store.saveCurrentProjectID("project-b")
+    #expect(try store.readCurrentProjectID() == "project-b")
+    #expect(try store.readAnalyticsRange() == .last7Days)
+    try store.saveAnalyticsRange(.last30Days)
+    #expect(try store.readAnalyticsRange() == .last30Days)
+
+    try store.clear()
+
+    #expect(userDefaults.object(forKey: UserDefaultsVercelAccountDataStore.selectedProjectIDsKey) == nil)
+    #expect(userDefaults.object(forKey: UserDefaultsVercelAccountDataStore.currentProjectIDKey) == nil)
+    #expect(userDefaults.object(forKey: UserDefaultsVercelAccountDataStore.analyticsRangeKey) == nil)
+    #expect(FileManager.default.fileExists(atPath: cacheURL.path) == false)
 }

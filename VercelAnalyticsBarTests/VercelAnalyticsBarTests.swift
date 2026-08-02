@@ -202,32 +202,16 @@ import VercelAnalyticsCore
     let accountDataStore = InMemoryAccountDataStore()
     let alphaProvider = ControlledSnapshotProvider()
     let betaProvider = ControlledSnapshotProvider()
-    let alphaSnapshot = AnalyticsSnapshot(
-        projectName: "Alpha",
-        range: .last7Days,
-        visitors: AnalyticsMetric(label: "Visitors", value: 100, previousValue: 90),
-        pageViews: AnalyticsMetric(label: "Page Views", value: 200, previousValue: 180),
-        series: [],
-        last24HoursVisitors: 11,
-        refreshedAt: Date(timeIntervalSince1970: 1_785_549_600)
+    let initialRefreshDate = Date(timeIntervalSince1970: 1_785_549_600)
+    let alphaSnapshot = makeAnalyticsSnapshot(
+        projectName: "Alpha", visitors: 100, pageViews: 200, last24HoursVisitors: 11, refreshedAt: initialRefreshDate
     )
-    let refreshedAlphaSnapshot = AnalyticsSnapshot(
-        projectName: "Alpha",
-        range: .last7Days,
-        visitors: AnalyticsMetric(label: "Visitors", value: 101, previousValue: 90),
-        pageViews: AnalyticsMetric(label: "Page Views", value: 202, previousValue: 180),
-        series: [],
-        last24HoursVisitors: 12,
-        refreshedAt: Date(timeIntervalSince1970: 1_785_549_660)
+    let refreshedAlphaSnapshot = makeAnalyticsSnapshot(
+        projectName: "Alpha", visitors: 101, pageViews: 202, last24HoursVisitors: 12,
+        refreshedAt: initialRefreshDate.addingTimeInterval(60)
     )
-    let betaSnapshot = AnalyticsSnapshot(
-        projectName: "Beta",
-        range: .last7Days,
-        visitors: AnalyticsMetric(label: "Visitors", value: 300, previousValue: 270),
-        pageViews: AnalyticsMetric(label: "Page Views", value: 500, previousValue: 450),
-        series: [],
-        last24HoursVisitors: 22,
-        refreshedAt: Date(timeIntervalSince1970: 1_785_549_600)
+    let betaSnapshot = makeAnalyticsSnapshot(
+        projectName: "Beta", visitors: 300, pageViews: 500, last24HoursVisitors: 22, refreshedAt: initialRefreshDate
     )
     let model = AppModel(
         credentialStore: InMemoryCredentialStore(),
@@ -400,45 +384,6 @@ import VercelAnalyticsCore
     #expect(model.accountState == .disconnected)
     #expect(credentialStore.token == nil)
     #expect(accountDataStore.hasData == false)
-}
-
-@Test func accountDataStoreClearsPreferencesAndCache() throws {
-    let suiteName = "VercelAnalyticsBarTests.\(UUID().uuidString)"
-    let userDefaults = try #require(UserDefaults(suiteName: suiteName))
-    let supportURL = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-        .appendingPathComponent(UUID().uuidString, isDirectory: true)
-    let cacheURL = supportURL
-        .appendingPathComponent("VercelAnalyticsBar", isDirectory: true)
-        .appendingPathComponent("Cache", isDirectory: true)
-
-    defer {
-        userDefaults.removePersistentDomain(forName: suiteName)
-        try? FileManager.default.removeItem(at: supportURL)
-    }
-
-    try FileManager.default.createDirectory(at: cacheURL, withIntermediateDirectories: true)
-    userDefaults.set(["project-id"], forKey: UserDefaultsVercelAccountDataStore.selectedProjectIDsKey)
-    userDefaults.set("project-id", forKey: UserDefaultsVercelAccountDataStore.currentProjectIDKey)
-    userDefaults.set("last7Days", forKey: UserDefaultsVercelAccountDataStore.analyticsRangeKey)
-
-    let store = UserDefaultsVercelAccountDataStore(
-        userDefaults: userDefaults,
-        applicationSupportURL: supportURL
-    )
-    try store.saveSelectedProjectIDs(["project-b", "project-a"])
-    #expect(try store.readSelectedProjectIDs() == ["project-a", "project-b"])
-    try store.saveCurrentProjectID("project-b")
-    #expect(try store.readCurrentProjectID() == "project-b")
-    #expect(try store.readAnalyticsRange() == .last7Days)
-    try store.saveAnalyticsRange(.last30Days)
-    #expect(try store.readAnalyticsRange() == .last30Days)
-
-    try store.clear()
-
-    #expect(userDefaults.object(forKey: UserDefaultsVercelAccountDataStore.selectedProjectIDsKey) == nil)
-    #expect(userDefaults.object(forKey: UserDefaultsVercelAccountDataStore.currentProjectIDKey) == nil)
-    #expect(userDefaults.object(forKey: UserDefaultsVercelAccountDataStore.analyticsRangeKey) == nil)
-    #expect(FileManager.default.fileExists(atPath: cacheURL.path) == false)
 }
 
 @Test func accountConnectionErrorsProvideSafeRecoveryCopy() {
