@@ -158,7 +158,8 @@ public struct VercelAPIClient: Sendable, VercelProjectListingProviding {
         var projects = try await listProjects()
 
         for team in teams {
-            try await projects.append(contentsOf: listProjects(teamID: team.id, teamName: team.name))
+            let teamProjects = try await listProjects(teamID: team.id, teamName: team.name)
+            projects.append(contentsOf: teamProjects)
         }
 
         var uniqueProjects: [VercelProject] = []
