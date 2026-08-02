@@ -27,12 +27,38 @@ The documented visits endpoints expose `pageviews` and `visitors`. Count respons
 
 Production is the default for visits queries. The probe additionally sends `filter=environment eq 'production'` and records whether it matches the default response without storing metric values.
 
+## Live verification
+
+A local probe against an account with both personal and team projects confirmed:
+
+- `GET /v2/user`, `GET /v2/teams`, and personal/team-scoped `GET /v9/projects` returned `200`.
+- Both discovery scopes returned nonempty project lists. The account was smaller than one page, so no live pagination cursor was emitted; the probe follows the documented `pagination.next` cursor contract.
+- All three visits count and aggregate queries returned `200` with both `visitors` and `pageviews`.
+- The default visits count matched an explicit `environment eq 'production'` query for every tested range.
+- Responses exposed `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`, and `X-Vercel-Id`.
+- A deliberately invalid token returned `403 forbidden` without exposing a credential or response body.
+
+The API does not return a comparison value. V1 obtains the previous period through a second count query and computes the percentage change in Core.
+
+### Range normalization
+
+The probe supplied rolling ISO 8601 timestamps in UTC. Vercel normalized the returned query windows according to endpoint and grouping granularity:
+
+| Product range | Count query | Aggregate query | Observed rows |
+| --- | --- | --- | --- |
+| Last 24 Hours | Current UTC day boundaries | Hour boundaries covering the rolling window | 25 hourly rows |
+| Last 7 Days | Seven-day UTC interval ending at the current day boundary | Day boundaries including the current partial day | 8 daily rows |
+| Last 30 Days | Thirty-day UTC interval ending at the current day boundary | Day boundaries including the current partial day | 31 daily rows |
+
+The typed client must preserve Vercel's echoed `since` and `until` values rather than assume that the requested timestamps are returned unchanged. The menu-bar metric uses the count endpoint's current UTC-day Visitors total, matching the product's “today” requirement. The popover's Last 24 Hours chart uses the hourly aggregate endpoint and its rolling window.
+
 ## Deliberate v1 omissions
 
 - Bounce Rate is documented for the dashboard but is not among the metrics exposed by the public visits endpoints. V1 omits it.
 - The public project discovery API does not expose an Analytics-enabled flag. A project remains `Unknown` until an Analytics query provides an available or unavailable result.
 - The probe does not induce `429` or transient server errors. It records safe rate-limit, retry, and request-ID headers when they are present on normal requests.
-- The probe tests a known-invalid token to record the public `401` shape. It does not manufacture an inaccessible project merely to force `403`.
+- The probe tests a known-invalid token and records its safe error metadata. It does not manufacture an inaccessible project merely to force another permission error.
+- Live authentication failures currently use `403 forbidden` for a deliberately invalid PAT. Client error mapping must still classify both `401` and `403` according to request context.
 
 ## Local probe
 
