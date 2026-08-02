@@ -26,6 +26,7 @@ struct MenuBarRootView: View {
         .padding(16)
         .frame(width: 320)
         .task {
+            await model.restoreConnection()
             guard model.state == .idle else { return }
             await model.load()
         }
