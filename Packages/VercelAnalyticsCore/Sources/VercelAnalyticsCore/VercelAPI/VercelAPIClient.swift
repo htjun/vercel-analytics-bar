@@ -83,7 +83,6 @@ public struct VercelAPIClient: Sendable, VercelProjectListingProviding {
     private let token: String
     private let baseURL: URL
     private let transport: any VercelHTTPTransport
-    private let decoder: JSONDecoder
 
     public init(
         token: String,
@@ -93,7 +92,6 @@ public struct VercelAPIClient: Sendable, VercelProjectListingProviding {
         self.token = token
         self.baseURL = baseURL
         self.transport = transport
-        decoder = JSONDecoder()
     }
 
     public func validateToken() async throws {
@@ -250,7 +248,7 @@ public struct VercelAPIClient: Sendable, VercelProjectListingProviding {
         try throwIfNeeded(for: response, endpoint: path)
 
         do {
-            return try decoder.decode(responseType, from: data)
+            return try JSONDecoder().decode(responseType, from: data)
         } catch {
             throw VercelAPIError.malformedResponse(endpoint: path)
         }
