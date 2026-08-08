@@ -7,6 +7,9 @@ struct MenuBarRootView: View {
     let chartStyle: ChartStyleStore
     @State private var isProjectSelectorPresented = false
     @State private var projectSearchQuery = ""
+    #if CHART_INSPECTOR
+        @Environment(\.openWindow) private var openWindow
+    #endif
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -18,6 +21,12 @@ struct MenuBarRootView: View {
                 SettingsLink {
                     Text("Settings")
                 }
+
+                #if CHART_INSPECTOR
+                    Button("Chart Inspector") {
+                        openWindow(id: ChartInspectorScene.id)
+                    }
+                #endif
 
                 Spacer()
 

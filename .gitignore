@@ -11,3 +11,5 @@ build/
 *.xcuserstate
 xcuserdata/
 .mint/
+Tools/ChartInspector/dist/
+Tools/ChartInspector/node_modules/

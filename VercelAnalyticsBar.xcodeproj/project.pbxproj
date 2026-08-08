@@ -28,6 +28,10 @@
 		A10000000000000000000017 /* ChartStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000017 /* ChartStyle.swift */; };
 		A10000000000000000000018 /* ChartStyleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000018 /* ChartStyleTests.swift */; };
 		A10000000000000000000019 /* VisitorsChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000019 /* VisitorsChart.swift */; };
+		A1000000000000000000001A /* ChartInspectorProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000001A /* ChartInspectorProtocol.swift */; };
+		A1000000000000000000001B /* ChartInspectorWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000001B /* ChartInspectorWebView.swift */; };
+		A1000000000000000000001C /* ChartInspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000001C /* ChartInspectorView.swift */; };
+		A1000000000000000000001D /* ChartInspectorProtocolTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000001D /* ChartInspectorProtocolTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -68,6 +72,10 @@
 		A30000000000000000000017 /* ChartStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartStyle.swift; sourceTree = "<group>"; };
 		A30000000000000000000018 /* ChartStyleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartStyleTests.swift; sourceTree = "<group>"; };
 		A30000000000000000000019 /* VisitorsChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisitorsChart.swift; sourceTree = "<group>"; };
+		A3000000000000000000001A /* ChartInspectorProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartInspectorProtocol.swift; sourceTree = "<group>"; };
+		A3000000000000000000001B /* ChartInspectorWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartInspectorWebView.swift; sourceTree = "<group>"; };
+		A3000000000000000000001C /* ChartInspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartInspectorView.swift; sourceTree = "<group>"; };
+		A3000000000000000000001D /* ChartInspectorProtocolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartInspectorProtocolTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -144,6 +152,7 @@
 				A30000000000000000000013 /* AppModelEdgeCaseTests.swift */,
 				A30000000000000000000015 /* NativeIntegrationTests.swift */,
 				A30000000000000000000018 /* ChartStyleTests.swift */,
+				A3000000000000000000001D /* ChartInspectorProtocolTests.swift */,
 			);
 			path = VercelAnalyticsBarTests;
 			sourceTree = "<group>";
@@ -172,6 +181,7 @@
 			isa = PBXGroup;
 			children = (
 				A4000000000000000000001B /* Chart */,
+				A4000000000000000000001C /* ChartInspector */,
 				A40000000000000000000018 /* MenuBar */,
 				A40000000000000000000019 /* Settings */,
 			);
@@ -209,6 +219,16 @@
 				A30000000000000000000019 /* VisitorsChart.swift */,
 			);
 			path = Chart;
+			sourceTree = "<group>";
+		};
+		A4000000000000000000001C /* ChartInspector */ = {
+			isa = PBXGroup;
+			children = (
+				A3000000000000000000001A /* ChartInspectorProtocol.swift */,
+				A3000000000000000000001B /* ChartInspectorWebView.swift */,
+				A3000000000000000000001C /* ChartInspectorView.swift */,
+			);
+			path = ChartInspector;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -328,6 +348,9 @@
 				A10000000000000000000014 /* LaunchAtLogin.swift in Sources */,
 				A10000000000000000000017 /* ChartStyle.swift in Sources */,
 				A10000000000000000000019 /* VisitorsChart.swift in Sources */,
+				A1000000000000000000001A /* ChartInspectorProtocol.swift in Sources */,
+				A1000000000000000000001B /* ChartInspectorWebView.swift in Sources */,
+				A1000000000000000000001C /* ChartInspectorView.swift in Sources */,
 				A10000000000000000000006 /* MenuBarRootView.swift in Sources */,
 				A10000000000000000000007 /* SettingsRootView.swift in Sources */,
 			);
@@ -344,6 +367,7 @@
 				A10000000000000000000013 /* AppModelEdgeCaseTests.swift in Sources */,
 				A10000000000000000000015 /* NativeIntegrationTests.swift in Sources */,
 				A10000000000000000000018 /* ChartStyleTests.swift in Sources */,
+				A1000000000000000000001D /* ChartInspectorProtocolTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

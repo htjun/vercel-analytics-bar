@@ -40,5 +40,12 @@ struct VercelAnalyticsBarApp: App {
         Settings {
             SettingsRootView(model: model)
         }
+
+        #if CHART_INSPECTOR
+            Window("Chart Inspector", id: ChartInspectorScene.id) {
+                ChartInspectorView(styleStore: chartStyle)
+            }
+            .defaultSize(width: 340, height: 640)
+        #endif
     }
 }
