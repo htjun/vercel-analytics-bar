@@ -147,15 +147,17 @@
 
         static let developmentURL = URL(string: "http://127.0.0.1:5173/")!
         static let developmentEnvironmentKey = "CHART_INSPECTOR_DEV_SERVER"
+        static let developmentArgument = "--chart-inspector-dev-server"
 
         let entryURL: URL
         let kind: Kind
 
         static func resolve(
             environment: [String: String] = ProcessInfo.processInfo.environment,
+            arguments: [String] = ProcessInfo.processInfo.arguments,
             bundle: Bundle = .main
         ) throws -> ChartInspectorSource {
-            if environment[developmentEnvironmentKey] == "1" {
+            if environment[developmentEnvironmentKey] == "1" || arguments.contains(developmentArgument) {
                 return ChartInspectorSource(entryURL: developmentURL, kind: .developmentServer)
             }
 

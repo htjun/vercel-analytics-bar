@@ -11,6 +11,7 @@ The application connects directly to Vercel, discovers projects across the accou
 - Displays Visitors and Page Views totals with equal-period comparisons after a live API request.
 - Switches among Last 24 Hours, Last 7 Days, and Last 30 Days, defaults to Last 7 Days, and persists the selected range.
 - Renders the selected range's Visitors trend with a native line and area chart.
+- Provides a Debug-only Chart Inspector for live tuning the native chart with DialKit controls.
 - Shows a chart icon and abbreviated Last 24 Hours Visitors count in the menu bar after the first successful load.
 - Opens a Settings window and terminates from the Quit button.
 - Includes an independent chart app icon and a monochrome chart menu-bar icon.
@@ -43,18 +44,22 @@ The app intentionally uses only Vercel's documented public PAT endpoints. Vercel
 - macOS 14 or later
 - Xcode 16.4 or later with Swift 6 support
 - [Homebrew](https://brew.sh/) for development-tool bootstrap
+- Node.js 20.16 or later for Chart Inspector development and verification
 
 The project currently targets Swift 6 language mode while remaining compatible with the locally validated Xcode 16.4 and Swift 6.1.2 toolchain.
 
 ## Bootstrap
 
-Install Mint, SwiftFormat 0.58.5, and SwiftLint 0.59.1:
+Install Node.js, Mint, SwiftFormat 0.58.5, and SwiftLint 0.59.1, then restore the locked Inspector
+dependencies:
 
 ```sh
 make bootstrap
 ```
 
-Application runtime dependencies remain limited to Apple frameworks. SwiftFormat and SwiftLint are development-only tools pinned in `Mintfile`.
+Application runtime dependencies remain limited to Apple frameworks. SwiftFormat and SwiftLint are
+development-only tools pinned in `Mintfile`; React, DialKit, and Vite are Debug Inspector tooling
+pinned by `Tools/ChartInspector/package-lock.json`.
 
 ## Open and run
 
@@ -74,6 +79,39 @@ make open
 
 The Debug configuration uses the temporary development bundle identifier `com.jasonjun.VercelAnalyticsBar`. A final identifier and Apple Developer Team are required only before distribution.
 
+## Tune the chart
+
+An ordinary Debug build contains a self-contained Chart Inspector and does not need Node.js or a
+running development server at runtime. Start the app with `make run`, open the menu-bar panel, and
+choose **Chart Inspector**. Repeating the action brings the existing Inspector window forward.
+
+The Inspector controls line color, width, cap, and join; area opacities; chart height; axis density;
+Y-scale headroom; and grid/X/Y label visibility. Changes are applied immediately to Swift Charts
+without refreshing analytics. **Reset to defaults** restores the code-defined style, and **Copy
+canonical JSON** copies the validated native state.
+
+For React/DialKit hot reload, use two terminals:
+
+```sh
+# Terminal 1
+make inspector-dev
+
+# Terminal 2
+make run-inspector
+```
+
+Development mode accepts only `http://127.0.0.1:5173`. Stop any running copy of the app before
+switching between bundled and hot-reload modes. To regenerate the committed self-contained assets
+after changing the web project, run:
+
+```sh
+make inspector-build
+```
+
+Inspector-enabled builds set `WKWebView.isInspectable`, so the embedded page can also be inspected
+from Safari's Develop menu. Direct and App Store release configurations omit the Inspector scene,
+bridge, and web resources.
+
 ## Probe the public API
 
 To verify the public Vercel API contract with a local account:
@@ -92,7 +130,10 @@ Run the complete local quality gate:
 make verify
 ```
 
-The command checks repository language policy, formatting, lint, Core package tests, application tests, and unsigned direct/App Store builds. It requires no Apple signing identity or Vercel account.
+The command checks repository language policy, formatting, lint, web tests and bundle freshness,
+Core package tests, application tests, the Debug Inspector bundle, unsigned direct/App Store builds,
+and Inspector exclusion from release artifacts. It requires no Apple signing identity or Vercel
+account.
 
 For tests without formatting and lint checks, run:
 
@@ -102,7 +143,9 @@ make test
 
 ## Architecture
 
-The checked-in Xcode project owns the application bundle, SwiftUI lifecycle, menu bar UI, Settings scene, Login Items integration, asset catalog, sandbox metadata, signing configuration, and app tests.
+The checked-in Xcode project owns the application bundle, SwiftUI lifecycle, menu bar UI, Settings
+scene, Debug-only Chart Inspector scene and WebKit bridge, Login Items integration, asset catalog,
+sandbox metadata, signing configuration, and app tests.
 
 The local `VercelAnalyticsCore` Swift package owns stable analytics domain values, the typed `VercelAPIClient`, project discovery, ranged snapshots, equal-period comparison calculation, and the `AnalyticsSnapshotProviding` boundary. The app injects token-based project and analytics providers into a main-actor observable model, which owns account connection, project selection, current-project switching, persisted range selection, refresh coordination, and menu-bar metric state. Fixture providers remain test-only. The API client accepts an injected HTTP transport for deterministic tests; its Vercel DTOs stay internal and tokens or response bodies are never included in client errors. The app's credential boundary uses Security Keychain APIs, while selected project IDs, the current project, account preferences, and versioned snapshot cache use injected stores so disconnect and recovery behavior are testable. Snapshot cache entries are keyed by project and analytics range and are persisted under Application Support; corrupt or incompatible files are discarded.
 
@@ -114,6 +157,7 @@ Build configurations are separated into Debug, direct-release, and App Store rel
 Config/                         Shared Xcode build settings
 Packages/VercelAnalyticsCore/  Domain models, API client, providers, and Core tests
 Scripts/                        Bootstrap and verification entry points
+Tools/ChartInspector/           React, DialKit, Vite, and TypeScript bridge tests
 VercelAnalyticsBar/             Application composition, Keychain boundary, and SwiftUI features
 VercelAnalyticsBarTests/        Main-actor application behavior tests
 ```

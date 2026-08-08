@@ -134,17 +134,24 @@
         }
 
         @Test func sourceSelectionDefaultsToBundleAndRequiresExplicitDevelopmentMode() throws {
-            let bundled = try ChartInspectorSource.resolve(environment: [:])
+            let bundled = try ChartInspectorSource.resolve(environment: [:], arguments: [])
             guard case .bundled = bundled.kind else {
                 Issue.record("Expected bundled Inspector source")
                 return
             }
 
             let development = try ChartInspectorSource.resolve(
-                environment: [ChartInspectorSource.developmentEnvironmentKey: "1"]
+                environment: [ChartInspectorSource.developmentEnvironmentKey: "1"],
+                arguments: []
             )
             #expect(development.kind == .developmentServer)
             #expect(development.entryURL == ChartInspectorSource.developmentURL)
+
+            let argumentDevelopment = try ChartInspectorSource.resolve(
+                environment: [:],
+                arguments: [ChartInspectorSource.developmentArgument]
+            )
+            #expect(argumentDevelopment.kind == .developmentServer)
         }
 
         @Test func developmentSourceRequiresTheExactLoopbackOrigin() throws {

@@ -12,5 +12,6 @@ fi
 brew bundle --file="$REPOSITORY_ROOT/Brewfile"
 cd "$REPOSITORY_ROOT"
 mint bootstrap
+npm --prefix Tools/ChartInspector ci --ignore-scripts
 
 echo "Development tools are ready."

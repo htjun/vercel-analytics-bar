@@ -5,13 +5,19 @@ DERIVED_DATA_PATH := .build/DerivedData
 DEBUG_APP_PATH := $(DERIVED_DATA_PATH)/Build/Products/Debug/VercelAnalyticsBar.app
 XCODEBUILD := xcodebuild -project $(PROJECT) -scheme $(SCHEME) -destination 'platform=macOS,arch=$(HOST_ARCHITECTURE)' CODE_SIGNING_ALLOWED=NO
 
-.PHONY: bootstrap format open probe run test verify
+.PHONY: bootstrap format inspector-build inspector-dev open probe run run-inspector test verify
 
 bootstrap:
 	Scripts/bootstrap.sh
 
 format:
 	mint run nicklockwood/SwiftFormat@0.58.5 swiftformat .
+
+inspector-build:
+	npm --prefix Tools/ChartInspector run build
+
+inspector-dev:
+	npm --prefix Tools/ChartInspector run dev
 
 open:
 	open $(PROJECT)
@@ -23,7 +29,12 @@ run:
 	$(XCODEBUILD) -configuration Debug -derivedDataPath $(DERIVED_DATA_PATH) build
 	open $(DEBUG_APP_PATH)
 
+run-inspector:
+	$(XCODEBUILD) -configuration Debug -derivedDataPath $(DERIVED_DATA_PATH) build
+	open $(DEBUG_APP_PATH) --args --chart-inspector-dev-server
+
 test:
+	npm --prefix Tools/ChartInspector test
 	swift test --package-path Packages/VercelAnalyticsCore
 	$(XCODEBUILD) -configuration Debug -derivedDataPath $(DERIVED_DATA_PATH) test
 
