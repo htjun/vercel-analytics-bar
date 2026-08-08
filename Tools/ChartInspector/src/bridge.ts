@@ -1,6 +1,7 @@
 export const INSPECTOR_PROTOCOL_VERSION = 1;
 export const INSPECTOR_SOURCE = "chart-inspector";
 export const NATIVE_SOURCE = "vercel-analytics-bar";
+export const MAX_INSPECTOR_REVISION = 1_000_000_000;
 
 export type ChartLineCap = "butt" | "round" | "square";
 export type ChartLineJoin = "miter" | "round" | "bevel";
@@ -72,6 +73,9 @@ export class ChartInspectorBridge {
     if (!isNativeStateMessage(value)) {
       return false;
     }
+    if (this.currentState !== undefined && value.revision < this.currentState.revision) {
+      return false;
+    }
 
     this.currentState = value;
     this.lastPostedStyle = undefined;
@@ -84,10 +88,13 @@ export class ChartInspectorBridge {
     if (this.currentState === undefined) {
       return false;
     }
+    if (this.nextRevision > MAX_INSPECTOR_REVISION) {
+      return false;
+    }
 
     const serializedStyle = serializeStyle(style);
     if (
-      stylesAreEquivalent(style, this.currentState.values) ||
+      chartStylesAreEquivalent(style, this.currentState.values) ||
       serializedStyle === this.lastPostedStyle
     ) {
       return false;
@@ -135,7 +142,7 @@ export class ChartInspectorBridge {
 
 export function createBrowserBridge(): ChartInspectorBridge {
   return new ChartInspectorBridge((message) => {
-    window.webkit?.messageHandlers.chartStyle.postMessage(message);
+    window.webkit?.messageHandlers?.chartStyle?.postMessage(message);
   });
 }
 
@@ -151,6 +158,7 @@ function isNativeStateMessage(value: unknown): value is NativeStateMessage {
     Number.isInteger(value.revision) &&
     typeof value.revision === "number" &&
     value.revision >= 0 &&
+    value.revision <= MAX_INSPECTOR_REVISION &&
     isChartStyle(value.values)
   );
 }
@@ -193,7 +201,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function stylesAreEquivalent(left: ChartStyle, right: ChartStyle): boolean {
+export function chartStylesAreEquivalent(left: ChartStyle, right: ChartStyle): boolean {
   if (serializeStyle(left) === serializeStyle(right)) {
     return true;
   }
@@ -210,8 +218,8 @@ declare global {
   interface Window {
     __chartInspectorReceiveState?: (message: unknown) => void;
     webkit?: {
-      messageHandlers: {
-        chartStyle: {
+      messageHandlers?: {
+        chartStyle?: {
           postMessage: (message: WebMessage) => void;
         };
       };

@@ -3,6 +3,7 @@
 
     enum ChartInspectorProtocol {
         static let version = 1
+        static let maximumRevision = 1_000_000_000
         static let webSource = "chart-inspector"
         static let nativeSource = "vercel-analytics-bar"
     }
@@ -57,6 +58,7 @@
         case unexpectedSource
         case missingStyle
         case notReady
+        case invalidRevision
         case staleRevision
     }
 
@@ -96,7 +98,12 @@
                 guard let style = message.values else {
                     throw ChartInspectorProtocolError.missingStyle
                 }
-                guard let incomingRevision = message.revision, incomingRevision > revision else {
+                guard let incomingRevision = message.revision,
+                      (1 ... ChartInspectorProtocol.maximumRevision).contains(incomingRevision)
+                else {
+                    throw ChartInspectorProtocolError.invalidRevision
+                }
+                guard incomingRevision > revision else {
                     throw ChartInspectorProtocolError.staleRevision
                 }
                 styleStore.update(style)
@@ -104,6 +111,9 @@
                 copiedStyleJSON = nil
             case .reset:
                 try requireReady()
+                guard revision < ChartInspectorProtocol.maximumRevision else {
+                    throw ChartInspectorProtocolError.invalidRevision
+                }
                 styleStore.reset()
                 revision += 1
                 copiedStyleJSON = nil

@@ -4,6 +4,7 @@ import {
   ChartStyle,
   INSPECTOR_PROTOCOL_VERSION,
   NATIVE_SOURCE,
+  MAX_INSPECTOR_REVISION,
 } from "./bridge";
 
 const defaultStyle: ChartStyle = {
@@ -84,6 +85,37 @@ describe("ChartInspectorBridge", () => {
         values: changedStyle,
       },
     ]);
+  });
+
+  it("rejects stale and out-of-range native revisions", () => {
+    const bridge = new ChartInspectorBridge(() => undefined);
+    expect(
+      bridge.receiveState({
+        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        type: "state",
+        source: NATIVE_SOURCE,
+        revision: 8,
+        values: defaultStyle,
+      }),
+    ).toBe(true);
+    expect(
+      bridge.receiveState({
+        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        type: "state",
+        source: NATIVE_SOURCE,
+        revision: 7,
+        values: defaultStyle,
+      }),
+    ).toBe(false);
+    expect(
+      bridge.receiveState({
+        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        type: "state",
+        source: NATIVE_SOURCE,
+        revision: MAX_INSPECTOR_REVISION + 1,
+        values: defaultStyle,
+      }),
+    ).toBe(false);
   });
 
   it("treats the displayed system accent as equivalent until edited", () => {

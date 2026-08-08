@@ -41,6 +41,36 @@
             #expect(throws: ChartInspectorProtocolError.staleRevision) {
                 try session.receive(styleChange)
             }
+
+            let invalidRevision = ChartInspectorIncomingMessage(
+                protocolVersion: 1,
+                type: .styleChanged,
+                source: "chart-inspector",
+                revision: ChartInspectorProtocol.maximumRevision + 1,
+                values: changedStyle
+            )
+            #expect(throws: ChartInspectorProtocolError.invalidRevision) {
+                try session.receive(invalidRevision)
+            }
+        }
+
+        @Test func maximumRevisionCannotOverflowDuringReset() throws {
+            let store = ChartStyleStore()
+            let session = ChartInspectorSession(styleStore: store)
+            _ = try session.receive(readyMessage)
+            _ = try session.receive(
+                ChartInspectorIncomingMessage(
+                    protocolVersion: 1,
+                    type: .styleChanged,
+                    source: "chart-inspector",
+                    revision: ChartInspectorProtocol.maximumRevision,
+                    values: .default
+                )
+            )
+
+            #expect(throws: ChartInspectorProtocolError.invalidRevision) {
+                try session.receive(commandMessage(.reset))
+            }
         }
 
         @Test func everyStyleFieldRoundTripsThroughTheCanonicalNativeBoundary() throws {

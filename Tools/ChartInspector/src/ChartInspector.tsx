@@ -1,11 +1,12 @@
 import { DialRoot, useDialKitController } from "dialkit";
 import type { ResolvedValues } from "dialkit";
 import "dialkit/styles.css";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChartLineCap,
   ChartLineJoin,
   ChartStyle,
+  chartStylesAreEquivalent,
   createBrowserBridge,
 } from "./bridge";
 
@@ -47,6 +48,7 @@ const chartConfig = {
 
 export function ChartInspector() {
   const [nativeStyle, setNativeStyle] = useState<ChartStyle>();
+  const suppressNextStylePost = useRef(false);
   const dial = useDialKitController("Visitors Chart", chartConfig, {
     id: "vercel-analytics-visitors-chart",
     onAction: (action) => {
@@ -58,6 +60,7 @@ export function ChartInspector() {
     },
   });
   const setDialValues = dial.setValues;
+  const getDialValues = dial.getValues;
   const values = dial.values;
   const nextStyle = useMemo(
     () => (nativeStyle === undefined ? undefined : styleFromDialValues(values)),
@@ -67,6 +70,8 @@ export function ChartInspector() {
   useEffect(() => {
     window.__chartInspectorReceiveState = (message) => bridge.receiveState(message);
     const unsubscribe = bridge.subscribe((message) => {
+      const currentDialStyle = styleFromDialValues(getDialValues());
+      suppressNextStylePost.current = !chartStylesAreEquivalent(currentDialStyle, message.values);
       setNativeStyle(message.values);
       setDialValues(dialValuesFromStyle(message.values));
     });
@@ -76,10 +81,14 @@ export function ChartInspector() {
       unsubscribe();
       delete window.__chartInspectorReceiveState;
     };
-  }, [setDialValues]);
+  }, [getDialValues, setDialValues]);
 
   useEffect(() => {
     if (nextStyle !== undefined) {
+      if (suppressNextStylePost.current) {
+        suppressNextStylePost.current = false;
+        return;
+      }
       bridge.postStyleChanged(nextStyle);
     }
   }, [nextStyle]);
