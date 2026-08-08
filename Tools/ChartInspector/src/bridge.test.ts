@@ -85,4 +85,81 @@ describe("ChartInspectorBridge", () => {
       },
     ]);
   });
+
+  it("treats the displayed system accent as equivalent until edited", () => {
+    const messages: unknown[] = [];
+    const bridge = new ChartInspectorBridge((message) => messages.push(message));
+    bridge.receiveState({
+      protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+      type: "state",
+      source: NATIVE_SOURCE,
+      revision: 0,
+      values: defaultStyle,
+    });
+
+    expect(bridge.postStyleChanged({ ...defaultStyle, lineColor: "#007AFF" })).toBe(false);
+    expect(bridge.postStyleChanged({ ...defaultStyle, lineColor: "#FF3B30" })).toBe(true);
+  });
+
+  it("posts reset and copy only after hydration", () => {
+    const messages: unknown[] = [];
+    const bridge = new ChartInspectorBridge((message) => messages.push(message));
+
+    bridge.postReset();
+    bridge.postCopyStyle();
+    expect(messages).toEqual([]);
+
+    bridge.receiveState({
+      protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+      type: "state",
+      source: NATIVE_SOURCE,
+      revision: 3,
+      values: defaultStyle,
+    });
+    bridge.postReset();
+    bridge.postCopyStyle();
+
+    expect(messages).toEqual([
+      {
+        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        type: "reset",
+        source: "chart-inspector",
+      },
+      {
+        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        type: "copyStyle",
+        source: "chart-inspector",
+      },
+    ]);
+  });
+
+  it("rejects an invalid native value for every style field", () => {
+    const invalidValues: Partial<ChartStyle>[] = [
+      { lineColor: "red" },
+      { lineWidth: Number.NaN },
+      { lineCap: "curved" as ChartStyle["lineCap"] },
+      { lineJoin: "curved" as ChartStyle["lineJoin"] },
+      { areaTopOpacity: 1.1 },
+      { areaBottomOpacity: -0.1 },
+      { chartHeight: 79 },
+      { axisMarkCount: 4.5 },
+      { yScaleHeadroom: Number.POSITIVE_INFINITY },
+      { showsGridLines: "yes" as unknown as boolean },
+      { showsXAxisLabels: 1 as unknown as boolean },
+      { showsYAxisLabels: null as unknown as boolean },
+    ];
+
+    for (const invalidValue of invalidValues) {
+      const bridge = new ChartInspectorBridge(() => undefined);
+      expect(
+        bridge.receiveState({
+          protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+          type: "state",
+          source: NATIVE_SOURCE,
+          revision: 0,
+          values: { ...defaultStyle, ...invalidValue },
+        }),
+      ).toBe(false);
+    }
+  });
 });

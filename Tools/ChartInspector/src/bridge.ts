@@ -42,7 +42,13 @@ export interface WebStyleChangedMessage {
   values: ChartStyle;
 }
 
-type WebMessage = WebReadyMessage | WebStyleChangedMessage;
+export interface WebCommandMessage {
+  protocolVersion: number;
+  type: "reset" | "copyStyle";
+  source: string;
+}
+
+type WebMessage = WebReadyMessage | WebStyleChangedMessage | WebCommandMessage;
 type MessageSender = (message: WebMessage) => void;
 type StateListener = (message: NativeStateMessage) => void;
 
@@ -79,9 +85,9 @@ export class ChartInspectorBridge {
       return false;
     }
 
-    const serializedStyle = JSON.stringify(style);
+    const serializedStyle = serializeStyle(style);
     if (
-      serializedStyle === JSON.stringify(this.currentState.values) ||
+      stylesAreEquivalent(style, this.currentState.values) ||
       serializedStyle === this.lastPostedStyle
     ) {
       return false;
@@ -99,12 +105,31 @@ export class ChartInspectorBridge {
     return true;
   }
 
+  postReset(): void {
+    this.postCommand("reset");
+  }
+
+  postCopyStyle(): void {
+    this.postCommand("copyStyle");
+  }
+
   subscribe(listener: StateListener): () => void {
     this.listeners.add(listener);
     if (this.currentState !== undefined) {
       listener(this.currentState);
     }
     return () => this.listeners.delete(listener);
+  }
+
+  private postCommand(type: WebCommandMessage["type"]): void {
+    if (this.currentState === undefined) {
+      return;
+    }
+    this.send({
+      protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+      type,
+      source: INSPECTOR_SOURCE,
+    });
   }
 }
 
@@ -166,6 +191,19 @@ function isOneOf<T extends string>(value: unknown, values: readonly T[]): value 
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function stylesAreEquivalent(left: ChartStyle, right: ChartStyle): boolean {
+  if (serializeStyle(left) === serializeStyle(right)) {
+    return true;
+  }
+
+  const accentEquivalent = left.lineColor === "#007AFF" && right.lineColor === "accent";
+  return accentEquivalent && serializeStyle({ ...left, lineColor: "accent" }) === serializeStyle(right);
+}
+
+function serializeStyle(style: ChartStyle): string {
+  return JSON.stringify(style);
 }
 
 declare global {

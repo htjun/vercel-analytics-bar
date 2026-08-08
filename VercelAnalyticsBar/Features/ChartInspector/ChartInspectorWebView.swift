@@ -1,4 +1,5 @@
 #if CHART_INSPECTOR
+    import AppKit
     import SwiftUI
     import WebKit
 
@@ -60,8 +61,11 @@
                     return
                 }
 
-                guard let state = try? session.receive(body: message.body) else { return }
-                send(state)
+                guard let response = try? session.receive(body: message.body) else { return }
+                if let copiedStyleJSON = response.copiedStyleJSON {
+                    copyToPasteboard(copiedStyleJSON)
+                }
+                send(response.state)
             }
 
             func webView(
@@ -95,6 +99,11 @@
                         contentWorld: .page
                     )
                 }
+            }
+
+            private func copyToPasteboard(_ value: String) {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(value, forType: .string)
             }
         }
     }

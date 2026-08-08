@@ -8,7 +8,9 @@
     }
 
     enum ChartInspectorIncomingMessageType: String, Codable {
+        case copyStyle
         case ready
+        case reset
         case styleChanged
     }
 
@@ -44,6 +46,11 @@
         }
     }
 
+    struct ChartInspectorSessionResponse: Equatable {
+        let state: ChartInspectorStateMessage
+        let copiedStyleJSON: String?
+    }
+
     enum ChartInspectorProtocolError: Error, Equatable {
         case invalidBody
         case unexpectedProtocolVersion
@@ -63,11 +70,11 @@
             self.styleStore = styleStore
         }
 
-        func receive(body: Any) throws -> ChartInspectorStateMessage {
+        func receive(body: Any) throws -> ChartInspectorSessionResponse {
             try receive(ChartInspectorIncomingMessage.decode(body: body))
         }
 
-        func receive(_ message: ChartInspectorIncomingMessage) throws -> ChartInspectorStateMessage {
+        func receive(_ message: ChartInspectorIncomingMessage) throws -> ChartInspectorSessionResponse {
             guard message.protocolVersion == ChartInspectorProtocol.version else {
                 throw ChartInspectorProtocolError.unexpectedProtocolVersion
             }
@@ -75,13 +82,13 @@
                 throw ChartInspectorProtocolError.unexpectedSource
             }
 
+            let copiedStyleJSON: String?
             switch message.type {
             case .ready:
                 isReady = true
+                copiedStyleJSON = nil
             case .styleChanged:
-                guard isReady else {
-                    throw ChartInspectorProtocolError.notReady
-                }
+                try requireReady()
                 guard let style = message.values else {
                     throw ChartInspectorProtocolError.missingStyle
                 }
@@ -90,13 +97,41 @@
                 }
                 styleStore.update(style)
                 revision = incomingRevision
+                copiedStyleJSON = nil
+            case .reset:
+                try requireReady()
+                styleStore.reset()
+                revision += 1
+                copiedStyleJSON = nil
+            case .copyStyle:
+                try requireReady()
+                copiedStyleJSON = try canonicalStyleJSON()
             }
 
-            return stateMessage
+            return ChartInspectorSessionResponse(
+                state: stateMessage,
+                copiedStyleJSON: copiedStyleJSON
+            )
         }
 
         var stateMessage: ChartInspectorStateMessage {
             ChartInspectorStateMessage(revision: revision, values: styleStore.style)
+        }
+
+        private func requireReady() throws {
+            guard isReady else {
+                throw ChartInspectorProtocolError.notReady
+            }
+        }
+
+        private func canonicalStyleJSON() throws -> String {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            let data = try encoder.encode(styleStore.style)
+            guard let json = String(data: data, encoding: .utf8) else {
+                throw ChartInspectorProtocolError.invalidBody
+            }
+            return json
         }
     }
 

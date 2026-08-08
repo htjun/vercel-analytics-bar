@@ -56,6 +56,23 @@ struct ChartStyleTests {
         #expect(roundTrip == .default)
     }
 
+    @Test func decodingRejectsUnknownLineEnums() throws {
+        let encodedDefault = try JSONEncoder().encode(ChartStyle.default)
+        var object = try #require(JSONSerialization.jsonObject(with: encodedDefault) as? [String: Any])
+        object["lineCap"] = "curved"
+        let invalidCap = try JSONSerialization.data(withJSONObject: object)
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(ChartStyle.self, from: invalidCap)
+        }
+
+        object = try #require(JSONSerialization.jsonObject(with: encodedDefault) as? [String: Any])
+        object["lineJoin"] = "curved"
+        let invalidJoin = try JSONSerialization.data(withJSONObject: object)
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(ChartStyle.self, from: invalidJoin)
+        }
+    }
+
     @MainActor
     @Test func storePublishesValidatedStyleWithoutTouchingApplicationState() throws {
         let accountStore = InMemoryAccountDataStore()
