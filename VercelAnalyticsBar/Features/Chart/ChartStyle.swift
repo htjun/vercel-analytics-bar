@@ -1,0 +1,193 @@
+import Foundation
+import Observation
+
+enum ChartColor: Equatable, Sendable {
+    case accent
+    case rgb(red: UInt8, green: UInt8, blue: UInt8)
+
+    init?(rawValue: String) {
+        if rawValue == "accent" {
+            self = .accent
+            return
+        }
+
+        guard rawValue.count == 7, rawValue.first == "#" else { return nil }
+        let hex = rawValue.dropFirst()
+        guard let red = UInt8(hex.prefix(2), radix: 16),
+              let green = UInt8(hex.dropFirst(2).prefix(2), radix: 16),
+              let blue = UInt8(hex.suffix(2), radix: 16)
+        else {
+            return nil
+        }
+
+        self = .rgb(red: red, green: green, blue: blue)
+    }
+
+    var rawValue: String {
+        switch self {
+        case .accent:
+            "accent"
+        case let .rgb(red, green, blue):
+            String(format: "#%02X%02X%02X", red, green, blue)
+        }
+    }
+}
+
+extension ChartColor: Codable {
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+        guard let color = ChartColor(rawValue: rawValue) else {
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Expected accent or a six-digit hexadecimal color."
+            )
+        }
+        self = color
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
+    }
+}
+
+enum ChartLineCap: String, Codable, CaseIterable, Sendable {
+    case butt
+    case round
+    case square
+}
+
+enum ChartLineJoin: String, Codable, CaseIterable, Sendable {
+    case miter
+    case round
+    case bevel
+}
+
+enum ChartStyleValidationError: Error, Equatable {
+    case outOfRange(field: String, range: ClosedRange<Double>)
+}
+
+struct ChartStyle: Codable, Equatable, Sendable {
+    static let lineWidthRange = 0.5 ... 12.0
+    static let opacityRange = 0.0 ... 1.0
+    static let chartHeightRange = 80.0 ... 360.0
+    static let axisMarkCountRange = 2.0 ... 12.0
+    static let yScaleHeadroomRange = 0.0 ... 1.0
+
+    static let `default`: ChartStyle = {
+        do {
+            return try ChartStyle(
+                lineColor: .accent,
+                lineWidth: 2,
+                lineCap: .butt,
+                lineJoin: .miter,
+                areaTopOpacity: 0.24,
+                areaBottomOpacity: 0.03,
+                chartHeight: 140,
+                axisMarkCount: 4,
+                yScaleHeadroom: 0.1,
+                showsGridLines: true,
+                showsXAxisLabels: true,
+                showsYAxisLabels: true
+            )
+        } catch {
+            preconditionFailure("The code-defined chart style must be valid: \(error)")
+        }
+    }()
+
+    let lineColor: ChartColor
+    let lineWidth: Double
+    let lineCap: ChartLineCap
+    let lineJoin: ChartLineJoin
+    let areaTopOpacity: Double
+    let areaBottomOpacity: Double
+    let chartHeight: Double
+    let axisMarkCount: Int
+    let yScaleHeadroom: Double
+    let showsGridLines: Bool
+    let showsXAxisLabels: Bool
+    let showsYAxisLabels: Bool
+
+    init(
+        lineColor: ChartColor,
+        lineWidth: Double,
+        lineCap: ChartLineCap,
+        lineJoin: ChartLineJoin,
+        areaTopOpacity: Double,
+        areaBottomOpacity: Double,
+        chartHeight: Double,
+        axisMarkCount: Int,
+        yScaleHeadroom: Double,
+        showsGridLines: Bool,
+        showsXAxisLabels: Bool,
+        showsYAxisLabels: Bool
+    ) throws {
+        try Self.validate(lineWidth, field: "lineWidth", range: Self.lineWidthRange)
+        try Self.validate(areaTopOpacity, field: "areaTopOpacity", range: Self.opacityRange)
+        try Self.validate(areaBottomOpacity, field: "areaBottomOpacity", range: Self.opacityRange)
+        try Self.validate(chartHeight, field: "chartHeight", range: Self.chartHeightRange)
+        try Self.validate(Double(axisMarkCount), field: "axisMarkCount", range: Self.axisMarkCountRange)
+        try Self.validate(yScaleHeadroom, field: "yScaleHeadroom", range: Self.yScaleHeadroomRange)
+
+        self.lineColor = lineColor
+        self.lineWidth = lineWidth
+        self.lineCap = lineCap
+        self.lineJoin = lineJoin
+        self.areaTopOpacity = areaTopOpacity
+        self.areaBottomOpacity = areaBottomOpacity
+        self.chartHeight = chartHeight
+        self.axisMarkCount = axisMarkCount
+        self.yScaleHeadroom = yScaleHeadroom
+        self.showsGridLines = showsGridLines
+        self.showsXAxisLabels = showsXAxisLabels
+        self.showsYAxisLabels = showsYAxisLabels
+    }
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        try self.init(
+            lineColor: container.decode(ChartColor.self, forKey: .lineColor),
+            lineWidth: container.decode(Double.self, forKey: .lineWidth),
+            lineCap: container.decode(ChartLineCap.self, forKey: .lineCap),
+            lineJoin: container.decode(ChartLineJoin.self, forKey: .lineJoin),
+            areaTopOpacity: container.decode(Double.self, forKey: .areaTopOpacity),
+            areaBottomOpacity: container.decode(Double.self, forKey: .areaBottomOpacity),
+            chartHeight: container.decode(Double.self, forKey: .chartHeight),
+            axisMarkCount: container.decode(Int.self, forKey: .axisMarkCount),
+            yScaleHeadroom: container.decode(Double.self, forKey: .yScaleHeadroom),
+            showsGridLines: container.decode(Bool.self, forKey: .showsGridLines),
+            showsXAxisLabels: container.decode(Bool.self, forKey: .showsXAxisLabels),
+            showsYAxisLabels: container.decode(Bool.self, forKey: .showsYAxisLabels)
+        )
+    }
+
+    private static func validate(
+        _ value: Double,
+        field: String,
+        range: ClosedRange<Double>
+    ) throws {
+        guard value.isFinite, range.contains(value) else {
+            throw ChartStyleValidationError.outOfRange(field: field, range: range)
+        }
+    }
+}
+
+@MainActor
+@Observable
+final class ChartStyleStore {
+    private(set) var style: ChartStyle
+
+    init(style: ChartStyle = .default) {
+        self.style = style
+    }
+
+    func update(_ style: ChartStyle) {
+        guard style != self.style else { return }
+        self.style = style
+    }
+
+    func reset() {
+        update(.default)
+    }
+}

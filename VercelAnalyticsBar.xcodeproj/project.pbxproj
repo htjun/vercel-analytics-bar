@@ -25,6 +25,9 @@
 		A10000000000000000000014 /* LaunchAtLogin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000014 /* LaunchAtLogin.swift */; };
 		A10000000000000000000015 /* NativeIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000015 /* NativeIntegrationTests.swift */; };
 		A10000000000000000000016 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000016 /* Assets.xcassets */; };
+		A10000000000000000000017 /* ChartStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000017 /* ChartStyle.swift */; };
+		A10000000000000000000018 /* ChartStyleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000018 /* ChartStyleTests.swift */; };
+		A10000000000000000000019 /* VisitorsChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000019 /* VisitorsChart.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -62,6 +65,9 @@
 		A30000000000000000000014 /* LaunchAtLogin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLogin.swift; sourceTree = "<group>"; };
 		A30000000000000000000015 /* NativeIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeIntegrationTests.swift; sourceTree = "<group>"; };
 		A30000000000000000000016 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A30000000000000000000017 /* ChartStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartStyle.swift; sourceTree = "<group>"; };
+		A30000000000000000000018 /* ChartStyleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartStyleTests.swift; sourceTree = "<group>"; };
+		A30000000000000000000019 /* VisitorsChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisitorsChart.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -137,6 +143,7 @@
 				A30000000000000000000012 /* ConnectionErrorTests.swift */,
 				A30000000000000000000013 /* AppModelEdgeCaseTests.swift */,
 				A30000000000000000000015 /* NativeIntegrationTests.swift */,
+				A30000000000000000000018 /* ChartStyleTests.swift */,
 			);
 			path = VercelAnalyticsBarTests;
 			sourceTree = "<group>";
@@ -164,6 +171,7 @@
 		A40000000000000000000017 /* Features */ = {
 			isa = PBXGroup;
 			children = (
+				A4000000000000000000001B /* Chart */,
 				A40000000000000000000018 /* MenuBar */,
 				A40000000000000000000019 /* Settings */,
 			);
@@ -192,6 +200,15 @@
 				A30000000000000000000016 /* Assets.xcassets */,
 			);
 			path = Resources;
+			sourceTree = "<group>";
+		};
+		A4000000000000000000001B /* Chart */ = {
+			isa = PBXGroup;
+			children = (
+				A30000000000000000000017 /* ChartStyle.swift */,
+				A30000000000000000000019 /* VisitorsChart.swift */,
+			);
+			path = Chart;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -309,6 +326,8 @@
 				A1000000000000000000000F /* AnalyticsSnapshotCache.swift in Sources */,
 				A10000000000000000000010 /* AppModelRefresh.swift in Sources */,
 				A10000000000000000000014 /* LaunchAtLogin.swift in Sources */,
+				A10000000000000000000017 /* ChartStyle.swift in Sources */,
+				A10000000000000000000019 /* VisitorsChart.swift in Sources */,
 				A10000000000000000000006 /* MenuBarRootView.swift in Sources */,
 				A10000000000000000000007 /* SettingsRootView.swift in Sources */,
 			);
@@ -324,6 +343,7 @@
 				A10000000000000000000012 /* ConnectionErrorTests.swift in Sources */,
 				A10000000000000000000013 /* AppModelEdgeCaseTests.swift in Sources */,
 				A10000000000000000000015 /* NativeIntegrationTests.swift in Sources */,
+				A10000000000000000000018 /* ChartStyleTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

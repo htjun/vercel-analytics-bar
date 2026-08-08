@@ -1,0 +1,108 @@
+import Charts
+import SwiftUI
+import VercelAnalyticsCore
+
+struct VisitorsChart: View {
+    let points: [VercelAnalyticsPoint]
+    let style: ChartStyle
+
+    var body: some View {
+        let lineColor = Color(style.lineColor)
+
+        Chart(points, id: \.timestamp) { point in
+            AreaMark(
+                x: .value("Time", point.timestamp),
+                y: .value("Visitors", point.visitors)
+            )
+            .foregroundStyle(
+                .linearGradient(
+                    colors: [
+                        lineColor.opacity(style.areaTopOpacity),
+                        lineColor.opacity(style.areaBottomOpacity),
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+
+            LineMark(
+                x: .value("Time", point.timestamp),
+                y: .value("Visitors", point.visitors)
+            )
+            .foregroundStyle(lineColor)
+            .lineStyle(
+                StrokeStyle(
+                    lineWidth: style.lineWidth,
+                    lineCap: style.lineCap.cgLineCap,
+                    lineJoin: style.lineJoin.cgLineJoin
+                )
+            )
+        }
+        .chartLegend(.hidden)
+        .chartXAxis {
+            AxisMarks(values: .automatic(desiredCount: style.axisMarkCount)) { _ in
+                if style.showsGridLines {
+                    AxisGridLine()
+                }
+                AxisTick()
+                if style.showsXAxisLabels {
+                    AxisValueLabel()
+                }
+            }
+        }
+        .chartYAxis {
+            AxisMarks(position: .leading, values: .automatic(desiredCount: style.axisMarkCount)) { _ in
+                if style.showsGridLines {
+                    AxisGridLine()
+                }
+                AxisTick()
+                if style.showsYAxisLabels {
+                    AxisValueLabel()
+                }
+            }
+        }
+        .chartYScale(domain: 0 ... chartMaximum)
+        .frame(height: style.chartHeight)
+        .accessibilityLabel("Visitors over time")
+    }
+
+    private var chartMaximum: Int {
+        let maximum = points.map(\.visitors).max() ?? 0
+        return max(1, maximum + max(1, Int(Double(maximum) * style.yScaleHeadroom)))
+    }
+}
+
+private extension Color {
+    init(_ chartColor: ChartColor) {
+        switch chartColor {
+        case .accent:
+            self = .accentColor
+        case let .rgb(red, green, blue):
+            self.init(
+                red: Double(red) / 255,
+                green: Double(green) / 255,
+                blue: Double(blue) / 255
+            )
+        }
+    }
+}
+
+private extension ChartLineCap {
+    var cgLineCap: CGLineCap {
+        switch self {
+        case .butt: .butt
+        case .round: .round
+        case .square: .square
+        }
+    }
+}
+
+private extension ChartLineJoin {
+    var cgLineJoin: CGLineJoin {
+        switch self {
+        case .miter: .miter
+        case .round: .round
+        case .bevel: .bevel
+        }
+    }
+}

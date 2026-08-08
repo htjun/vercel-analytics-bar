@@ -1,10 +1,10 @@
 import AppKit
-import Charts
 import SwiftUI
 import VercelAnalyticsCore
 
 struct MenuBarRootView: View {
     let model: AppModel
+    let chartStyle: ChartStyleStore
     @State private var isProjectSelectorPresented = false
     @State private var projectSearchQuery = ""
 
@@ -118,7 +118,7 @@ struct MenuBarRootView: View {
                         .frame(maxWidth: .infinity, minHeight: 140)
                         .foregroundStyle(.secondary)
                 } else {
-                    visitorsChart(snapshot.series)
+                    VisitorsChart(points: snapshot.series, style: chartStyle.style)
                 }
             }
 
@@ -206,44 +206,6 @@ struct MenuBarRootView: View {
                 }
             }
         )
-    }
-
-    private func visitorsChart(_ points: [VercelAnalyticsPoint]) -> some View {
-        Chart(points, id: \.timestamp) { point in
-            AreaMark(
-                x: .value("Time", point.timestamp),
-                y: .value("Visitors", point.visitors)
-            )
-            .foregroundStyle(
-                .linearGradient(
-                    colors: [.accentColor.opacity(0.24), .accentColor.opacity(0.03)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-
-            LineMark(
-                x: .value("Time", point.timestamp),
-                y: .value("Visitors", point.visitors)
-            )
-            .foregroundStyle(Color.accentColor)
-            .lineStyle(StrokeStyle(lineWidth: 2))
-        }
-        .chartLegend(.hidden)
-        .chartXAxis {
-            AxisMarks(values: .automatic(desiredCount: 4))
-        }
-        .chartYAxis {
-            AxisMarks(position: .leading, values: .automatic(desiredCount: 4))
-        }
-        .chartYScale(domain: 0 ... visitorsChartMaximum(points))
-        .frame(height: 140)
-        .accessibilityLabel("Visitors over time")
-    }
-
-    private func visitorsChartMaximum(_ points: [VercelAnalyticsPoint]) -> Int {
-        let maximum = points.map(\.visitors).max() ?? 0
-        return max(1, maximum + max(1, maximum / 10))
     }
 }
 

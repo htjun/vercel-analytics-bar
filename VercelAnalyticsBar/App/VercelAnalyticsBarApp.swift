@@ -5,6 +5,7 @@ import VercelAnalyticsCore
 @MainActor
 struct VercelAnalyticsBarApp: App {
     @State private var model: AppModel
+    @State private var chartStyle = ChartStyleStore()
 
     init() {
         let model = AppModel(
@@ -21,7 +22,7 @@ struct VercelAnalyticsBarApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            MenuBarRootView(model: model)
+            MenuBarRootView(model: model, chartStyle: chartStyle)
         } label: {
             HStack(spacing: 4) {
                 Image("MenuBarChart")
