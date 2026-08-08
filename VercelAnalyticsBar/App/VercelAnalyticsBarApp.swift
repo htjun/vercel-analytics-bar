@@ -22,7 +22,11 @@ struct VercelAnalyticsBarApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            MenuBarRootView(model: model, chartStyle: chartStyle)
+            MenuBarRootView(
+                model: model,
+                chartStyle: chartStyle,
+                isChartInspectorEnabled: isChartInspectorEnabled
+            )
         } label: {
             HStack(spacing: 4) {
                 Image("MenuBarChart")
@@ -43,9 +47,18 @@ struct VercelAnalyticsBarApp: App {
 
         #if CHART_INSPECTOR
             Window("Chart Inspector", id: ChartInspectorScene.id) {
-                ChartInspectorView(styleStore: chartStyle)
+                ChartInspectorView(analyticsState: model.state, styleStore: chartStyle)
             }
-            .defaultSize(width: 340, height: 640)
+            .defaultSize(width: 820, height: 640)
+            .windowResizability(.contentMinSize)
+        #endif
+    }
+
+    private var isChartInspectorEnabled: Bool {
+        #if CHART_INSPECTOR
+            ChartInspectorSource.isInspectorEnabled()
+        #else
+            false
         #endif
     }
 }

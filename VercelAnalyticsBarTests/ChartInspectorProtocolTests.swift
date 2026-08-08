@@ -2,6 +2,7 @@
     import Foundation
     import Testing
     @testable import VercelAnalyticsBar
+    import VercelAnalyticsCore
 
     @MainActor
     @Suite("Chart Inspector protocol")
@@ -169,6 +170,22 @@
                 Issue.record("Expected bundled Inspector source")
                 return
             }
+            #expect(!ChartInspectorSource.isInspectorEnabled(environment: [:], arguments: []))
+
+            let bundledInspector = try ChartInspectorSource.resolve(
+                environment: [:],
+                arguments: [ChartInspectorSource.inspectorArgument]
+            )
+            guard case .bundled = bundledInspector.kind else {
+                Issue.record("Expected an explicitly enabled bundled Inspector source")
+                return
+            }
+            #expect(
+                ChartInspectorSource.isInspectorEnabled(
+                    environment: [:],
+                    arguments: [ChartInspectorSource.inspectorArgument]
+                )
+            )
 
             let development = try ChartInspectorSource.resolve(
                 environment: [ChartInspectorSource.developmentEnvironmentKey: "1"],
@@ -182,6 +199,12 @@
                 arguments: [ChartInspectorSource.developmentArgument]
             )
             #expect(argumentDevelopment.kind == .developmentServer)
+            #expect(
+                ChartInspectorSource.isInspectorEnabled(
+                    environment: [:],
+                    arguments: [ChartInspectorSource.developmentArgument]
+                )
+            )
         }
 
         @Test func developmentSourceRequiresTheExactLoopbackOrigin() throws {
@@ -251,6 +274,44 @@
                 revision: nil,
                 values: nil
             )
+        }
+    }
+
+    extension ChartInspectorProtocolTests {
+        @Test func previewUsesTheLiveSnapshotSeriesAndSourceLabel() {
+            let snapshot = AnalyticsSnapshot.fixture
+            let preview = ChartInspectorPreview(analyticsState: .loaded(snapshot))
+
+            #expect(preview.points == snapshot.series)
+            #expect(preview.source == .live(projectName: snapshot.projectName, range: snapshot.range))
+            #expect(preview.sourceLabel == "Live \u{00B7} Acme Storefront \u{00B7} Last 7 Days")
+        }
+
+        @Test func previewUsesSampleDataUntilANonEmptyLiveSeriesIsAvailable() {
+            let emptySnapshot = AnalyticsSnapshot(
+                projectName: "Empty",
+                range: .last7Days,
+                visitors: AnalyticsMetric(label: "Visitors", value: 0, previousValue: 0),
+                pageViews: AnalyticsMetric(label: "Page Views", value: 0, previousValue: 0),
+                series: [],
+                last24HoursVisitors: 0,
+                refreshedAt: .distantPast
+            )
+
+            let loadingPreview = ChartInspectorPreview(analyticsState: .loading)
+            let emptyStatePreview = ChartInspectorPreview(analyticsState: .empty("No data"))
+            let failedPreview = ChartInspectorPreview(analyticsState: .failed("Unavailable"))
+            let emptySeriesPreview = ChartInspectorPreview(analyticsState: .loaded(emptySnapshot))
+            let livePreview = ChartInspectorPreview(analyticsState: .loaded(.fixture))
+
+            #expect(loadingPreview.source == .sample)
+            #expect(loadingPreview.sourceLabel == "Sample data")
+            #expect(loadingPreview.points == ChartInspectorPreview.samplePoints)
+            #expect(emptyStatePreview == loadingPreview)
+            #expect(failedPreview == loadingPreview)
+            #expect(emptySeriesPreview == loadingPreview)
+            #expect(livePreview.source != .sample)
+            #expect(livePreview.points == AnalyticsSnapshot.fixture.series)
         }
     }
 

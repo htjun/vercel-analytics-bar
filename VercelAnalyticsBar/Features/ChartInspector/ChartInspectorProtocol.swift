@@ -156,6 +156,7 @@
         }
 
         static let developmentURL = URL(string: "http://127.0.0.1:5173/")!
+        static let inspectorArgument = "--chart-inspector"
         static let developmentEnvironmentKey = "CHART_INSPECTOR_DEV_SERVER"
         static let developmentArgument = "--chart-inspector-dev-server"
 
@@ -167,7 +168,7 @@
             arguments: [String] = ProcessInfo.processInfo.arguments,
             bundle: Bundle = .main
         ) throws -> ChartInspectorSource {
-            if environment[developmentEnvironmentKey] == "1" || arguments.contains(developmentArgument) {
+            if usesDevelopmentServer(environment: environment, arguments: arguments) {
                 return ChartInspectorSource(entryURL: developmentURL, kind: .developmentServer)
             }
 
@@ -181,6 +182,16 @@
             return ChartInspectorSource(
                 entryURL: entryURL,
                 kind: .bundled(rootURL: entryURL.deletingLastPathComponent())
+            )
+        }
+
+        static func isInspectorEnabled(
+            environment: [String: String] = ProcessInfo.processInfo.environment,
+            arguments: [String] = ProcessInfo.processInfo.arguments
+        ) -> Bool {
+            arguments.contains(inspectorArgument) || usesDevelopmentServer(
+                environment: environment,
+                arguments: arguments
             )
         }
 
@@ -222,6 +233,13 @@
                 && url.port == developmentURL.port
                 && url.user == nil
                 && url.password == nil
+        }
+
+        private static func usesDevelopmentServer(
+            environment: [String: String],
+            arguments: [String]
+        ) -> Bool {
+            environment[developmentEnvironmentKey] == "1" || arguments.contains(developmentArgument)
         }
     }
 

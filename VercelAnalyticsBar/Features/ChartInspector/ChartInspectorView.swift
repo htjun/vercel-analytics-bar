@@ -1,16 +1,33 @@
 #if CHART_INSPECTOR
+    import Foundation
     import Observation
     import SwiftUI
+    import VercelAnalyticsCore
 
     enum ChartInspectorScene {
         static let id = "chart-inspector"
     }
 
     struct ChartInspectorView: View {
+        let analyticsState: AppModel.State
         let styleStore: ChartStyleStore
         @State private var pageState = ChartInspectorPageState()
 
         var body: some View {
+            let preview = ChartInspectorPreview(analyticsState: analyticsState)
+
+            HSplitView {
+                ChartInspectorPreviewView(preview: preview, style: styleStore.style)
+                    .frame(minWidth: 380, idealWidth: 380)
+
+                inspectorPanel
+                    .frame(minWidth: 340, maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(minWidth: 740, minHeight: 560)
+        }
+
+        private var inspectorPanel: some View {
             ZStack {
                 ChartInspectorWebView(
                     styleStore: styleStore,
@@ -37,7 +54,76 @@
                     }
                 }
             }
-            .frame(minWidth: 320, minHeight: 560)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    struct ChartInspectorPreviewView: View {
+        let preview: ChartInspectorPreview
+        let style: ChartStyle
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(preview.sourceLabel)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+
+                VisitorsChartSection(points: preview.points, style: style)
+            }
+            .padding(16)
+            .frame(width: 380, alignment: .leading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+    }
+
+    struct ChartInspectorPreview: Equatable {
+        enum Source: Equatable {
+            case live(projectName: String, range: VercelAnalyticsRange)
+            case sample
+        }
+
+        static let samplePoints = [
+            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 0), visitors: 18, pageViews: 32),
+            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 1), visitors: 26, pageViews: 45),
+            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 2), visitors: 12, pageViews: 22),
+            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 3), visitors: 13, pageViews: 23),
+            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 4), visitors: 28, pageViews: 48),
+            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 5), visitors: 42, pageViews: 71),
+            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 6), visitors: 14, pageViews: 25),
+            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 7), visitors: 21, pageViews: 37),
+            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 8), visitors: 286, pageViews: 492),
+            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 9), visitors: 254, pageViews: 439),
+            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 10), visitors: 157, pageViews: 274),
+            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 11), visitors: 196, pageViews: 342),
+            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 12), visitors: 28, pageViews: 49),
+            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 13), visitors: 7, pageViews: 13),
+        ]
+
+        let points: [VercelAnalyticsPoint]
+        let source: Source
+
+        init(analyticsState: AppModel.State) {
+            guard case let .loaded(snapshot) = analyticsState, !snapshot.series.isEmpty else {
+                points = Self.samplePoints
+                source = .sample
+                return
+            }
+
+            points = snapshot.series
+            source = .live(projectName: snapshot.projectName, range: snapshot.range)
+        }
+
+        var sourceLabel: String {
+            switch source {
+            case let .live(projectName, range):
+                "Live \u{00B7} \(projectName) \u{00B7} \(range.title)"
+            case .sample:
+                "Sample data"
+            }
+        }
+
+        private static func sampleDate(dayOffset: Int) -> Date {
+            Date(timeIntervalSince1970: 1_784_419_200 + Double(dayOffset * 86400))
         }
     }
 

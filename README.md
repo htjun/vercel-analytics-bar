@@ -81,9 +81,21 @@ The Debug configuration uses the temporary development bundle identifier `com.ja
 
 ## Tune the chart
 
-An ordinary Debug build contains a self-contained Chart Inspector and does not need Node.js or a
-running development server at runtime. Start the app with `make run`, open the menu-bar panel, and
-choose **Chart Inspector**. Repeating the action brings the existing Inspector window forward.
+The normal application launch keeps development controls out of the menu-bar panel:
+
+```sh
+make run
+```
+
+To use the self-contained bundled Inspector without Node.js or a running development server, opt in
+explicitly:
+
+```sh
+make run-inspector-bundled
+```
+
+Then open the menu-bar panel and choose **Chart Inspector**. Repeating the action brings the existing
+Inspector window forward.
 
 The Inspector controls line color, width, cap, and join; area opacities; chart height; axis density;
 Y-scale headroom; and grid/X/Y label visibility. Changes are applied immediately to Swift Charts
@@ -101,8 +113,8 @@ make run-inspector
 ```
 
 Development mode accepts only `http://127.0.0.1:5173`. Stop any running copy of the app before
-switching between bundled and hot-reload modes. To regenerate the committed self-contained assets
-after changing the web project, run:
+switching between normal, bundled Inspector, and hot-reload modes. To regenerate the committed
+self-contained assets after changing the web project, run:
 
 ```sh
 make inspector-build

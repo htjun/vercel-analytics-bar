@@ -5,6 +5,7 @@ import VercelAnalyticsCore
 struct MenuBarRootView: View {
     let model: AppModel
     let chartStyle: ChartStyleStore
+    let isChartInspectorEnabled: Bool
     @State private var isProjectSelectorPresented = false
     @State private var projectSearchQuery = ""
     #if CHART_INSPECTOR
@@ -23,8 +24,10 @@ struct MenuBarRootView: View {
                 }
 
                 #if CHART_INSPECTOR
-                    Button("Chart Inspector") {
-                        openWindow(id: ChartInspectorScene.id)
+                    if isChartInspectorEnabled {
+                        Button("Chart Inspector") {
+                            openWindow(id: ChartInspectorScene.id)
+                        }
                     }
                 #endif
 
@@ -118,18 +121,7 @@ struct MenuBarRootView: View {
                 MetricSummaryView(metric: snapshot.pageViews)
             }
 
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Visitors over time")
-                    .font(.subheadline.weight(.medium))
-
-                if snapshot.series.isEmpty {
-                    Text("No trend data for this period.")
-                        .frame(maxWidth: .infinity, minHeight: 140)
-                        .foregroundStyle(.secondary)
-                } else {
-                    VisitorsChart(points: snapshot.series, style: chartStyle.style)
-                }
-            }
+            VisitorsChartSection(points: snapshot.series, style: chartStyle.style)
 
             snapshotFooter(snapshot)
         }

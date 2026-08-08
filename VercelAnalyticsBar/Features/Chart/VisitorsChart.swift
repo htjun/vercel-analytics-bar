@@ -72,6 +72,26 @@ struct VisitorsChart: View {
     }
 }
 
+struct VisitorsChartSection: View {
+    let points: [VercelAnalyticsPoint]
+    let style: ChartStyle
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Visitors over time")
+                .font(.subheadline.weight(.medium))
+
+            if points.isEmpty {
+                Text("No trend data for this period.")
+                    .frame(maxWidth: .infinity, minHeight: 140)
+                    .foregroundStyle(.secondary)
+            } else {
+                VisitorsChart(points: points, style: style)
+            }
+        }
+    }
+}
+
 private extension Color {
     init(_ chartColor: ChartColor) {
         switch chartColor {
