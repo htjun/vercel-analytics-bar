@@ -70,6 +70,10 @@
             self.styleStore = styleStore
         }
 
+        func pageWillLoad() {
+            isReady = false
+        }
+
         func receive(body: Any) throws -> ChartInspectorSessionResponse {
             try receive(ChartInspectorIncomingMessage.decode(body: body))
         }
@@ -135,13 +139,81 @@
         }
     }
 
-    enum ChartInspectorLocation {
-        static let developmentURL = URL(string: "http://127.0.0.1:5173/")!
-
-        static func allows(scheme: String, host: String, port: Int) -> Bool {
-            scheme == developmentURL.scheme
-                && host == developmentURL.host
-                && port == developmentURL.port
+    struct ChartInspectorSource: Equatable {
+        enum Kind: Equatable {
+            case bundled(rootURL: URL)
+            case developmentServer
         }
+
+        static let developmentURL = URL(string: "http://127.0.0.1:5173/")!
+        static let developmentEnvironmentKey = "CHART_INSPECTOR_DEV_SERVER"
+
+        let entryURL: URL
+        let kind: Kind
+
+        static func resolve(
+            environment: [String: String] = ProcessInfo.processInfo.environment,
+            bundle: Bundle = .main
+        ) throws -> ChartInspectorSource {
+            if environment[developmentEnvironmentKey] == "1" {
+                return ChartInspectorSource(entryURL: developmentURL, kind: .developmentServer)
+            }
+
+            guard let entryURL = bundle.url(
+                forResource: "index",
+                withExtension: "html",
+                subdirectory: "ChartInspector"
+            ) else {
+                throw ChartInspectorSourceError.missingBundledInspector
+            }
+            return ChartInspectorSource(
+                entryURL: entryURL,
+                kind: .bundled(rootURL: entryURL.deletingLastPathComponent())
+            )
+        }
+
+        func allowsNavigation(to url: URL) -> Bool {
+            switch kind {
+            case .developmentServer:
+                return Self.hasDevelopmentOrigin(url)
+            case let .bundled(rootURL):
+                guard url.isFileURL else { return false }
+                let rootPath = rootURL.standardizedFileURL.path + "/"
+                let candidatePath = url.standardizedFileURL.path
+                return candidatePath == entryURL.standardizedFileURL.path
+                    || candidatePath.hasPrefix(rootPath)
+            }
+        }
+
+        func allowsMessage(
+            frameURL: URL?,
+            scheme: String,
+            host: String,
+            port: Int
+        ) -> Bool {
+            switch kind {
+            case .developmentServer:
+                scheme == "http"
+                    && host == "127.0.0.1"
+                    && port == 5173
+                    && frameURL.map(Self.hasDevelopmentOrigin) == true
+            case .bundled:
+                scheme == "file"
+                    && host.isEmpty
+                    && frameURL.map { allowsNavigation(to: $0) } == true
+            }
+        }
+
+        private static func hasDevelopmentOrigin(_ url: URL) -> Bool {
+            url.scheme == developmentURL.scheme
+                && url.host == developmentURL.host
+                && url.port == developmentURL.port
+                && url.user == nil
+                && url.password == nil
+        }
+    }
+
+    enum ChartInspectorSourceError: Error, Equatable {
+        case missingBundledInspector
     }
 #endif

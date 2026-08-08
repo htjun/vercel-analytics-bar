@@ -133,11 +133,67 @@
             }
         }
 
-        @Test func developmentLocationRequiresTheExactLoopbackOrigin() {
-            #expect(ChartInspectorLocation.allows(scheme: "http", host: "127.0.0.1", port: 5173))
-            #expect(!ChartInspectorLocation.allows(scheme: "http", host: "localhost", port: 5173))
-            #expect(!ChartInspectorLocation.allows(scheme: "https", host: "127.0.0.1", port: 5173))
-            #expect(!ChartInspectorLocation.allows(scheme: "http", host: "127.0.0.1", port: 5174))
+        @Test func sourceSelectionDefaultsToBundleAndRequiresExplicitDevelopmentMode() throws {
+            let bundled = try ChartInspectorSource.resolve(environment: [:])
+            guard case .bundled = bundled.kind else {
+                Issue.record("Expected bundled Inspector source")
+                return
+            }
+
+            let development = try ChartInspectorSource.resolve(
+                environment: [ChartInspectorSource.developmentEnvironmentKey: "1"]
+            )
+            #expect(development.kind == .developmentServer)
+            #expect(development.entryURL == ChartInspectorSource.developmentURL)
+        }
+
+        @Test func developmentSourceRequiresTheExactLoopbackOrigin() throws {
+            let source = ChartInspectorSource(
+                entryURL: ChartInspectorSource.developmentURL,
+                kind: .developmentServer
+            )
+            let allowedURL = try #require(URL(string: "http://127.0.0.1:5173/settings"))
+            let localhostURL = try #require(URL(string: "http://localhost:5173/"))
+            let wrongPortURL = try #require(URL(string: "http://127.0.0.1:5174/"))
+
+            #expect(source.allowsNavigation(to: allowedURL))
+            #expect(!source.allowsNavigation(to: localhostURL))
+            #expect(!source.allowsNavigation(to: wrongPortURL))
+            #expect(
+                source.allowsMessage(
+                    frameURL: allowedURL,
+                    scheme: "http",
+                    host: "127.0.0.1",
+                    port: 5173
+                )
+            )
+            #expect(!source.allowsMessage(frameURL: allowedURL, scheme: "https", host: "127.0.0.1", port: 5173))
+        }
+
+        @Test func bundledSourceAllowsOnlyFilesInsideItsResourceRoot() {
+            let rootURL = URL(fileURLWithPath: "/Applications/Test.app/Contents/Resources/ChartInspector")
+            let entryURL = rootURL.appendingPathComponent("index.html")
+            let source = ChartInspectorSource(entryURL: entryURL, kind: .bundled(rootURL: rootURL))
+            let assetURL = rootURL.appendingPathComponent("assets/index.js")
+            let siblingURL = rootURL.deletingLastPathComponent()
+                .appendingPathComponent("ChartInspector-copy/index.html")
+
+            #expect(source.allowsNavigation(to: entryURL))
+            #expect(source.allowsNavigation(to: assetURL))
+            #expect(!source.allowsNavigation(to: siblingURL))
+            #expect(!source.allowsNavigation(to: ChartInspectorSource.developmentURL))
+            #expect(source.allowsMessage(frameURL: entryURL, scheme: "file", host: "", port: 0))
+            #expect(!source.allowsMessage(frameURL: siblingURL, scheme: "file", host: "", port: 0))
+        }
+
+        @Test func pageStateOffersARecoverableRetryTransition() {
+            let state = ChartInspectorPageState()
+            state.fail("Failed")
+            #expect(state.phase == .failed("Failed"))
+
+            state.retry()
+            #expect(state.phase == .loading)
+            #expect(state.reloadToken == 1)
         }
 
         private var readyMessage: ChartInspectorIncomingMessage {

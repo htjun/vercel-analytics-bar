@@ -3,6 +3,10 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   base: "./",
+  build: {
+    outDir: "../../VercelAnalyticsBar/Resources/ChartInspector",
+    emptyOutDir: true,
+  },
   plugins: [react()],
   server: {
     host: "127.0.0.1",
