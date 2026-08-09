@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { ChartInspectorBridge } from "./bridge";
 import {
-  ChartInspectorBridge,
-  ChartStyle,
   INSPECTOR_PROTOCOL_VERSION,
-  NATIVE_SOURCE,
   MAX_INSPECTOR_REVISION,
-} from "./bridge";
+  NATIVE_SOURCE,
+} from "./generated/contract";
+import type { ChartStyle } from "./generated/contract";
 
 const defaultStyle: ChartStyle = {
   lineColor: "accent",

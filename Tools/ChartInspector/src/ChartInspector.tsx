@@ -2,49 +2,63 @@ import { DialRoot, useDialKitController } from "dialkit";
 import type { ResolvedValues } from "dialkit";
 import "dialkit/styles.css";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { chartStylesAreEquivalent, createBrowserBridge } from "./bridge";
 import {
-  ChartLineCap,
-  ChartLineJoin,
-  ChartStyle,
-  chartStylesAreEquivalent,
-  createBrowserBridge,
-} from "./bridge";
+  CHART_STYLE_DEFAULT,
+  CHART_STYLE_RANGES,
+  LINE_CAP_VALUES,
+  LINE_JOIN_VALUES,
+} from "./generated/contract";
+import type { ChartLineCap, ChartLineJoin, ChartStyle } from "./generated/contract";
 
 const bridge = createBrowserBridge();
 const chartConfig = {
   line: {
-    color: { type: "color" as const, default: "#02C06C" },
-    width: [1, 0.5, 12, 0.5] as [number, number, number, number],
+    color: { type: "color" as const, default: CHART_STYLE_DEFAULT.lineColor },
+    width: dialRange(CHART_STYLE_DEFAULT.lineWidth, CHART_STYLE_RANGES.lineWidth),
     cap: {
       type: "select" as const,
-      options: ["butt", "round", "square"],
-      default: "round",
+      options: [...LINE_CAP_VALUES],
+      default: CHART_STYLE_DEFAULT.lineCap,
     },
     join: {
       type: "select" as const,
-      options: ["miter", "round", "bevel"],
-      default: "round",
+      options: [...LINE_JOIN_VALUES],
+      default: CHART_STYLE_DEFAULT.lineJoin,
     },
   },
   area: {
-    topOpacity: [0.2, 0, 1, 0.01] as [number, number, number, number],
-    bottomOpacity: [0, 0, 1, 0.01] as [number, number, number, number],
+    topOpacity: dialRange(CHART_STYLE_DEFAULT.areaTopOpacity, CHART_STYLE_RANGES.areaTopOpacity),
+    bottomOpacity: dialRange(
+      CHART_STYLE_DEFAULT.areaBottomOpacity,
+      CHART_STYLE_RANGES.areaBottomOpacity,
+    ),
   },
   layout: {
-    height: [140, 80, 360, 1] as [number, number, number, number],
+    height: dialRange(CHART_STYLE_DEFAULT.chartHeight, CHART_STYLE_RANGES.chartHeight),
   },
   axes: {
-    markCount: [3, 2, 12, 1] as [number, number, number, number],
-    yScaleHeadroom: [0.1, 0, 1, 0.01] as [number, number, number, number],
-    gridLines: true,
-    xLabels: true,
-    yLabels: true,
+    markCount: dialRange(CHART_STYLE_DEFAULT.axisMarkCount, CHART_STYLE_RANGES.axisMarkCount),
+    yScaleHeadroom: dialRange(
+      CHART_STYLE_DEFAULT.yScaleHeadroom,
+      CHART_STYLE_RANGES.yScaleHeadroom,
+    ),
+    gridLines: CHART_STYLE_DEFAULT.showsGridLines,
+    xLabels: CHART_STYLE_DEFAULT.showsXAxisLabels,
+    yLabels: CHART_STYLE_DEFAULT.showsYAxisLabels,
   },
   actions: {
     reset: { type: "action" as const, label: "Reset to defaults" },
     copyStyle: { type: "action" as const, label: "Copy canonical JSON" },
   },
 };
+
+function dialRange(
+  defaultValue: number,
+  range: { minimum: number; maximum: number; step: number },
+): [number, number, number, number] {
+  return [defaultValue, range.minimum, range.maximum, range.step];
+}
 
 export function ChartInspector() {
   const [nativeStyle, setNativeStyle] = useState<ChartStyle>();

@@ -1,20 +1,6 @@
 #if CHART_INSPECTOR
     import Foundation
 
-    enum ChartInspectorProtocol {
-        static let version = 1
-        static let maximumRevision = 1_000_000_000
-        static let webSource = "chart-inspector"
-        static let nativeSource = "vercel-analytics-bar"
-    }
-
-    enum ChartInspectorIncomingMessageType: String, Codable {
-        case copyStyle
-        case ready
-        case reset
-        case styleChanged
-    }
-
     struct ChartInspectorIncomingMessage: Decodable {
         let protocolVersion: Int
         let type: ChartInspectorIncomingMessageType
@@ -33,7 +19,7 @@
 
     struct ChartInspectorStateMessage: Encodable, Equatable {
         let protocolVersion = ChartInspectorProtocol.version
-        let type = "state"
+        let type = ChartInspectorProtocol.nativeStateMessage
         let source = ChartInspectorProtocol.nativeSource
         let revision: Int
         let values: ChartStyle
@@ -66,7 +52,7 @@
     final class ChartInspectorSession {
         private let styleStore: ChartStyleStore
         private(set) var isReady = false
-        private(set) var revision = 0
+        private(set) var revision = ChartInspectorProtocol.minimumRevision
 
         init(styleStore: ChartStyleStore) {
             self.styleStore = styleStore
@@ -99,7 +85,7 @@
                     throw ChartInspectorProtocolError.missingStyle
                 }
                 guard let incomingRevision = message.revision,
-                      (1 ... ChartInspectorProtocol.maximumRevision).contains(incomingRevision)
+                      ChartInspectorProtocol.styleChangeRevisionRange.contains(incomingRevision)
                 else {
                     throw ChartInspectorProtocolError.invalidRevision
                 }

@@ -246,6 +246,7 @@ ${decoding}
         static let minimumRevision = ${swiftInteger(protocol.revisions.nativeMinimum)}
         static let firstStyleChangeRevision = ${swiftInteger(protocol.revisions.styleChangeMinimum)}
         static let maximumRevision = ${swiftInteger(protocol.revisions.maximum)}
+        static let styleChangeRevisionRange = firstStyleChangeRevision ... maximumRevision
         static let webSource = ${swiftString(protocol.sources.web)}
         static let nativeSource = ${swiftString(protocol.sources.native)}
         static let nativeStateMessage = ${swiftString(protocol.messages.nativeState)}

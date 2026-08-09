@@ -181,6 +181,7 @@ struct ChartStyle: Codable, Equatable, Sendable {
         static let minimumRevision = 0
         static let firstStyleChangeRevision = 1
         static let maximumRevision = 1_000_000_000
+        static let styleChangeRevisionRange = firstStyleChangeRevision ... maximumRevision
         static let webSource = "chart-inspector"
         static let nativeSource = "vercel-analytics-bar"
         static let nativeStateMessage = "state"

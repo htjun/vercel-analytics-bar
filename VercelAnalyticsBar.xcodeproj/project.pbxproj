@@ -16,6 +16,7 @@
 		A10000000000000000000028 /* SnapshotRefreshCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000028 /* SnapshotRefreshCoordinator.swift */; };
 		A10000000000000000000029 /* SnapshotRefreshCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000029 /* SnapshotRefreshCoordinatorTests.swift */; };
 		A1000000000000000000002A /* AnalyticsPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000002A /* AnalyticsPanelController.swift */; };
+		A1000000000000000000002B /* ChartInspectorContract.generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000002B /* ChartInspectorContract.generated.swift */; };
 		A10000000000000000000006 /* MenuBarRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000000A /* MenuBarRootView.swift */; };
 		A10000000000000000000007 /* SettingsRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000000B /* SettingsRootView.swift */; };
 		A10000000000000000000008 /* AccountPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000000C /* AccountPersistence.swift */; };
@@ -73,6 +74,7 @@
 		A30000000000000000000028 /* SnapshotRefreshCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotRefreshCoordinator.swift; sourceTree = "<group>"; };
 		A30000000000000000000029 /* SnapshotRefreshCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotRefreshCoordinatorTests.swift; sourceTree = "<group>"; };
 		A3000000000000000000002A /* AnalyticsPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsPanelController.swift; sourceTree = "<group>"; };
+		A3000000000000000000002B /* ChartInspectorContract.generated.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Generated/ChartInspectorContract.generated.swift; sourceTree = "<group>"; };
 		A3000000000000000000000A /* MenuBarRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarRootView.swift; sourceTree = "<group>"; };
 		A3000000000000000000000B /* SettingsRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsRootView.swift; sourceTree = "<group>"; };
 		A3000000000000000000000C /* AccountPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountPersistence.swift; sourceTree = "<group>"; };
@@ -263,6 +265,7 @@
 		A4000000000000000000001C /* ChartInspector */ = {
 			isa = PBXGroup;
 			children = (
+				A3000000000000000000002B /* ChartInspectorContract.generated.swift */,
 				A3000000000000000000001A /* ChartInspectorProtocol.swift */,
 				A3000000000000000000001B /* ChartInspectorWebView.swift */,
 				A3000000000000000000001C /* ChartInspectorView.swift */,
@@ -392,6 +395,7 @@
 				A10000000000000000000014 /* LaunchAtLogin.swift in Sources */,
 				A10000000000000000000017 /* ChartStyle.swift in Sources */,
 				A10000000000000000000019 /* VisitorsChart.swift in Sources */,
+				A1000000000000000000002B /* ChartInspectorContract.generated.swift in Sources */,
 				A1000000000000000000001A /* ChartInspectorProtocol.swift in Sources */,
 				A1000000000000000000001B /* ChartInspectorWebView.swift in Sources */,
 				A1000000000000000000001C /* ChartInspectorView.swift in Sources */,
