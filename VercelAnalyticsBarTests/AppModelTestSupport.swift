@@ -217,6 +217,7 @@ struct RefreshTestHarness {
     let provider: ControlledSnapshotProvider
     let clock: MutableDateClock
     let sleeper: ManualRefreshSleeper
+    let cacheStore: InMemorySnapshotCacheStore
     let model: AppModel
 
     init(
@@ -232,6 +233,7 @@ struct RefreshTestHarness {
         self.provider = provider
         self.clock = clock
         self.sleeper = sleeper
+        self.cacheStore = cacheStore
         model = AppModel(
             credentialStore: InMemoryCredentialStore(),
             accountDataStore: InMemoryAccountDataStore(),

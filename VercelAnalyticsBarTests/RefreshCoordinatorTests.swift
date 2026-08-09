@@ -28,6 +28,92 @@ import VercelAnalyticsCore
 }
 
 @MainActor
+@Test func snapshotRefreshCoordinatorOwnsCachePolicyAndSuccessfulPersistence() async throws {
+    let cachedSnapshot = makeAnalyticsSnapshot(
+        projectName: "Alpha",
+        visitors: 100,
+        pageViews: 200,
+        last24HoursVisitors: 11,
+        refreshedAt: Date(timeIntervalSince1970: 1_785_549_600)
+    )
+    let cacheStore = InMemorySnapshotCacheStore(entries: [
+        SnapshotCacheEntry(projectID: "project-alpha", snapshot: cachedSnapshot),
+    ])
+    let coordinator = SnapshotRefreshCoordinator(
+        cacheStore: cacheStore,
+        now: { Date(timeIntervalSince1970: 1_785_549_720) }
+    )
+    let request = SnapshotRefreshRequest(
+        projectID: "project-alpha",
+        range: .last7Days,
+        trigger: .popoverOpen
+    )
+
+    let preparation = coordinator.prepare(request)
+    #expect(preparation.cachedSnapshot == cachedSnapshot)
+    #expect(preparation.freshness == .stale)
+    #expect(preparation.shouldRequestLiveSnapshot)
+
+    let provider = ControlledSnapshotProvider()
+    let refresh = Task {
+        try await coordinator.refresh(request, using: provider, isCurrent: { true })
+    }
+    await provider.waitUntilRequested()
+
+    let liveSnapshot = makeAnalyticsSnapshot(
+        projectName: "Alpha",
+        visitors: 150,
+        pageViews: 250,
+        last24HoursVisitors: 15,
+        refreshedAt: Date(timeIntervalSince1970: 1_785_549_720)
+    )
+    await provider.succeed(with: liveSnapshot)
+
+    let result = try await refresh.value
+    #expect(result == .accepted(liveSnapshot))
+    #expect(cacheStore.entries == [
+        SnapshotCacheEntry(projectID: "project-alpha", snapshot: liveSnapshot),
+    ])
+}
+
+@MainActor
+@Test func appModelPresentsStaleCacheBeforeLiveRefreshCompletes() async {
+    let cachedSnapshot = makeAnalyticsSnapshot(
+        projectName: "Alpha",
+        visitors: 100,
+        pageViews: 200,
+        last24HoursVisitors: 11,
+        refreshedAt: Date(timeIntervalSince1970: 1_785_549_600)
+    )
+    let harness = RefreshTestHarness(cacheEntries: [
+        SnapshotCacheEntry(projectID: "project-alpha", snapshot: cachedSnapshot),
+    ])
+
+    await harness.connect()
+    let refresh = Task { await harness.model.load() }
+    await harness.provider.waitUntilRequested()
+
+    #expect(harness.model.state == .loaded(cachedSnapshot))
+    #expect(harness.model.snapshotFreshness == .stale)
+
+    let liveSnapshot = makeAnalyticsSnapshot(
+        projectName: "Alpha",
+        visitors: 150,
+        pageViews: 250,
+        last24HoursVisitors: 15,
+        refreshedAt: harness.clock.now()
+    )
+    await harness.provider.succeed(with: liveSnapshot)
+    await refresh.value
+
+    #expect(harness.model.state == .loaded(liveSnapshot))
+    #expect(harness.model.snapshotFreshness == .fresh)
+    #expect(harness.cacheStore.entries == [
+        SnapshotCacheEntry(projectID: "project-alpha", snapshot: liveSnapshot),
+    ])
+}
+
+@MainActor
 @Test func appModelCoalescesConcurrentRefreshes() async {
     let harness = RefreshTestHarness()
 

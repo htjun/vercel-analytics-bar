@@ -1,7 +1,7 @@
 import Foundation
 import VercelAnalyticsCore
 
-enum RefreshTrigger {
+enum RefreshTrigger: Equatable {
     case popoverOpen
     case periodic
     case projectSwitch
@@ -87,14 +87,17 @@ extension AppModel {
     ) async {
         let requestedRange = selectedRange
         let requestKey = RefreshRequestKey(projectID: projectID, range: requestedRange)
-        let cachedSnapshot = projectID.flatMap { snapshotCache[SnapshotCacheKey(projectID: $0, range: requestedRange)] }
+        let refreshRequest = SnapshotRefreshRequest(
+            projectID: projectID,
+            range: requestedRange,
+            trigger: trigger
+        )
+        let preparation = snapshotRefreshCoordinator.prepare(refreshRequest)
 
-        if let cachedSnapshot {
-            presentCachedSnapshot(cachedSnapshot)
-            if trigger == .popoverOpen, snapshotFreshness == .fresh {
-                return
-            }
+        if let cachedSnapshot = preparation.cachedSnapshot {
+            presentCachedSnapshot(cachedSnapshot, freshness: preparation.freshness)
         }
+        guard preparation.shouldRequestLiveSnapshot else { return }
 
         if let activeRefreshKey, activeRefreshKey == requestKey, let activeRefreshTask {
             await activeRefreshTask.value
@@ -107,7 +110,7 @@ extension AppModel {
         let requestID = UUID()
         activeRefreshID = requestID
         activeRefreshKey = requestKey
-        if showLoading || cachedSnapshot == nil {
+        if showLoading || preparation.cachedSnapshot == nil {
             state = .loading
             snapshotFreshness = .fresh
             refreshMessage = nil
@@ -117,8 +120,7 @@ extension AppModel {
             guard let self else { return }
             await performRefresh(
                 using: provider,
-                projectID: projectID,
-                requestedRange: requestedRange,
+                request: refreshRequest,
                 requestID: requestID
             )
         }
@@ -134,23 +136,21 @@ extension AppModel {
 
     private func performRefresh(
         using provider: any AnalyticsSnapshotProviding,
-        projectID: String?,
-        requestedRange: VercelAnalyticsRange,
+        request: SnapshotRefreshRequest,
         requestID: UUID
     ) async {
         do {
-            try Task.checkCancellation()
-            let snapshot = try await provider.snapshot(for: requestedRange)
-            try Task.checkCancellation()
-            guard activeRefreshID == requestID,
-                  requestedRange == selectedRange,
-                  projectID == currentProjectID
-            else { return }
+            let result = try await snapshotRefreshCoordinator.refresh(
+                request,
+                using: provider,
+                isCurrent: {
+                    self.activeRefreshID == requestID
+                        && request.range == self.selectedRange
+                        && request.projectID == self.currentProjectID
+                }
+            )
+            guard case let .accepted(snapshot) = result else { return }
 
-            if let projectID {
-                snapshotCache[SnapshotCacheKey(projectID: projectID, range: requestedRange)] = snapshot
-                persistSnapshotCache()
-            }
             state = .loaded(snapshot)
             snapshotFreshness = .fresh
             refreshMessage = nil
@@ -162,23 +162,22 @@ extension AppModel {
             return
         } catch {
             guard activeRefreshID == requestID,
-                  requestedRange == selectedRange,
-                  projectID == currentProjectID
+                  request.range == selectedRange,
+                  request.projectID == currentProjectID
             else { return }
-            handleRefreshFailure(error, projectID: projectID, range: requestedRange)
+            handleRefreshFailure(error, projectID: request.projectID, range: request.range)
         }
     }
 
-    private func presentCachedSnapshot(_ snapshot: AnalyticsSnapshot) {
+    private func presentCachedSnapshot(
+        _ snapshot: AnalyticsSnapshot,
+        freshness: SnapshotFreshness
+    ) {
         state = .loaded(snapshot)
-        snapshotFreshness = isStale(snapshot) ? .stale : .fresh
+        snapshotFreshness = freshness
         if snapshotFreshness == .fresh, retryAvailableAt == nil {
             refreshMessage = nil
         }
-    }
-
-    private func isStale(_ snapshot: AnalyticsSnapshot) -> Bool {
-        now().timeIntervalSince(snapshot.refreshedAt) > 60
     }
 
     private func canStartRefresh(trigger: RefreshTrigger) -> Bool {
@@ -229,7 +228,7 @@ extension AppModel {
 
         guard isRecoverable(error),
               let projectID,
-              let cachedSnapshot = snapshotCache[SnapshotCacheKey(projectID: projectID, range: range)]
+              let cachedSnapshot = snapshotRefreshCoordinator.cachedSnapshot(projectID: projectID, range: range)
         else {
             state = .failed(error.localizedDescription)
             snapshotFreshness = .fresh
@@ -259,12 +258,5 @@ extension AppModel {
 
     private func rateLimitMessage(for date: Date) -> String {
         "Refresh paused until \(date.formatted(date: .omitted, time: .shortened))."
-    }
-
-    private func persistSnapshotCache() {
-        let entries = snapshotCache.map { key, snapshot in
-            SnapshotCacheEntry(projectID: key.projectID, snapshot: snapshot)
-        }
-        try? snapshotCacheStore.write(entries)
     }
 }

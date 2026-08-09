@@ -41,14 +41,13 @@ final class AppModel {
     let provider: (any AnalyticsSnapshotProviding)?
     let credentialStore: any VercelCredentialStore
     let accountDataStore: any VercelAccountDataStore
-    let snapshotCacheStore: any AnalyticsSnapshotCacheStore
+    let snapshotRefreshCoordinator: SnapshotRefreshCoordinator
     private let tokenValidator: @Sendable (String) async throws -> Void
     let projectProviderFactory: (@Sendable (String) -> any VercelProjectListingProviding)?
     let analyticsProviderFactory: (@Sendable (String, VercelProject) -> any AnalyticsSnapshotProviding)?
     let launchAtLoginManager: any LaunchAtLoginManaging
     let now: @Sendable () -> Date
     let sleep: @Sendable (Duration) async throws -> Void
-    var snapshotCache: [SnapshotCacheKey: AnalyticsSnapshot] = [:]
     var activeRefreshID: UUID?
     var activeRefreshKey: RefreshRequestKey?
     var activeRefreshTask: Task<Void, Never>?
@@ -87,7 +86,10 @@ final class AppModel {
         self.provider = provider
         self.credentialStore = credentialStore
         self.accountDataStore = accountDataStore
-        self.snapshotCacheStore = snapshotCacheStore
+        snapshotRefreshCoordinator = SnapshotRefreshCoordinator(
+            cacheStore: snapshotCacheStore,
+            now: now
+        )
         self.projectProviderFactory = projectProviderFactory
         self.analyticsProviderFactory = analyticsProviderFactory
         self.launchAtLoginManager = launchAtLoginManager
@@ -98,7 +100,6 @@ final class AppModel {
             selection: (try? accountDataStore.readProjectSelection()) ?? .empty
         )
         selectedRange = (try? accountDataStore.readAnalyticsRange()) ?? .last7Days
-        snapshotCache = Self.cacheDictionary(from: (try? snapshotCacheStore.read()) ?? [])
         launchAtLoginStatus = launchAtLoginManager.status
     }
 
@@ -257,7 +258,7 @@ extension AppModel {
         }
 
         do {
-            try snapshotCacheStore.clear()
+            try snapshotRefreshCoordinator.clearCache()
         } catch {
             failure = failure ?? error
         }
@@ -271,7 +272,6 @@ extension AppModel {
             accountState = .disconnected
             projectState = .idle
             projectCatalog = ProjectCatalog()
-            snapshotCache.removeAll()
             snapshotFreshness = .fresh
             refreshMessage = nil
             retryAvailableAt = nil
