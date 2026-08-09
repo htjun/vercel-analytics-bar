@@ -40,13 +40,17 @@ struct VisitorsChart: View {
         }
         .chartLegend(.hidden)
         .chartXAxis {
-            AxisMarks(values: .automatic(desiredCount: style.axisMarkCount)) { _ in
+            AxisMarks(values: .automatic(desiredCount: style.axisMarkCount)) { value in
                 if style.showsGridLines {
                     AxisGridLine()
                 }
                 AxisTick()
-                if style.showsXAxisLabels {
-                    AxisValueLabel()
+                if style.showsXAxisLabels, let date = value.as(Date.self) {
+                    AxisValueLabel {
+                        Text(date, format: .dateTime.day().month(.abbreviated))
+                            .font(AppTypography.geistMonoRegular11)
+                            .textCase(.uppercase)
+                    }
                 }
             }
         }
@@ -58,6 +62,7 @@ struct VisitorsChart: View {
                 AxisTick()
                 if style.showsYAxisLabels {
                     AxisValueLabel()
+                        .font(AppTypography.geistMonoRegular11)
                 }
             }
         }

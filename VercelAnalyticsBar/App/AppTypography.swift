@@ -109,6 +109,10 @@ enum AppTypography {
         )
     }
 
+    static var geistMonoRegular11: Font {
+        AppFontRegistry.font(postScriptName: "GeistMono-Regular", size: 11)
+    }
+
     static var interMedium12: Font {
         AppFontRegistry.font(
             postScriptName: "Inter-Medium",
