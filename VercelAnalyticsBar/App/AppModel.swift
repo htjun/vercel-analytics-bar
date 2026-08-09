@@ -46,15 +46,8 @@ final class AppModel {
     let projectProviderFactory: (@Sendable (String) -> any VercelProjectListingProviding)?
     let analyticsProviderFactory: (@Sendable (String, VercelProject) -> any AnalyticsSnapshotProviding)?
     let launchAtLoginManager: any LaunchAtLoginManaging
-    let now: @Sendable () -> Date
     let sleep: @Sendable (Duration) async throws -> Void
-    var activeRefreshID: UUID?
-    var activeRefreshKey: RefreshRequestKey?
-    var activeRefreshTask: Task<Void, Never>?
     var refreshLoopTask: Task<Void, Never>?
-    var manualRetryCount = 0
-    var manualRetryWindowEndsAt: Date?
-    var nextRefreshAllowedAt: Date?
     private(set) var launchAtLoginStatus: LaunchAtLoginStatus
     private(set) var launchAtLoginError: String?
     private var didAttemptRestore = false
@@ -93,7 +86,6 @@ final class AppModel {
         self.projectProviderFactory = projectProviderFactory
         self.analyticsProviderFactory = analyticsProviderFactory
         self.launchAtLoginManager = launchAtLoginManager
-        self.now = now
         self.sleep = sleep
         self.tokenValidator = tokenValidator
         projectCatalog = ProjectCatalog(
@@ -263,9 +255,7 @@ extension AppModel {
             failure = failure ?? error
         }
 
-        activeRefreshTask?.cancel()
-        activeRefreshTask = nil
-        activeRefreshID = nil
+        snapshotRefreshCoordinator.reset()
         didAttemptRestore = true
         if failure == nil {
             state = .idle
@@ -275,9 +265,6 @@ extension AppModel {
             snapshotFreshness = .fresh
             refreshMessage = nil
             retryAvailableAt = nil
-            nextRefreshAllowedAt = nil
-            manualRetryCount = 0
-            manualRetryWindowEndsAt = nil
             selectedRange = .last7Days
             projectSelectionError = nil
         } else {

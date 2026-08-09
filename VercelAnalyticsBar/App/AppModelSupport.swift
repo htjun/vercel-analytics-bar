@@ -1,11 +1,6 @@
 import Foundation
 import VercelAnalyticsCore
 
-struct RefreshRequestKey: Hashable {
-    let projectID: String?
-    let range: VercelAnalyticsRange
-}
-
 extension AppModel {
     var currentProject: VercelProject? {
         guard case .loaded = projectState else { return nil }

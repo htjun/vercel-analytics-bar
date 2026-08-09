@@ -14,6 +14,7 @@
 		A10000000000000000000005 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000009 /* AppModel.swift */; };
 		A10000000000000000000027 /* ProjectCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000027 /* ProjectCatalog.swift */; };
 		A10000000000000000000028 /* SnapshotRefreshCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000028 /* SnapshotRefreshCoordinator.swift */; };
+		A10000000000000000000029 /* SnapshotRefreshCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000029 /* SnapshotRefreshCoordinatorTests.swift */; };
 		A10000000000000000000006 /* MenuBarRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000000A /* MenuBarRootView.swift */; };
 		A10000000000000000000007 /* SettingsRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000000B /* SettingsRootView.swift */; };
 		A10000000000000000000008 /* AccountPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000000C /* AccountPersistence.swift */; };
@@ -69,6 +70,7 @@
 		A30000000000000000000009 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		A30000000000000000000027 /* ProjectCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectCatalog.swift; sourceTree = "<group>"; };
 		A30000000000000000000028 /* SnapshotRefreshCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotRefreshCoordinator.swift; sourceTree = "<group>"; };
+		A30000000000000000000029 /* SnapshotRefreshCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotRefreshCoordinatorTests.swift; sourceTree = "<group>"; };
 		A3000000000000000000000A /* MenuBarRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarRootView.swift; sourceTree = "<group>"; };
 		A3000000000000000000000B /* SettingsRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsRootView.swift; sourceTree = "<group>"; };
 		A3000000000000000000000C /* AccountPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountPersistence.swift; sourceTree = "<group>"; };
@@ -176,6 +178,7 @@
 				A30000000000000000000026 /* AnalyticsCardIntegrationTests.swift */,
 				A3000000000000000000000D /* AppModelTestSupport.swift */,
 				A30000000000000000000011 /* RefreshCoordinatorTests.swift */,
+				A30000000000000000000029 /* SnapshotRefreshCoordinatorTests.swift */,
 				A30000000000000000000012 /* ConnectionErrorTests.swift */,
 				A30000000000000000000013 /* AppModelEdgeCaseTests.swift */,
 				A30000000000000000000015 /* NativeIntegrationTests.swift */,
@@ -407,6 +410,7 @@
 				A10000000000000000000026 /* AnalyticsCardIntegrationTests.swift in Sources */,
 				A10000000000000000000009 /* AppModelTestSupport.swift in Sources */,
 				A10000000000000000000011 /* RefreshCoordinatorTests.swift in Sources */,
+				A10000000000000000000029 /* SnapshotRefreshCoordinatorTests.swift in Sources */,
 				A10000000000000000000012 /* ConnectionErrorTests.swift in Sources */,
 				A10000000000000000000013 /* AppModelEdgeCaseTests.swift in Sources */,
 				A10000000000000000000015 /* NativeIntegrationTests.swift in Sources */,
