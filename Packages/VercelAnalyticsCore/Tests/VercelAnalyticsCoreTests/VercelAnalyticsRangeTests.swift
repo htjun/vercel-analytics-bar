@@ -115,6 +115,7 @@ func clientFiltersRoundedAggregateRowsToLogicalBucketCount(
             "/v1/query/web-analytics/visits/aggregate": [
                 .fixture(named: "analytics-aggregate"),
                 .fixture(named: "analytics-aggregate"),
+                .fixture(named: "analytics-pages", query: ["by": "requestPath"]),
             ],
         ]
     )
@@ -146,16 +147,25 @@ func clientFiltersRoundedAggregateRowsToLogicalBucketCount(
                 pageViews: 21
             ),
         ],
+        topPages: [
+            VercelAnalyticsBreakdown(label: "/products", visitors: 820, pageViews: 1280),
+            VercelAnalyticsBreakdown(label: "/pricing", visitors: 615, pageViews: 940),
+            VercelAnalyticsBreakdown(label: "/docs", visitors: 410, pageViews: 690),
+            VercelAnalyticsBreakdown(label: "/blog", visitors: 330, pageViews: 520),
+            VercelAnalyticsBreakdown(label: "/about", visitors: 180, pageViews: 240),
+        ],
         last24HoursVisitors: 22,
         refreshedAt: now
     ))
     let requests = await transport.requests
-    #expect(requests.count == 2)
+    #expect(requests.count == 3)
     #expect(requests.allSatisfy { queryValue("projectId", in: $0) == "prj_team_fixture_1" })
     #expect(requests.allSatisfy { queryValue("teamId", in: $0) == "team_fixture" })
     #expect(requests.allSatisfy { queryValue("filter", in: $0) == "environment eq 'production'" })
-    #expect(requests.allSatisfy { queryValue("by", in: $0) == "hour" })
-    #expect(Set(requests.map { "\(queryValue("since", in: $0)!)|\(queryValue("until", in: $0)!)" }) == Set([
+    #expect(requests.count(where: { queryValue("by", in: $0) == "hour" }) == 2)
+    #expect(requests.count(where: { queryValue("by", in: $0) == "requestPath" }) == 1)
+    let seriesRequests = requests.filter { queryValue("by", in: $0) == "hour" }
+    #expect(Set(seriesRequests.map { "\(queryValue("since", in: $0)!)|\(queryValue("until", in: $0)!)" }) == Set([
         "2026-08-01T01:00:00.000Z|2026-08-02T00:59:59.999Z",
         "2026-07-31T01:00:00.000Z|2026-08-01T00:59:59.999Z",
     ]))
@@ -171,6 +181,7 @@ func clientFiltersRoundedAggregateRowsToLogicalBucketCount(
             "/v1/query/web-analytics/visits/aggregate": [
                 .fixture(named: "analytics-aggregate"),
                 .fixture(named: "analytics-aggregate"),
+                .fixture(named: "analytics-pages", query: ["by": "requestPath"]),
             ],
         ]
     )
@@ -199,12 +210,14 @@ func clientFiltersRoundedAggregateRowsToLogicalBucketCount(
     #expect(snapshot.visitors == AnalyticsMetric(label: "Visitors", value: 165, previousValue: 165))
     #expect(snapshot.pageViews == AnalyticsMetric(label: "Page Views", value: 284, previousValue: 284))
     #expect(snapshot.series == expectedSeries)
+    #expect(snapshot.topPages.count == 5)
     #expect(snapshot.last24HoursVisitors == 22)
 
     let requests = await transport.requests
-    #expect(requests.count == 4)
+    #expect(requests.count == 5)
     #expect(requests.count(where: { queryValue("by", in: $0) == "day" }) == 1)
     #expect(requests.count(where: { queryValue("by", in: $0) == "hour" }) == 1)
+    #expect(requests.count(where: { queryValue("by", in: $0) == "requestPath" }) == 1)
     let countRequests = requests.filter { queryValue("by", in: $0) == nil }
     #expect(Set(countRequests.map { "\(queryValue("since", in: $0)!)|\(queryValue("until", in: $0)!)" }) == Set([
         "2026-07-26T00:00:00.000Z|2026-08-02T00:00:00.000Z",
@@ -228,7 +241,20 @@ func clientFiltersRoundedAggregateRowsToLogicalBucketCount(
     )
     let transport = FixtureTransport(
         responses: [
-            "/v1/query/web-analytics/visits/aggregate": [emptyAggregate, emptyAggregate],
+            "/v1/query/web-analytics/visits/aggregate": [
+                emptyAggregate,
+                emptyAggregate,
+                .response(statusCode: 200, body: """
+                {
+                  "version": 1,
+                  "query": {
+                    "since": "2026-08-01T01:00:00.000Z",
+                    "until": "2026-08-02T00:59:59.999Z"
+                  },
+                  "data": []
+                }
+                """),
+            ],
         ]
     )
     let now = try date("2026-08-02T00:17:30.000Z")
@@ -244,5 +270,6 @@ func clientFiltersRoundedAggregateRowsToLogicalBucketCount(
     #expect(snapshot.visitors == AnalyticsMetric(label: "Visitors", value: 0, previousValue: 0))
     #expect(snapshot.pageViews == AnalyticsMetric(label: "Page Views", value: 0, previousValue: 0))
     #expect(snapshot.series.isEmpty)
+    #expect(snapshot.topPages.isEmpty)
     #expect(snapshot.last24HoursVisitors == 0)
 }

@@ -244,6 +244,42 @@ public struct VercelAPIClient: Sendable, VercelProjectListingProviding {
         )
     }
 
+    public func fetchTopBreakdown(
+        for project: VercelProject,
+        dimension: VercelAnalyticsDimension,
+        range: VercelAnalyticsRange,
+        now: Date
+    ) async throws -> [VercelAnalyticsBreakdown] {
+        let queryWindow = queryWindow(for: range, now: now)
+        var query = analyticsQuery(for: project, window: queryWindow.aggregateWindow)
+        query["by"] = dimension.rawValue
+        query["limit"] = "5"
+
+        let response = try await request(
+            AnalyticsBreakdownResponseDTO.self,
+            path: "/v1/query/web-analytics/visits/aggregate",
+            query: query
+        )
+
+        let rows: [VercelAnalyticsBreakdown] = response.data.compactMap { point in
+            let rawLabel = switch dimension {
+            case .requestPath:
+                point.requestPath
+            case .referrerHostname:
+                point.referrerHostname
+            }
+            guard let label = normalizedBreakdownLabel(rawLabel, dimension: dimension) else {
+                return nil
+            }
+            return VercelAnalyticsBreakdown(
+                label: label,
+                visitors: point.visitors,
+                pageViews: point.pageViews
+            )
+        }
+        return Array(rows.prefix(5))
+    }
+
     private func request<Response: Decodable>(
         _ responseType: Response.Type,
         path: String,
@@ -319,6 +355,25 @@ public struct VercelAPIClient: Sendable, VercelProjectListingProviding {
             query["teamId"] = teamID
         }
         return query
+    }
+
+    private func normalizedBreakdownLabel(
+        _ rawLabel: String?,
+        dimension: VercelAnalyticsDimension
+    ) -> String? {
+        guard let label = rawLabel?.trimmingCharacters(in: .whitespacesAndNewlines), !label.isEmpty else {
+            return nil
+        }
+        guard label.caseInsensitiveCompare("Others") != .orderedSame else {
+            return nil
+        }
+        if dimension == .referrerHostname {
+            let normalizedLabel = label.lowercased()
+            guard normalizedLabel != "direct", normalizedLabel != "(direct)" else {
+                return nil
+            }
+        }
+        return label
     }
 
     private func queryWindow(for range: VercelAnalyticsRange, now: Date) -> AnalyticsQueryWindow {

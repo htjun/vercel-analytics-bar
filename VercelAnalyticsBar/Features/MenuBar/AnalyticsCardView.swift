@@ -1,13 +1,6 @@
 import SwiftUI
 import VercelAnalyticsCore
 
-struct AnalyticsBreakdownRow: Equatable, Identifiable {
-    let path: String
-    let count: Int
-
-    var id: String { path }
-}
-
 struct AnalyticsCardMetric: Equatable {
     enum Trend: Equatable {
         case positive
@@ -61,16 +54,28 @@ struct AnalyticsCardPresentation: Equatable {
     let visitors: AnalyticsCardMetric
     let pageViews: AnalyticsCardMetric
     let series: [VercelAnalyticsPoint]
-    let breakdownRows: [AnalyticsBreakdownRow]
+    let topPages: [VercelAnalyticsBreakdown]
     let updatedText: String
     let dashboardURL: URL?
 
     static let pageFixtures = [
-        AnalyticsBreakdownRow(path: "/reading/the-almanack-of-naval-ravikant", count: 872),
-        AnalyticsBreakdownRow(path: "/reading/tiny-experiments", count: 202),
-        AnalyticsBreakdownRow(path: "/blog/creating-consistent-style-images-with-comfyui", count: 60),
-        AnalyticsBreakdownRow(path: "/reading/build", count: 29),
-        AnalyticsBreakdownRow(path: "/blog/two-dials-of-ai-assisted-coding", count: 28),
+        VercelAnalyticsBreakdown(
+            label: "/reading/the-almanack-of-naval-ravikant",
+            visitors: 710,
+            pageViews: 872
+        ),
+        VercelAnalyticsBreakdown(label: "/reading/tiny-experiments", visitors: 175, pageViews: 202),
+        VercelAnalyticsBreakdown(
+            label: "/blog/creating-consistent-style-images-with-comfyui",
+            visitors: 52,
+            pageViews: 60
+        ),
+        VercelAnalyticsBreakdown(label: "/reading/build", visitors: 24, pageViews: 29),
+        VercelAnalyticsBreakdown(
+            label: "/blog/two-dials-of-ai-assisted-coding",
+            visitors: 25,
+            pageViews: 28
+        ),
     ]
 
     static let figmaFixture = AnalyticsCardPresentation(
@@ -79,7 +84,7 @@ struct AnalyticsCardPresentation: Equatable {
         visitors: AnalyticsCardMetric(label: "Visitors", value: 3234, comparisonText: "+177%", trend: .positive),
         pageViews: AnalyticsCardMetric(label: "Page Views", value: 6423, comparisonText: "-2%", trend: .negative),
         series: fixtureSeries,
-        breakdownRows: pageFixtures,
+        topPages: pageFixtures,
         updatedText: "Updated 6:38 pm",
         dashboardURL: URL(string: "https://vercel.com")
     )
@@ -263,21 +268,28 @@ struct AnalyticsCardView<ProjectSelectorContent: View>: View {
             }
             .frame(height: 16, alignment: .topLeading)
 
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach(presentation.breakdownRows.prefix(5)) { row in
-                    HStack(spacing: 8) {
-                        Text(row.path)
-                            .font(AppTypography.geistRegular12)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
+            if presentation.topPages.isEmpty {
+                Text("No page data")
+                    .font(AppTypography.geistRegular12)
+                    .foregroundStyle(AnalyticsCardColors.secondaryText)
+                    .frame(width: 344, height: 16, alignment: .leading)
+            } else {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(presentation.topPages.prefix(5)) { row in
+                        HStack(spacing: 8) {
+                            Text(row.label)
+                                .font(AppTypography.geistRegular12)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
 
-                        Spacer(minLength: 0)
+                            Spacer(minLength: 0)
 
-                        Text(row.count.formatted(.number.grouping(.never)))
-                            .font(AppTypography.geistMedium12)
+                            Text(row.pageViews.formatted(.number.grouping(.never)))
+                                .font(AppTypography.geistMedium12)
+                        }
+                        .foregroundStyle(AnalyticsCardColors.primaryText)
+                        .frame(width: 344, height: 16)
                     }
-                    .foregroundStyle(AnalyticsCardColors.primaryText)
-                    .frame(width: 344, height: 16)
                 }
             }
         }

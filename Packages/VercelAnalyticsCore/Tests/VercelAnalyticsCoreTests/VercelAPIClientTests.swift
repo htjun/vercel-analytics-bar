@@ -179,6 +179,55 @@ func projectBuildsAnalyticsDashboardURL(range: VercelAnalyticsRange, period: Str
     #expect(queryValue("by", in: requests[1]) == "hour")
 }
 
+@Test func clientMapsTopPagesAndScopesBreakdownQueries() async throws {
+    let teamTransport = try FixtureTransport(
+        responses: [
+            "/v1/query/web-analytics/visits/aggregate": [.fixture(named: "analytics-pages")],
+        ]
+    )
+    let client = VercelAPIClient(token: "fixture-token", transport: teamTransport)
+    let project = VercelProject(id: "prj_team_fixture_1", name: "Team Dashboard", teamID: "team_fixture")
+    let now = try date("2026-08-02T00:00:00.000Z")
+
+    let pages = try await client.fetchTopBreakdown(
+        for: project,
+        dimension: .requestPath,
+        range: .last7Days,
+        now: now
+    )
+
+    #expect(pages == [
+        VercelAnalyticsBreakdown(label: "/products", visitors: 820, pageViews: 1280),
+        VercelAnalyticsBreakdown(label: "/pricing", visitors: 615, pageViews: 940),
+        VercelAnalyticsBreakdown(label: "/docs", visitors: 410, pageViews: 690),
+        VercelAnalyticsBreakdown(label: "/blog", visitors: 330, pageViews: 520),
+        VercelAnalyticsBreakdown(label: "/about", visitors: 180, pageViews: 240),
+    ])
+    let teamRequest = try #require(await teamTransport.requests.first)
+    #expect(queryValue("projectId", in: teamRequest) == "prj_team_fixture_1")
+    #expect(queryValue("teamId", in: teamRequest) == "team_fixture")
+    #expect(queryValue("filter", in: teamRequest) == "environment eq 'production'")
+    #expect(queryValue("since", in: teamRequest) == "2026-07-26T00:00:00.000Z")
+    #expect(queryValue("until", in: teamRequest) == "2026-08-01T23:59:59.999Z")
+    #expect(queryValue("by", in: teamRequest) == "requestPath")
+    #expect(queryValue("limit", in: teamRequest) == "5")
+
+    let personalTransport = try FixtureTransport(
+        responses: [
+            "/v1/query/web-analytics/visits/aggregate": [.fixture(named: "analytics-pages")],
+        ]
+    )
+    let personalClient = VercelAPIClient(token: "fixture-token", transport: personalTransport)
+    _ = try await personalClient.fetchTopBreakdown(
+        for: VercelProject(id: "prj_personal_fixture", name: "Personal Site"),
+        dimension: .requestPath,
+        range: .last7Days,
+        now: now
+    )
+    let personalRequest = try #require(await personalTransport.requests.first)
+    #expect(queryValue("teamId", in: personalRequest) == nil)
+}
+
 @Test func clientMapsAuthenticationAndRedactsResponseBody() async throws {
     let transport = FixtureTransport(
         responses: [

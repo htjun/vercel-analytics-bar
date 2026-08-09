@@ -82,6 +82,11 @@ public enum VercelAnalyticsAvailability: String, Equatable, Sendable {
     }
 }
 
+public enum VercelAnalyticsDimension: String, Equatable, Sendable {
+    case requestPath
+    case referrerHostname
+}
+
 public enum VercelAnalyticsRange: String, CaseIterable, Codable, Equatable, Hashable, Sendable {
     case last24Hours
     case last7Days

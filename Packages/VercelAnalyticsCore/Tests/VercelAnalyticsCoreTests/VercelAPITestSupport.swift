@@ -14,7 +14,13 @@ actor FixtureTransport: VercelHTTPTransport {
             throw FixtureTransportError.missingResponse
         }
 
-        let response = pathResponses.removeFirst()
+        let responseIndex = pathResponses.firstIndex { response in
+            response.query?.allSatisfy { queryValue($0.key, in: request) == $0.value } == true
+        } ?? pathResponses.firstIndex { $0.query == nil }
+        guard let responseIndex else {
+            throw FixtureTransportError.missingResponse
+        }
+        let response = pathResponses.remove(at: responseIndex)
         responses[path] = pathResponses
         requests.append(request)
 
@@ -35,12 +41,13 @@ struct FixtureResponse: Sendable {
     let statusCode: Int
     let headers: [String: String]
     let body: Data
+    let query: [String: String]?
 
-    static func fixture(named name: String) throws -> FixtureResponse {
+    static func fixture(named name: String, query: [String: String]? = nil) throws -> FixtureResponse {
         guard let url = Bundle.module.url(forResource: name, withExtension: "json", subdirectory: "Fixtures") else {
             throw FixtureTransportError.missingFixture
         }
-        return try FixtureResponse(statusCode: 200, headers: [:], body: Data(contentsOf: url))
+        return try FixtureResponse(statusCode: 200, headers: [:], body: Data(contentsOf: url), query: query)
     }
 
     static func response(
@@ -48,7 +55,7 @@ struct FixtureResponse: Sendable {
         headers: [String: String] = [:],
         body: String = "{}"
     ) -> FixtureResponse {
-        FixtureResponse(statusCode: statusCode, headers: headers, body: Data(body.utf8))
+        FixtureResponse(statusCode: statusCode, headers: headers, body: Data(body.utf8), query: nil)
     }
 }
 
@@ -99,7 +106,7 @@ func aggregateFixture(points: [AggregateFixturePoint]) throws -> FixtureResponse
         },
     ]
     let body = try JSONSerialization.data(withJSONObject: payload)
-    return FixtureResponse(statusCode: 200, headers: [:], body: body)
+    return FixtureResponse(statusCode: 200, headers: [:], body: body, query: nil)
 }
 
 private func iso8601String(_ date: Date) -> String {

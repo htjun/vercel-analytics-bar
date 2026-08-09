@@ -230,26 +230,44 @@ actor StaticAnalyticsTransport: VercelHTTPTransport {
             }
             """
         case "/v1/query/web-analytics/visits/aggregate":
-            body = """
-            {
-              "query": {
-                "since": "2026-07-26T00:00:00.000Z",
-                "until": "2026-08-02T00:00:00.000Z"
-              },
-              "data": [
+            if analyticsQueryValue("by", in: request) == "requestPath" {
+                body = """
                 {
-                  "timestamp": "2026-08-01T00:00:00.000Z",
-                  "visitors": 20,
-                  "pageviews": 34
-                },
-                {
-                  "timestamp": "2026-08-02T00:00:00.000Z",
-                  "visitors": 24,
-                  "pageviews": 41
+                  "query": {
+                    "since": "2026-07-26T00:00:00.000Z",
+                    "until": "2026-08-02T00:00:00.000Z"
+                  },
+                  "data": [
+                    {
+                      "requestPath": "/products",
+                      "visitors": 80,
+                      "pageviews": 128
+                    }
+                  ]
                 }
-              ]
+                """
+            } else {
+                body = """
+                {
+                  "query": {
+                    "since": "2026-07-26T00:00:00.000Z",
+                    "until": "2026-08-02T00:00:00.000Z"
+                  },
+                  "data": [
+                    {
+                      "timestamp": "2026-08-01T00:00:00.000Z",
+                      "visitors": 20,
+                      "pageviews": 34
+                    },
+                    {
+                      "timestamp": "2026-08-02T00:00:00.000Z",
+                      "visitors": 24,
+                      "pageviews": 41
+                    }
+                  ]
+                }
+                """
             }
-            """
         default:
             throw StaticAnalyticsTransportError.unhandledRequest
         }
@@ -268,12 +286,21 @@ enum StaticAnalyticsTransportError: Error {
     case invalidResponse
 }
 
+private func analyticsQueryValue(_ name: String, in request: URLRequest) -> String? {
+    guard let url = request.url else { return nil }
+    return URLComponents(url: url, resolvingAgainstBaseURL: false)?
+        .queryItems?
+        .first { $0.name == name }?
+        .value
+}
+
 func makeAnalyticsSnapshot(
     projectName: String,
     visitors: Int,
     pageViews: Int,
     last24HoursVisitors: Int,
-    refreshedAt: Date
+    refreshedAt: Date,
+    topPages: [VercelAnalyticsBreakdown] = []
 ) -> AnalyticsSnapshot {
     AnalyticsSnapshot(
         projectName: projectName,
@@ -281,6 +308,7 @@ func makeAnalyticsSnapshot(
         visitors: AnalyticsMetric(label: "Visitors", value: visitors, previousValue: visitors * 9 / 10),
         pageViews: AnalyticsMetric(label: "Page Views", value: pageViews, previousValue: pageViews * 9 / 10),
         series: [],
+        topPages: topPages,
         last24HoursVisitors: last24HoursVisitors,
         refreshedAt: refreshedAt
     )
@@ -331,7 +359,12 @@ func makeAnalyticsSnapshot(
     let store = FileAnalyticsSnapshotCacheStore(applicationSupportURL: supportURL)
     let refreshedAt = Date(timeIntervalSince1970: 1_785_549_600)
     let last7Days = makeAnalyticsSnapshot(
-        projectName: "Alpha", visitors: 100, pageViews: 200, last24HoursVisitors: 11, refreshedAt: refreshedAt
+        projectName: "Alpha",
+        visitors: 100,
+        pageViews: 200,
+        last24HoursVisitors: 11,
+        refreshedAt: refreshedAt,
+        topPages: [VercelAnalyticsBreakdown(label: "/products", visitors: 80, pageViews: 128)]
     )
     let last30Days = AnalyticsSnapshot(
         projectName: "Alpha",
@@ -353,6 +386,24 @@ func makeAnalyticsSnapshot(
 
     try store.write(entries)
     #expect(try store.read() == entries)
+
+    let encodedCache = try JSONSerialization.jsonObject(with: Data(contentsOf: store.fileURL))
+    let legacyCache = try #require(encodedCache as? [String: Any])
+    let legacyEntries = try #require(legacyCache["entries"] as? [[String: Any]])
+    var legacyEntry = try #require(legacyEntries.first)
+    var legacySnapshot = try #require(legacyEntry["snapshot"] as? [String: Any])
+    legacySnapshot.removeValue(forKey: "topPages")
+    legacySnapshot.removeValue(forKey: "topReferrers")
+    legacyEntry["snapshot"] = legacySnapshot
+    let legacyData = try JSONSerialization.data(withJSONObject: [
+        "version": FileAnalyticsSnapshotCacheStore.currentSchemaVersion,
+        "entries": [legacyEntry],
+    ])
+    try legacyData.write(to: store.fileURL, options: .atomic)
+    let migratedEntries = try store.read()
+    #expect(migratedEntries.count == 1)
+    #expect(migratedEntries.first?.snapshot.topPages == [])
+    #expect(migratedEntries.first?.snapshot.topReferrers == [])
 
     try Data(#"{"version":999,"entries":[]}"#.utf8).write(to: store.fileURL, options: .atomic)
     #expect(try store.read() == [])

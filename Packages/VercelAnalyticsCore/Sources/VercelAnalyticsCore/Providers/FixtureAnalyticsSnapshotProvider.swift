@@ -32,6 +32,10 @@ public extension AnalyticsSnapshot {
                 pageViews: 3170
             ),
         ],
+        topPages: [
+            VercelAnalyticsBreakdown(label: "/products", visitors: 820, pageViews: 1280),
+            VercelAnalyticsBreakdown(label: "/pricing", visitors: 615, pageViews: 940),
+        ],
         last24HoursVisitors: 1890,
         refreshedAt: fixtureRefreshDate
     )

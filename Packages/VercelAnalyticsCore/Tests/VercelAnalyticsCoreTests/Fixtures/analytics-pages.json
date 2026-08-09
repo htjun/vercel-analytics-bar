@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "query": {
+    "since": "2026-07-26T00:00:00.000Z",
+    "until": "2026-08-01T23:59:59.999Z",
+    "groupBy": ["requestPath"],
+    "filter": "environment eq 'production'",
+    "limit": 5
+  },
+  "data": [
+    {
+      "requestPath": "/products",
+      "visitors": 820,
+      "pageviews": 1280
+    },
+    {
+      "requestPath": " ",
+      "visitors": 700,
+      "pageviews": 1100
+    },
+    {
+      "requestPath": "Others",
+      "visitors": 650,
+      "pageviews": 1000
+    },
+    {
+      "requestPath": "/pricing",
+      "visitors": 615,
+      "pageviews": 940
+    },
+    {
+      "requestPath": "/docs",
+      "visitors": 410,
+      "pageviews": 690
+    },
+    {
+      "requestPath": "/blog",
+      "visitors": 330,
+      "pageviews": 520
+    },
+    {
+      "requestPath": "/about",
+      "visitors": 180,
+      "pageviews": 240
+    },
+    {
+      "requestPath": "/contact",
+      "visitors": 75,
+      "pageviews": 92
+    }
+  ]
+}

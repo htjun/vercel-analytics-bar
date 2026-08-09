@@ -86,7 +86,7 @@ struct MenuBarRootView: View {
             visitors: AnalyticsCardMetric(metric: snapshot.visitors),
             pageViews: AnalyticsCardMetric(metric: snapshot.pageViews),
             series: snapshot.series,
-            breakdownRows: AnalyticsCardPresentation.pageFixtures,
+            topPages: snapshot.topPages,
             updatedText: updatedText(for: snapshot),
             dashboardURL: model.currentProject?.analyticsDashboardURL(for: snapshot.range)
         )

@@ -58,6 +58,11 @@ struct AnalyticsSeriesResponseDTO: Decodable {
     let query: AnalyticsQueryDTO
 }
 
+struct AnalyticsBreakdownResponseDTO: Decodable {
+    let data: [AnalyticsBreakdownPointDTO]
+    let query: AnalyticsQueryDTO
+}
+
 struct AnalyticsMetricsDTO: Decodable {
     let visitors: Int
     let pageViews: Int
@@ -75,6 +80,20 @@ struct AnalyticsPointDTO: Decodable {
 
     private enum CodingKeys: String, CodingKey {
         case timestamp
+        case visitors
+        case pageViews = "pageviews"
+    }
+}
+
+struct AnalyticsBreakdownPointDTO: Decodable {
+    let requestPath: String?
+    let referrerHostname: String?
+    let visitors: Int
+    let pageViews: Int
+
+    private enum CodingKeys: String, CodingKey {
+        case requestPath
+        case referrerHostname
         case visitors
         case pageViews = "pageviews"
     }
