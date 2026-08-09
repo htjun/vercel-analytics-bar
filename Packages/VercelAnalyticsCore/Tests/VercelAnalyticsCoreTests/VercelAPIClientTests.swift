@@ -228,6 +228,35 @@ func projectBuildsAnalyticsDashboardURL(range: VercelAnalyticsRange, period: Str
     #expect(queryValue("teamId", in: personalRequest) == nil)
 }
 
+@Test func clientMapsReferralHostnamesAndRemovesDirectTraffic() async throws {
+    let transport = try FixtureTransport(
+        responses: [
+            "/v1/query/web-analytics/visits/aggregate": [.fixture(named: "analytics-referrers")],
+        ]
+    )
+    let client = VercelAPIClient(token: "fixture-token", transport: transport)
+    let now = try date("2026-08-02T00:00:00.000Z")
+
+    let referrers = try await client.fetchTopBreakdown(
+        for: VercelProject(id: "prj_fixture", name: "Fixture"),
+        dimension: .referrerHostname,
+        range: .last7Days,
+        now: now
+    )
+
+    #expect(referrers == [
+        VercelAnalyticsBreakdown(label: "google.com", visitors: 510, pageViews: 640),
+        VercelAnalyticsBreakdown(label: "news.ycombinator.com", visitors: 205, pageViews: 260),
+        VercelAnalyticsBreakdown(label: "github.com", visitors: 160, pageViews: 195),
+        VercelAnalyticsBreakdown(label: "linkedin.com", visitors: 95, pageViews: 120),
+        VercelAnalyticsBreakdown(label: "example.com", visitors: 40, pageViews: 55),
+    ])
+    let requests = await transport.requests
+    let request = try #require(requests.first)
+    #expect(queryValue("by", in: request) == "referrerHostname")
+    #expect(queryValue("limit", in: request) == "5")
+}
+
 @Test func clientMapsAuthenticationAndRedactsResponseBody() async throws {
     let transport = FixtureTransport(
         responses: [

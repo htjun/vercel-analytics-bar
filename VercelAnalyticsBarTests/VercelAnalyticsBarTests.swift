@@ -396,8 +396,11 @@ import VercelAnalyticsCore
     #expect(snapshot.topPages == [
         VercelAnalyticsBreakdown(label: "/products", visitors: 80, pageViews: 128),
     ])
+    #expect(snapshot.topReferrers == [
+        VercelAnalyticsBreakdown(label: "google.com", visitors: 48, pageViews: 64),
+    ])
     #expect(model.abbreviatedVisitors == "24")
-    #expect(await transport.requests.count == 5)
+    #expect(await transport.requests.count == 6)
 }
 
 @MainActor

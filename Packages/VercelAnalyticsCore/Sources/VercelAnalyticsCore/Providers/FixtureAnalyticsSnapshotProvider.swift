@@ -36,6 +36,10 @@ public extension AnalyticsSnapshot {
             VercelAnalyticsBreakdown(label: "/products", visitors: 820, pageViews: 1280),
             VercelAnalyticsBreakdown(label: "/pricing", visitors: 615, pageViews: 940),
         ],
+        topReferrers: [
+            VercelAnalyticsBreakdown(label: "google.com", visitors: 510, pageViews: 640),
+            VercelAnalyticsBreakdown(label: "news.ycombinator.com", visitors: 205, pageViews: 260),
+        ],
         last24HoursVisitors: 1890,
         refreshedAt: fixtureRefreshDate
     )

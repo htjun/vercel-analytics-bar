@@ -246,6 +246,22 @@ actor StaticAnalyticsTransport: VercelHTTPTransport {
                   ]
                 }
                 """
+            } else if analyticsQueryValue("by", in: request) == "referrerHostname" {
+                body = """
+                {
+                  "query": {
+                    "since": "2026-07-26T00:00:00.000Z",
+                    "until": "2026-08-02T00:00:00.000Z"
+                  },
+                  "data": [
+                    {
+                      "referrerHostname": "google.com",
+                      "visitors": 48,
+                      "pageviews": 64
+                    }
+                  ]
+                }
+                """
             } else {
                 body = """
                 {

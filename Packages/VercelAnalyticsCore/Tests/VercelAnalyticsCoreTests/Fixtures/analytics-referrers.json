@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "query": {
+    "since": "2026-07-26T00:00:00.000Z",
+    "until": "2026-08-01T23:59:59.999Z",
+    "groupBy": ["referrerHostname"],
+    "filter": "environment eq 'production'",
+    "limit": 5
+  },
+  "data": [
+    { "referrerHostname": "google.com", "visitors": 510, "pageviews": 640 },
+    { "referrerHostname": "Direct", "visitors": 400, "pageviews": 510 },
+    { "referrerHostname": "(direct)", "visitors": 350, "pageviews": 420 },
+    { "referrerHostname": "Others", "visitors": 300, "pageviews": 390 },
+    { "referrerHostname": " ", "visitors": 240, "pageviews": 310 },
+    { "referrerHostname": "news.ycombinator.com", "visitors": 205, "pageviews": 260 },
+    { "referrerHostname": "github.com", "visitors": 160, "pageviews": 195 },
+    { "referrerHostname": "linkedin.com", "visitors": 95, "pageviews": 120 },
+    { "referrerHostname": "example.com", "visitors": 40, "pageviews": 55 },
+    { "referrerHostname": "mastodon.social", "visitors": 20, "pageviews": 28 }
+  ]
+}

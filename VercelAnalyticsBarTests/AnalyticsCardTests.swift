@@ -57,7 +57,12 @@ import VercelAnalyticsCore
     #expect(AnalyticsCardLayout.chartFrame == CGRect(x: 8, y: 166, width: 368, height: 150))
     #expect(AnalyticsCardPresentation.pageFixtures.count == 5)
     #expect(AnalyticsCardPresentation.figmaFixture.topPages.first?.pageViews == 872)
-    #expect(!AnalyticsCardPresentation.referralsEnabled)
+    #expect(AnalyticsCardPresentation.figmaFixture.breakdownRows(for: .pages) ==
+        AnalyticsCardPresentation.pageFixtures)
+    #expect(AnalyticsCardPresentation.figmaFixture.breakdownRows(for: .referrals) ==
+        AnalyticsCardPresentation.referralFixtures)
+    #expect(AnalyticsCardPresentation.figmaFixture.emptyBreakdownText(for: .pages) == "No page data")
+    #expect(AnalyticsCardPresentation.figmaFixture.emptyBreakdownText(for: .referrals) == "No referral data")
 }
 
 @Test func analyticsGlassAppearanceHonorsReducedTransparency() {
@@ -115,11 +120,25 @@ import VercelAnalyticsCore
 
 @MainActor
 @Test func analyticsCardVisualFixtureRendersAtRetinaScale() throws {
+    try renderAnalyticsCardFixture(selection: .pages, outputName: "current.png")
+}
+
+@MainActor
+@Test func analyticsCardReferralFixtureRendersAtRetinaScale() throws {
+    try renderAnalyticsCardFixture(selection: .referrals, outputName: "referrals-current.png")
+}
+
+@MainActor
+private func renderAnalyticsCardFixture(
+    selection: AnalyticsBreakdownSelection,
+    outputName: String
+) throws {
     AppFontRegistry.registerBundledFonts()
     let renderer = ImageRenderer(content: AnalyticsCardView(
         presentation: .figmaFixture,
         chartStyle: .default,
         isProjectSelectorPresented: .constant(false),
+        selectedBreakdown: .constant(selection),
         projectSelectorContent: { EmptyView() },
         onSelectProject: {},
         onSelectRange: { _ in },
@@ -144,8 +163,10 @@ import VercelAnalyticsCore
 
     let outputDirectory = repositoryRoot.appendingPathComponent(".build/VisualDiff", isDirectory: true)
     try FileManager.default.createDirectory(at: outputDirectory, withIntermediateDirectories: true)
-    let currentURL = outputDirectory.appendingPathComponent("current.png")
+    let currentURL = outputDirectory.appendingPathComponent(outputName)
     try writePNG(currentImage, to: currentURL)
+
+    guard selection == .pages else { return }
 
     let referenceURL = outputDirectory.appendingPathComponent("figma-reference-2x.png")
     guard let referenceImage = loadImage(at: referenceURL) else {

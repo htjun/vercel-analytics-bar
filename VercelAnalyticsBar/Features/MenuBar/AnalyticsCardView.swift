@@ -46,15 +46,19 @@ struct AnalyticsCardMetric: Equatable {
     }
 }
 
-struct AnalyticsCardPresentation: Equatable {
-    static let referralsEnabled = false
+enum AnalyticsBreakdownSelection: Equatable {
+    case pages
+    case referrals
+}
 
+struct AnalyticsCardPresentation: Equatable {
     let projectName: String
     let selectedRange: VercelAnalyticsRange
     let visitors: AnalyticsCardMetric
     let pageViews: AnalyticsCardMetric
     let series: [VercelAnalyticsPoint]
     let topPages: [VercelAnalyticsBreakdown]
+    let topReferrers: [VercelAnalyticsBreakdown]
     let updatedText: String
     let dashboardURL: URL?
 
@@ -78,6 +82,12 @@ struct AnalyticsCardPresentation: Equatable {
         ),
     ]
 
+    static let referralFixtures = [
+        VercelAnalyticsBreakdown(label: "google.com", visitors: 510, pageViews: 640),
+        VercelAnalyticsBreakdown(label: "news.ycombinator.com", visitors: 205, pageViews: 260),
+        VercelAnalyticsBreakdown(label: "github.com", visitors: 160, pageViews: 195),
+    ]
+
     static let figmaFixture = AnalyticsCardPresentation(
         projectName: "jasonjun-dev-2024",
         selectedRange: .last30Days,
@@ -85,6 +95,7 @@ struct AnalyticsCardPresentation: Equatable {
         pageViews: AnalyticsCardMetric(label: "Page Views", value: 6423, comparisonText: "-2%", trend: .negative),
         series: fixtureSeries,
         topPages: pageFixtures,
+        topReferrers: referralFixtures,
         updatedText: "Updated 6:38 pm",
         dashboardURL: URL(string: "https://vercel.com")
     )
@@ -100,12 +111,31 @@ struct AnalyticsCardPresentation: Equatable {
             )
         }
     }()
+
+    func breakdownRows(for selection: AnalyticsBreakdownSelection) -> [VercelAnalyticsBreakdown] {
+        switch selection {
+        case .pages:
+            topPages
+        case .referrals:
+            topReferrers
+        }
+    }
+
+    func emptyBreakdownText(for selection: AnalyticsBreakdownSelection) -> String {
+        switch selection {
+        case .pages:
+            "No page data"
+        case .referrals:
+            "No referral data"
+        }
+    }
 }
 
 struct AnalyticsCardView<ProjectSelectorContent: View>: View {
     let presentation: AnalyticsCardPresentation
     let chartStyle: ChartStyle
     @Binding var isProjectSelectorPresented: Bool
+    @Binding var selectedBreakdown: AnalyticsBreakdownSelection
     @ViewBuilder let projectSelectorContent: () -> ProjectSelectorContent
     let onSelectProject: () -> Void
     let onSelectRange: (VercelAnalyticsRange) -> Void
@@ -255,27 +285,23 @@ struct AnalyticsCardView<ProjectSelectorContent: View>: View {
     }
 
     private var breakdown: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 12) {
-                Text("Pages")
-                    .font(AppTypography.geistMedium12)
-                    .foregroundStyle(AnalyticsCardColors.primaryText)
+        let rows = presentation.breakdownRows(for: selectedBreakdown)
 
-                Text("Referrals")
-                    .font(AppTypography.geistMedium12)
-                    .foregroundStyle(AnalyticsCardColors.primaryText.opacity(0.4))
-                    .accessibilityLabel("Referrals, unavailable")
+        return VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 12) {
+                breakdownTab("Pages", selection: .pages)
+                breakdownTab("Referrals", selection: .referrals)
             }
             .frame(height: 16, alignment: .topLeading)
 
-            if presentation.topPages.isEmpty {
-                Text("No page data")
+            if rows.isEmpty {
+                Text(presentation.emptyBreakdownText(for: selectedBreakdown))
                     .font(AppTypography.geistRegular12)
                     .foregroundStyle(AnalyticsCardColors.secondaryText)
                     .frame(width: 344, height: 16, alignment: .leading)
             } else {
                 VStack(alignment: .leading, spacing: 8) {
-                    ForEach(presentation.topPages.prefix(5)) { row in
+                    ForEach(rows.prefix(5)) { row in
                         HStack(spacing: 8) {
                             Text(row.label)
                                 .font(AppTypography.geistRegular12)
@@ -294,6 +320,21 @@ struct AnalyticsCardView<ProjectSelectorContent: View>: View {
             }
         }
         .frame(width: 344, height: 144, alignment: .topLeading)
+    }
+
+    private func breakdownTab(
+        _ title: String,
+        selection: AnalyticsBreakdownSelection
+    ) -> some View {
+        let isSelected = selectedBreakdown == selection
+        return Button(title) {
+            selectedBreakdown = selection
+        }
+        .buttonStyle(.plain)
+        .font(AppTypography.geistMedium12)
+        .foregroundStyle(AnalyticsCardColors.primaryText.opacity(isSelected ? 1 : 0.4))
+        .accessibilityValue(isSelected ? "Selected" : "Not selected")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     private var updatedLabel: some View {

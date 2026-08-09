@@ -8,6 +8,7 @@ struct MenuBarRootView: View {
     let onDismissPanel: () -> Void
     @State private var isProjectSelectorPresented = false
     @State private var projectSearchQuery = ""
+    @State private var selectedBreakdown = AnalyticsBreakdownSelection.pages
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -55,6 +56,7 @@ struct MenuBarRootView: View {
             presentation: presentation(for: snapshot),
             chartStyle: chartStyle.style,
             isProjectSelectorPresented: $isProjectSelectorPresented,
+            selectedBreakdown: $selectedBreakdown,
             projectSelectorContent: {
                 ProjectSelectorView(
                     model: model,
@@ -87,6 +89,7 @@ struct MenuBarRootView: View {
             pageViews: AnalyticsCardMetric(metric: snapshot.pageViews),
             series: snapshot.series,
             topPages: snapshot.topPages,
+            topReferrers: snapshot.topReferrers,
             updatedText: updatedText(for: snapshot),
             dashboardURL: model.currentProject?.analyticsDashboardURL(for: snapshot.range)
         )

@@ -5,6 +5,7 @@ private struct SnapshotData {
     let pageViews: AnalyticsMetric
     let series: [VercelAnalyticsPoint]
     let topPages: [VercelAnalyticsBreakdown]
+    let topReferrers: [VercelAnalyticsBreakdown]
     let last24HoursVisitors: Int
 }
 
@@ -52,8 +53,19 @@ public struct VercelAnalyticsSnapshotProvider: AnalyticsSnapshotProviding {
             range: .last24Hours,
             now: refreshedAt
         )
+        async let topReferrers = client.fetchTopBreakdown(
+            for: project,
+            dimension: .referrerHostname,
+            range: .last24Hours,
+            now: refreshedAt
+        )
 
-        let (current, previous, pages) = try await (currentSeries, previousSeries, topPages)
+        let (current, previous, pages, referrers) = try await (
+            currentSeries,
+            previousSeries,
+            topPages,
+            topReferrers
+        )
         let currentTotals = totals(from: current)
         let previousTotals = totals(from: previous)
         let data = SnapshotData(
@@ -69,6 +81,7 @@ public struct VercelAnalyticsSnapshotProvider: AnalyticsSnapshotProviding {
             ),
             series: current.points,
             topPages: pages,
+            topReferrers: referrers,
             last24HoursVisitors: currentTotals.visitors
         )
 
@@ -105,13 +118,20 @@ public struct VercelAnalyticsSnapshotProvider: AnalyticsSnapshotProviding {
             range: range,
             now: refreshedAt
         )
+        async let topReferrers = client.fetchTopBreakdown(
+            for: project,
+            dimension: .referrerHostname,
+            range: range,
+            now: refreshedAt
+        )
 
-        let (count, previous, series, last24, pages) = try await (
+        let (count, previous, series, last24, pages, referrers) = try await (
             currentCount,
             previousCount,
             currentSeries,
             last24HoursSeries,
-            topPages
+            topPages,
+            topReferrers
         )
         let data = SnapshotData(
             visitors: AnalyticsMetric(
@@ -126,6 +146,7 @@ public struct VercelAnalyticsSnapshotProvider: AnalyticsSnapshotProviding {
             ),
             series: series.points,
             topPages: pages,
+            topReferrers: referrers,
             last24HoursVisitors: totals(from: last24).visitors
         )
 
@@ -151,6 +172,7 @@ public struct VercelAnalyticsSnapshotProvider: AnalyticsSnapshotProviding {
             pageViews: data.pageViews,
             series: data.series,
             topPages: data.topPages,
+            topReferrers: data.topReferrers,
             last24HoursVisitors: data.last24HoursVisitors,
             refreshedAt: refreshedAt
         )
