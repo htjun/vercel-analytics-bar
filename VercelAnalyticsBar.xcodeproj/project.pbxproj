@@ -38,6 +38,7 @@
 		A10000000000000000000021 /* Fonts in Resources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000021 /* Fonts */; };
 		A10000000000000000000022 /* AnalyticsCardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000022 /* AnalyticsCardTests.swift */; };
 		A10000000000000000000023 /* AnalyticsGlassShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000023 /* AnalyticsGlassShell.swift */; };
+		A10000000000000000000024 /* StatusBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000024 /* StatusBarController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -88,6 +89,7 @@
 		A30000000000000000000021 /* Fonts */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Fonts; sourceTree = "<group>"; };
 		A30000000000000000000022 /* AnalyticsCardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsCardTests.swift; sourceTree = "<group>"; };
 		A30000000000000000000023 /* AnalyticsGlassShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsGlassShell.swift; sourceTree = "<group>"; };
+		A30000000000000000000024 /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -207,6 +209,7 @@
 			children = (
 				A30000000000000000000020 /* AnalyticsCardView.swift */,
 				A30000000000000000000023 /* AnalyticsGlassShell.swift */,
+				A30000000000000000000024 /* StatusBarController.swift */,
 				A3000000000000000000000A /* MenuBarRootView.swift */,
 			);
 			path = MenuBar;
@@ -374,6 +377,7 @@
 				A1000000000000000000001C /* ChartInspectorView.swift in Sources */,
 				A10000000000000000000020 /* AnalyticsCardView.swift in Sources */,
 				A10000000000000000000023 /* AnalyticsGlassShell.swift in Sources */,
+				A10000000000000000000024 /* StatusBarController.swift in Sources */,
 				A10000000000000000000006 /* MenuBarRootView.swift in Sources */,
 				A10000000000000000000007 /* SettingsRootView.swift in Sources */,
 			);

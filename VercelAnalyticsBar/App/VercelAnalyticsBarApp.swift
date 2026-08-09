@@ -1,15 +1,16 @@
+import AppKit
 import SwiftUI
 import VercelAnalyticsCore
 
-@main
 @MainActor
-struct VercelAnalyticsBarApp: App {
-    @State private var model: AppModel
-    @State private var chartStyle = ChartStyleStore()
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    let model: AppModel
+    let chartStyle: ChartStyleStore
+    private var statusBarController: StatusBarController?
 
-    init() {
+    override init() {
         AppFontRegistry.registerBundledFonts()
-        let model = AppModel(
+        model = AppModel(
             projectProviderFactory: { token in
                 VercelAPIClient(token: token)
             },
@@ -17,40 +18,41 @@ struct VercelAnalyticsBarApp: App {
                 VercelAnalyticsSnapshotProvider(token: token, project: project)
             }
         )
-        model.startRefreshLoop()
-        _model = State(initialValue: model)
+        chartStyle = ChartStyleStore()
+        super.init()
     }
 
-    var body: some Scene {
-        MenuBarExtra {
-            MenuBarRootView(
-                model: model,
-                chartStyle: chartStyle
-            )
-        } label: {
-            HStack(spacing: 4) {
-                Image("MenuBarChart")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 16, height: 16)
-                    .accessibilityLabel("Visitors")
-                if let abbreviatedVisitors = model.abbreviatedVisitors {
-                    Text(abbreviatedVisitors)
-                }
-            }
-        }
-        .menuBarExtraStyle(.window)
+    func applicationDidFinishLaunching(_: Notification) {
+        model.startRefreshLoop()
+        statusBarController = StatusBarController(model: model, chartStyle: chartStyle)
+    }
 
+    func applicationWillTerminate(_: Notification) {
+        statusBarController?.tearDown()
+        statusBarController = nil
+        model.stopRefreshLoop()
+    }
+}
+
+@main
+@MainActor
+struct VercelAnalyticsBarApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
+    var body: some Scene {
         Settings {
             SettingsRootView(
-                model: model,
+                model: appDelegate.model,
                 isChartInspectorEnabled: isChartInspectorEnabled
             )
         }
 
         #if CHART_INSPECTOR
             Window("Chart Inspector", id: ChartInspectorScene.id) {
-                ChartInspectorView(analyticsState: model.state, styleStore: chartStyle)
+                ChartInspectorView(
+                    analyticsState: appDelegate.model.state,
+                    styleStore: appDelegate.chartStyle
+                )
             }
             .defaultSize(width: 820, height: 640)
             .windowResizability(.contentMinSize)

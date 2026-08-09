@@ -120,7 +120,8 @@ import VercelAnalyticsCore
         chartStyle: .default,
         onSelectProject: {},
         onSelectRange: { _ in },
-        onOpenSettings: {}
+        onOpenSettings: {},
+        onOpenDashboard: { _ in }
     ))
     renderer.scale = 2
     renderer.proposedSize = ProposedViewSize(

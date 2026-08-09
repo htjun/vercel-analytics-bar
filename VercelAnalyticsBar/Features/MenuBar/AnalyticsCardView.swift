@@ -103,6 +103,7 @@ struct AnalyticsCardView: View {
     let onSelectProject: () -> Void
     let onSelectRange: (VercelAnalyticsRange) -> Void
     let onOpenSettings: () -> Void
+    let onOpenDashboard: (URL) -> Void
     @State private var isRangeSelectorPresented = false
 
     var body: some View {
@@ -289,7 +290,9 @@ struct AnalyticsCardView: View {
     @ViewBuilder
     private var dashboardLink: some View {
         if let dashboardURL = presentation.dashboardURL {
-            Link(destination: dashboardURL) {
+            Button {
+                onOpenDashboard(dashboardURL)
+            } label: {
                 dashboardLabel
             }
             .buttonStyle(.plain)

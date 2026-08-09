@@ -4,17 +4,15 @@ import VercelAnalyticsCore
 struct MenuBarRootView: View {
     let model: AppModel
     let chartStyle: ChartStyleStore
+    let onDismissPanel: () -> Void
     @State private var isProjectSelectorPresented = false
     @State private var projectSearchQuery = ""
     @Environment(\.openSettings) private var openSettings
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         content
-            .task {
-                await model.restoreConnection()
-                guard model.state == .idle else { return }
-                await model.load()
-            }
+            .onExitCommand(perform: onDismissPanel)
     }
 
     @ViewBuilder
@@ -66,7 +64,12 @@ struct MenuBarRootView: View {
                 }
             },
             onOpenSettings: {
+                onDismissPanel()
                 openSettings()
+            },
+            onOpenDashboard: { url in
+                onDismissPanel()
+                openURL(url)
             }
         )
         .popover(isPresented: $isProjectSelectorPresented, arrowEdge: .top) {
