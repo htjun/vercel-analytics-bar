@@ -69,10 +69,14 @@ enum AnalyticsPanelEventPolicy {
     static func keepsPanelOpen(
         for eventWindow: NSWindow?,
         panel: NSWindow,
-        statusItemWindow: NSWindow?
+        statusItemWindow: NSWindow?,
+        companionWindows: [NSWindow] = []
     ) -> Bool {
         guard let eventWindow else { return false }
-        if eventWindow === panel || eventWindow === statusItemWindow {
+        if eventWindow === panel
+            || eventWindow === statusItemWindow
+            || companionWindows.contains(where: { $0 === eventWindow })
+        {
             return true
         }
 
@@ -226,6 +230,7 @@ final class AnalyticsPanel: NSPanel {
 final class StatusBarController: NSObject {
     private let model: AppModel
     private let chartStyle: ChartStyleStore
+    private let companionWindows: () -> [NSWindow]
     private let onOpenSettings: () -> Void
     private let statusBar: NSStatusBar
     private let statusItem: NSStatusItem
@@ -246,10 +251,12 @@ final class StatusBarController: NSObject {
         model: AppModel,
         chartStyle: ChartStyleStore,
         statusBar: NSStatusBar = .system,
+        companionWindows: @escaping () -> [NSWindow] = { [] },
         onOpenSettings: @escaping () -> Void
     ) {
         self.model = model
         self.chartStyle = chartStyle
+        self.companionWindows = companionWindows
         self.onOpenSettings = onOpenSettings
         self.statusBar = statusBar
         statusItem = statusBar.statusItem(withLength: NSStatusItem.variableLength)
@@ -389,7 +396,8 @@ final class StatusBarController: NSObject {
             guard !AnalyticsPanelEventPolicy.keepsPanelOpen(
                 for: event.window,
                 panel: panel,
-                statusItemWindow: statusItem.button?.window
+                statusItemWindow: statusItem.button?.window,
+                companionWindows: companionWindows()
             ) else {
                 return event
             }

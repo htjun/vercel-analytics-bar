@@ -126,7 +126,6 @@ struct MenuBarRootView: View {
     }
 
     private func openSettings() {
-        onDismissPanel()
         onOpenSettings()
     }
 }

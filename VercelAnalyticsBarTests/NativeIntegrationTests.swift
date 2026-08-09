@@ -178,6 +178,7 @@ import VercelAnalyticsCore
     let panel = AnalyticsPanel(hostingView: NSView())
     let childWindow = NSWindow()
     let statusItemWindow = NSWindow()
+    let companionWindow = NSWindow()
     let unrelatedWindow = NSWindow()
     panel.addChildWindow(childWindow, ordered: .above)
 
@@ -195,6 +196,12 @@ import VercelAnalyticsCore
         for: statusItemWindow,
         panel: panel,
         statusItemWindow: statusItemWindow
+    ))
+    #expect(AnalyticsPanelEventPolicy.keepsPanelOpen(
+        for: companionWindow,
+        panel: panel,
+        statusItemWindow: statusItemWindow,
+        companionWindows: [companionWindow]
     ))
     #expect(!AnalyticsPanelEventPolicy.keepsPanelOpen(
         for: unrelatedWindow,

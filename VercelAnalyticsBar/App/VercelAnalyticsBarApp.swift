@@ -31,6 +31,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusBarController = StatusBarController(
             model: model,
             chartStyle: chartStyle,
+            companionWindows: { [weak self] in
+                [self?.settingsWindowController?.window].compactMap { $0 }
+            },
             onOpenSettings: { [weak self] in
                 self?.settingsWindowController?.present()
             }
