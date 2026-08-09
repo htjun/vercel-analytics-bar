@@ -1,6 +1,6 @@
 # Vercel Web Analytics API Contract
 
-Updated: 2026-08-02
+Updated: 2026-08-09
 
 This document records the public API contract that Vercel Analytics Bar may use. The app must not call Vercel dashboard endpoints or infer a contract from dashboard traffic.
 
@@ -13,7 +13,7 @@ This document records the public API contract that Vercel Analytics Bar may use.
 | Discover teams | `GET /v2/teams` | None |
 | Discover projects | `GET /v9/projects` | `teamId` for team-owned projects |
 | Summary totals | `GET /v1/query/web-analytics/visits/count` | `projectId`; optional `since`, `until`, `teamId` |
-| Time series | `GET /v1/query/web-analytics/visits/aggregate` | `projectId`, `since`, `until`, `by`; optional `teamId` |
+| Time series and dimension breakdowns | `GET /v1/query/web-analytics/visits/aggregate` | `projectId`, `since`, `until`, `by`; optional `teamId`, `filter`, `limit` |
 
 The API uses bearer authentication. Personal projects omit team scope; team projects include `teamId` or `slug`.
 
@@ -21,11 +21,17 @@ The live probe treats successful access to the required team-list endpoint as to
 
 ## Analytics model
 
-The documented visits endpoints expose `pageviews` and `visitors`. Count responses return one total, while aggregate responses can group by one time dimension: `hour`, `day`, `week`, `month`, or `year`.
+The documented visits endpoints expose `pageviews` and `visitors`. Count responses return one total.
+Aggregate responses group by one requested dimension. Time dimensions include `hour`, `day`, `week`,
+`month`, and `year`; the app's traffic breakdowns use `requestPath` and `referrerHostname`.
+Breakdown rows include the dimension label plus both metrics. The app requests five rows, retains the
+server's order, and removes empty labels, direct referral markers, and the synthetic `Others` row.
 
 `since` and `until` accept date strings or millisecond timestamps. Vercel includes both ends of the requested interval, then adjusts aggregate results to the requested granularity. The client therefore defines every product range as an explicit half-open UTC interval, sends `endExclusive` to count queries, sends `endExclusive - 1 ms` to aggregate queries, and discards returned points outside `[start, endExclusive)`. The response's echoed query is retained for compatibility, but it must not widen the logical interval used by cards or charts.
 
-Production is the default for visits queries. The probe additionally sends `filter=environment eq 'production'` and records whether it matches the default response without storing metric values.
+Production is the default for visits queries. The app and probe explicitly send
+`filter=environment eq 'production'` for breakdowns. The probe also records whether an explicit
+Production count matches the default response without storing metric values.
 
 ## Live verification
 
@@ -37,6 +43,11 @@ A local probe against an account with both personal and team projects confirmed:
 - The default visits count matched an explicit `environment eq 'production'` query for every tested range.
 - Responses exposed `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`, and `X-Vercel-Id`.
 - A deliberately invalid token returned `403 forbidden` without exposing a credential or response body.
+
+That verification record predates the dimension probes. The current probe additionally queries
+`requestPath` and `referrerHostname` for one selected range. Its output records only status, safe
+headers, row count, recognized schema keys, and safe echoed query fields; it does not persist paths,
+hostnames, metric values, or project identity.
 
 The API does not return a comparison value. V1 obtains the previous period through a second count query and computes the percentage change in Core.
 
@@ -72,7 +83,10 @@ Run the probe only from an interactive local terminal:
 make probe
 ```
 
-The script reads `VERCEL_TOKEN` if it is set; otherwise it prompts with hidden terminal input. It never writes the token, project ID, project name, team ID, metric values, or raw response bodies. It writes a sanitized contract record to `.build/vercel-api-probe.json`, which is ignored by Git.
+The script reads `VERCEL_TOKEN` if it is set; otherwise it prompts with hidden terminal input. It
+never writes the token, project ID, project name, team ID, breakdown labels, metric values, or raw
+response bodies. It writes a sanitized contract record to `.build/vercel-api-probe.json`, which is
+ignored by Git.
 
 ## Sources
 

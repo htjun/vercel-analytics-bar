@@ -11,6 +11,8 @@ The application connects directly to Vercel, discovers projects across the accou
 - Displays Visitors and Page Views totals with equal-period comparisons after a live API request.
 - Switches among Last 24 Hours, Last 7 Days, and Last 30 Days, defaults to Last 7 Days, and persists the selected range.
 - Renders the selected range's Visitors trend with a native line and area chart.
+- Shows the five highest-traffic Production pages by page views and switches locally to the five
+  highest-traffic referral hostnames without another request.
 - Provides a Debug-only Chart Inspector for live tuning the native chart with DialKit controls.
 - Shows a chart icon and abbreviated Last 24 Hours Visitors count in the menu bar after the first successful load.
 - Opens a Settings window and terminates from the Quit button.
@@ -29,7 +31,15 @@ The application connects directly to Vercel, discovers projects across the accou
 - Offers an off-by-default Open at login setting through macOS Login Items.
 - States that the app is independent and not affiliated with Vercel; credentials are sent directly to Vercel and are not operated by a hosted Vercel Analytics Bar service.
 
-The Core client is covered separately by sanitized fixture tests. It supports bearer-authenticated personal and team project discovery, pagination, alphabetical sorting, Production Visitors/Page Views count and time-series queries, equal-period comparisons, and a live ranged snapshot provider for one project. It also provides safe typed handling for authentication, permission, rate-limit, transient, and malformed-response failures. Analytics activation is currently represented as `Unknown` in the project list because the documented public discovery response does not expose that setting; live metric errors are surfaced in the menu bar as unavailable states. Bounce Rate is omitted because the verified public API contract does not provide it.
+The Core client is covered separately by sanitized fixture tests. It supports bearer-authenticated
+personal and team project discovery, pagination, alphabetical sorting, Production Visitors/Page
+Views count, time-series, page-path, and referral-hostname queries, equal-period comparisons, and a
+live ranged snapshot provider for one project. It also provides safe typed handling for
+authentication, permission, rate-limit, transient, and malformed-response failures. Analytics
+activation is currently represented as `Unknown` in the project list because the documented public
+discovery response does not expose that setting; live metric errors are surfaced in the menu bar as
+unavailable states. Bounce Rate is omitted because the verified public API contract does not
+provide it.
 
 ### Analytics range semantics
 

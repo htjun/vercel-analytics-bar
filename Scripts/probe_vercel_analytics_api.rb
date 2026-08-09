@@ -16,6 +16,7 @@ SAFE_HEADER_NAMES = %w[
   x-vercel-id
 ].freeze
 SAFE_METRIC_KEYS = %w[pageviews visitors].freeze
+SAFE_DIMENSION_KEYS = %w[referrerHostname requestPath].freeze
 
 def prompt_for_token
   token = ENV.fetch("VERCEL_TOKEN", "").strip
@@ -191,6 +192,20 @@ def analytics_summary(response)
   )
 end
 
+def breakdown_summary(response, dimension)
+  body = response.fetch("body")
+  rows = body["data"].is_a?(Array) ? body.fetch("data") : []
+  returned_query = body["query"].is_a?(Hash) ? body.fetch("query") : {}
+  row_keys = rows.select { |row| row.is_a?(Hash) }.flat_map(&:keys).uniq
+
+  request_summary(response).merge(
+    "rowCount" => rows.count,
+    "metricKeys" => row_keys & SAFE_METRIC_KEYS,
+    "dimensionKeyPresent" => row_keys.include?(dimension),
+    "returnedQuery" => returned_query.slice("since", "until", "groupBy", "filter", "limit"),
+  )
+end
+
 def query_analytics(project, token)
   range_queries(project).to_h do |name, query|
     count = request("/v1/query/web-analytics/visits/count", query.reject { |key| key == "by" }, token)
@@ -215,6 +230,21 @@ def query_analytics(project, token)
   end
 end
 
+def query_breakdowns(project, token)
+  query = range_queries(project).fetch("last7Days")
+
+  SAFE_DIMENSION_KEYS.to_h do |dimension|
+    breakdown_query = query.merge(
+      "by" => dimension,
+      "limit" => 5,
+      "filter" => "environment eq 'production'",
+    )
+    response = request("/v1/query/web-analytics/visits/aggregate", breakdown_query, token)
+
+    [dimension, breakdown_summary(response, dimension)]
+  end
+end
+
 def write_record(record)
   directory = File.dirname(OUTPUT_PATH)
   Dir.mkdir(directory) unless Dir.exist?(directory)
@@ -226,7 +256,7 @@ token = prompt_for_token
 abort "A Vercel access token is required." if token.empty?
 
 record = {
-  "schemaVersion" => 2,
+  "schemaVersion" => 3,
   "generatedAt" => Time.now.utc.iso8601,
   "apiBaseURL" => API_BASE_URL,
   "privateDashboardEndpointsUsed" => false,
@@ -257,4 +287,5 @@ projects = projects_for(scopes, token, record)
 project = select_project(projects)
 record["selectedProject"] = { "scopeKind" => project.dig("scope", "kind") }
 record["analytics"] = query_analytics(project, token)
+record["breakdowns"] = query_breakdowns(project, token)
 write_record(record)
