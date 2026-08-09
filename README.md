@@ -130,6 +130,15 @@ self-contained assets after changing the web project, run:
 make inspector-build
 ```
 
+Inspector protocol and chart-style declarations are generated from
+`Contracts/ChartInspectorContract.json`. After changing that contract, regenerate the checked-in
+Swift and TypeScript declarations before rebuilding the web assets:
+
+```sh
+npm --prefix Tools/ChartInspector run contract:generate
+make inspector-build
+```
+
 Inspector-enabled builds set `WKWebView.isInspectable`, so the embedded page can also be inspected
 from Safari's Develop menu. Direct and App Store release configurations omit the Inspector scene,
 bridge, and web resources.
@@ -169,7 +178,26 @@ The checked-in Xcode project owns the application bundle, AppKit lifecycle, menu
 Settings and Debug-only Chart Inspector windows, WebKit bridge, Login Items integration, asset catalog,
 sandbox metadata, signing configuration, and app tests.
 
-The local `VercelAnalyticsCore` Swift package owns stable analytics domain values, the typed `VercelAPIClient`, project discovery, ranged snapshots, equal-period comparison calculation, and the `AnalyticsSnapshotProviding` boundary. The app injects token-based project and analytics providers into a main-actor observable model, which owns account connection, project selection, current-project switching, persisted range selection, refresh coordination, and menu-bar metric state. Fixture providers remain test-only. The API client accepts an injected HTTP transport for deterministic tests; its Vercel DTOs stay internal and tokens or response bodies are never included in client errors. The app's credential boundary uses Security Keychain APIs, while selected project IDs, the current project, account preferences, and versioned snapshot cache use injected stores so disconnect and recovery behavior are testable. Snapshot cache entries are keyed by project and analytics range and are persisted under Application Support; corrupt or incompatible files are discarded.
+The local `VercelAnalyticsCore` Swift package owns stable analytics domain values, canonical UTC
+range plans, the typed `VercelAPIClient`, project discovery, ranged snapshots, equal-period
+comparison calculation, and the `AnalyticsSnapshotProviding` boundary. The main-actor application
+model owns account and range intent plus presentation orchestration. It delegates catalog and
+selection invariants to `ProjectCatalog`, refresh/cache/concurrency/retry/scheduling mechanics to
+`SnapshotRefreshCoordinator`, and the complete menu-bar panel lifecycle to
+`AnalyticsPanelController`. Fixture providers remain test-only. The API client accepts an injected
+HTTP transport for deterministic tests; its Vercel DTOs stay internal and tokens or response bodies
+are never included in client errors.
+
+The app's credential boundary uses Security Keychain APIs. Selected and current project IDs are one
+versioned persisted record with legacy migration; account preferences and versioned snapshot cache
+use injected stores so disconnect and recovery behavior are testable. Snapshot cache entries are
+keyed by project and analytics range and are persisted under Application Support; corrupt or
+incompatible files are discarded. The Chart Inspector's language-neutral JSON contract generates
+the Swift and TypeScript declarations used by both adapters, and freshness is checked before every
+Inspector test or build.
+
+The complete ownership map and domain glossary are in
+[`docs/architecture.md`](docs/architecture.md).
 
 Build configurations are separated into Debug, direct-release, and App Store release variants. Both release variants are currently unsigned build contracts; packaging, signing, notarization, Sparkle, and App Store submission are intentionally deferred.
 
@@ -177,9 +205,10 @@ Build configurations are separated into Debug, direct-release, and App Store rel
 
 ```text
 Config/                         Shared Xcode build settings
+Contracts/                      Authoritative language-neutral generated-code contracts
 Packages/VercelAnalyticsCore/  Domain models, API client, providers, and Core tests
 Scripts/                        Bootstrap and verification entry points
-Tools/ChartInspector/           React, DialKit, Vite, and TypeScript bridge tests
+Tools/ChartInspector/           Generated contract, React, DialKit, Vite, and bridge tests
 VercelAnalyticsBar/             Application composition, Keychain boundary, and SwiftUI features
 VercelAnalyticsBarTests/        Main-actor application behavior tests
 ```
