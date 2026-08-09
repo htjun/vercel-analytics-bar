@@ -199,7 +199,6 @@ def breakdown_summary(response, dimension)
   row_keys = rows.select { |row| row.is_a?(Hash) }.flat_map(&:keys).uniq
 
   request_summary(response).merge(
-    "rowCount" => rows.count,
     "metricKeys" => row_keys & SAFE_METRIC_KEYS,
     "dimensionKeyPresent" => row_keys.include?(dimension),
     "returnedQuery" => returned_query.slice("since", "until", "groupBy", "filter", "limit"),

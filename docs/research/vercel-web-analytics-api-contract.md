@@ -46,8 +46,8 @@ A local probe against an account with both personal and team projects confirmed:
 
 That verification record predates the dimension probes. The current probe additionally queries
 `requestPath` and `referrerHostname` for one selected range. Its output records only status, safe
-headers, row count, recognized schema keys, and safe echoed query fields; it does not persist paths,
-hostnames, metric values, or project identity.
+headers, recognized schema keys, and safe echoed query fields; it does not persist paths, hostnames,
+metric values, row counts, or project identity.
 
 The API does not return a comparison value. V1 obtains the previous period through a second count query and computes the percentage change in Core.
 
