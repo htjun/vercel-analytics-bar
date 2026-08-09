@@ -19,40 +19,12 @@ struct StatusItemPresentation: Equatable {
 }
 
 @MainActor
-enum AnalyticsPanelEventPolicy {
-    static func keepsPanelOpen(
-        for eventWindow: NSWindow?,
-        panel: NSWindow,
-        statusItemWindow: NSWindow?,
-        companionWindows: [NSWindow] = []
-    ) -> Bool {
-        guard let eventWindow else { return false }
-        let isOwnedWindow = eventWindow === panel
-            || eventWindow === statusItemWindow
-            || companionWindows.contains(where: { $0 === eventWindow })
-        if isOwnedWindow {
-            return true
-        }
-
-        var ancestor = eventWindow.parent
-        while let window = ancestor {
-            if window === panel { return true }
-            ancestor = window.parent
-        }
-        return false
-    }
-}
-
-@MainActor
 final class StatusBarController: NSObject {
     private let model: AppModel
-    private let companionWindows: () -> [NSWindow]
     private let statusBar: NSStatusBar
     private let statusItem: NSStatusItem
     private let panelController: AnalyticsPanelController
 
-    private var localEventMonitor: Any?
-    private var globalEventMonitor: Any?
     private var isInstalled = true
 
     var isStatusItemVisible: Bool {
@@ -67,7 +39,6 @@ final class StatusBarController: NSObject {
         onOpenSettings: @escaping () -> Void
     ) {
         self.model = model
-        self.companionWindows = companionWindows
         self.statusBar = statusBar
         let statusItem = statusBar.statusItem(withLength: NSStatusItem.variableLength)
         self.statusItem = statusItem
@@ -76,17 +47,12 @@ final class StatusBarController: NSObject {
             model: model,
             chartStyle: chartStyle,
             onOpenSettings: onOpenSettings,
-            setStatusItemHighlighted: { statusItemButton?.highlight($0) }
+            setStatusItemHighlighted: { statusItemButton?.highlight($0) },
+            statusItemWindow: { statusItemButton?.window },
+            companionWindows: companionWindows
         )
         super.init()
 
-        panelController.onPresentationChanged = { [weak self] isPresented in
-            if isPresented {
-                self?.installEventMonitors()
-            } else {
-                self?.removeEventMonitors()
-            }
-        }
         configureStatusItem()
         observeStatusItemPresentation()
     }
@@ -159,50 +125,5 @@ final class StatusBarController: NSObject {
         let anchorOnScreen = buttonWindow.convertToScreen(anchorInWindow)
         let visibleFrame = buttonWindow.screen?.visibleFrame ?? NSScreen.main?.visibleFrame ?? anchorOnScreen
         return AnalyticsPanelAnchor(frame: anchorOnScreen, visibleFrame: visibleFrame)
-    }
-
-    private func installEventMonitors() {
-        removeEventMonitors()
-        localEventMonitor = NSEvent.addLocalMonitorForEvents(
-            matching: [.leftMouseDown, .rightMouseDown, .keyDown]
-        ) { [weak self] event in
-            guard let self, panelController.isPresented else { return event }
-            if event.type == .keyDown, event.keyCode == 53 {
-                if !panelController.window.hasTransientChildWindows {
-                    dismissPanel()
-                    return nil
-                }
-                return event
-            }
-            guard !AnalyticsPanelEventPolicy.keepsPanelOpen(
-                for: event.window,
-                panel: panelController.window,
-                statusItemWindow: statusItem.button?.window,
-                companionWindows: companionWindows()
-            ) else {
-                return event
-            }
-            dismissPanel()
-            return event
-        }
-
-        globalEventMonitor = NSEvent.addGlobalMonitorForEvents(
-            matching: [.leftMouseDown, .rightMouseDown]
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.dismissPanel()
-            }
-        }
-    }
-
-    private func removeEventMonitors() {
-        if let localEventMonitor {
-            NSEvent.removeMonitor(localEventMonitor)
-            self.localEventMonitor = nil
-        }
-        if let globalEventMonitor {
-            NSEvent.removeMonitor(globalEventMonitor)
-            self.globalEventMonitor = nil
-        }
     }
 }

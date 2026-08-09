@@ -6,6 +6,17 @@ struct AnalyticsPanelAnchor: Equatable {
     let visibleFrame: CGRect
 }
 
+enum AnalyticsPanelEventInput {
+    case escape
+    case pointerDown(window: NSWindow?)
+    case globalPointerDown
+}
+
+enum AnalyticsPanelEventResult: Equatable {
+    case passThrough
+    case consume
+}
+
 enum AnalyticsPanelPlacement {
     static let gap: CGFloat = 4
     static let screenMargin: CGFloat = 8
@@ -42,25 +53,40 @@ final class AnalyticsPanelController {
     let window: AnalyticsPanel
     private(set) var isPresented = false
     private(set) var sessionID = UUID()
-    var onPresentationChanged: ((Bool) -> Void)?
+
+    var hasLocalEventMonitor: Bool {
+        localEventMonitor != nil
+    }
+
+    var hasGlobalEventMonitor: Bool {
+        globalEventMonitor != nil
+    }
 
     private let model: AppModel
     private let chartStyle: ChartStyleStore
     private let onOpenSettings: () -> Void
     private let setStatusItemHighlighted: (Bool) -> Void
+    private let statusItemWindow: () -> NSWindow?
+    private let companionWindows: () -> [NSWindow]
     private let hostingView: NSHostingView<AnyView>
     private var presentationTask: Task<Void, Never>?
+    private var localEventMonitor: Any?
+    private var globalEventMonitor: Any?
 
     init(
         model: AppModel,
         chartStyle: ChartStyleStore,
         onOpenSettings: @escaping () -> Void,
-        setStatusItemHighlighted: @escaping (Bool) -> Void
+        setStatusItemHighlighted: @escaping (Bool) -> Void,
+        statusItemWindow: @escaping () -> NSWindow? = { nil },
+        companionWindows: @escaping () -> [NSWindow] = { [] }
     ) {
         self.model = model
         self.chartStyle = chartStyle
         self.onOpenSettings = onOpenSettings
         self.setStatusItemHighlighted = setStatusItemHighlighted
+        self.statusItemWindow = statusItemWindow
+        self.companionWindows = companionWindows
         hostingView = NSHostingView(rootView: AnyView(EmptyView()))
         window = AnalyticsPanel(hostingView: hostingView)
         updateHostedContent()
@@ -79,7 +105,7 @@ final class AnalyticsPanelController {
         window.orderFrontRegardless()
         window.makeKey()
         setStatusItemHighlighted(true)
-        onPresentationChanged?(true)
+        installEventMonitors()
 
         presentationTask?.cancel()
         presentationTask = Task { [weak self] in
@@ -91,12 +117,12 @@ final class AnalyticsPanelController {
     }
 
     func dismiss() {
+        removeEventMonitors()
         guard isPresented || window.isVisible else { return }
         isPresented = false
         window.orderOutTransientChildWindows()
         window.orderOut(nil)
         setStatusItemHighlighted(false)
-        onPresentationChanged?(false)
     }
 
     func reposition(anchor: AnalyticsPanelAnchor?) {
@@ -113,6 +139,25 @@ final class AnalyticsPanelController {
         presentationTask?.cancel()
         presentationTask = nil
         dismiss()
+        removeEventMonitors()
+    }
+
+    func handle(_ input: AnalyticsPanelEventInput) -> AnalyticsPanelEventResult {
+        guard isPresented else { return .passThrough }
+
+        switch input {
+        case .escape:
+            guard !window.hasTransientChildWindows else { return .passThrough }
+            dismiss()
+            return .consume
+        case let .pointerDown(eventWindow):
+            guard !keepsPanelOpen(for: eventWindow) else { return .passThrough }
+            dismiss()
+            return .passThrough
+        case .globalPointerDown:
+            dismiss()
+            return .passThrough
+        }
     }
 
     private func updateHostedContent() {
@@ -128,5 +173,56 @@ final class AnalyticsPanelController {
             )
             .id(sessionID)
         )
+    }
+
+    private func installEventMonitors() {
+        removeEventMonitors()
+        localEventMonitor = NSEvent.addLocalMonitorForEvents(
+            matching: [.leftMouseDown, .rightMouseDown, .keyDown]
+        ) { [weak self] event in
+            guard let self else { return event }
+            let input: AnalyticsPanelEventInput = if event.type == .keyDown, event.keyCode == 53 {
+                .escape
+            } else {
+                .pointerDown(window: event.window)
+            }
+            return handle(input) == .consume ? nil : event
+        }
+
+        globalEventMonitor = NSEvent.addGlobalMonitorForEvents(
+            matching: [.leftMouseDown, .rightMouseDown]
+        ) { [weak self] _ in
+            Task { @MainActor in
+                _ = self?.handle(.globalPointerDown)
+            }
+        }
+    }
+
+    private func removeEventMonitors() {
+        if let localEventMonitor {
+            NSEvent.removeMonitor(localEventMonitor)
+            self.localEventMonitor = nil
+        }
+        if let globalEventMonitor {
+            NSEvent.removeMonitor(globalEventMonitor)
+            self.globalEventMonitor = nil
+        }
+    }
+
+    private func keepsPanelOpen(for eventWindow: NSWindow?) -> Bool {
+        guard let eventWindow else { return false }
+        let isOwnedWindow = eventWindow === window
+            || eventWindow === statusItemWindow()
+            || companionWindows().contains(where: { $0 === eventWindow })
+        if isOwnedWindow {
+            return true
+        }
+
+        var ancestor = eventWindow.parent
+        while let ancestorWindow = ancestor {
+            if ancestorWindow === window { return true }
+            ancestor = ancestorWindow.parent
+        }
+        return false
     }
 }

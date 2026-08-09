@@ -104,6 +104,8 @@ import VercelAnalyticsCore
     #expect(presentedSessionID != initialSessionID)
     #expect(controller.window.frame == CGRect(x: 500, y: 284, width: 400, height: 562))
     #expect(highlightStates == [true])
+    #expect(controller.hasLocalEventMonitor)
+    #expect(controller.hasGlobalEventMonitor)
 
     controller.present(anchor: anchor)
     #expect(controller.sessionID == presentedSessionID)
@@ -118,6 +120,8 @@ import VercelAnalyticsCore
     #expect(!transientChild.isVisible)
     #expect(!controller.window.isVisible)
     #expect(highlightStates == [true, false])
+    #expect(!controller.hasLocalEventMonitor)
+    #expect(!controller.hasGlobalEventMonitor)
 
     controller.present(anchor: anchor)
     #expect(controller.sessionID != presentedSessionID)
@@ -205,45 +209,64 @@ import VercelAnalyticsCore
 }
 
 @MainActor
-@Test func analyticsPanelEventPolicyKeepsOwnedAndStatusWindowsOpen() {
-    let panel = AnalyticsPanel(hostingView: NSView())
+@Test func analyticsPanelControllerKeepsOwnedWindowsOpenAndHandlesEscape() {
     let childWindow = NSWindow()
     let statusItemWindow = NSWindow()
     let companionWindow = NSWindow()
-    let unrelatedWindow = NSWindow()
-    panel.addChildWindow(childWindow, ordered: .above)
-
-    #expect(AnalyticsPanelEventPolicy.keepsPanelOpen(
-        for: panel,
-        panel: panel,
-        statusItemWindow: statusItemWindow
-    ))
-    #expect(AnalyticsPanelEventPolicy.keepsPanelOpen(
-        for: childWindow,
-        panel: panel,
-        statusItemWindow: statusItemWindow
-    ))
-    #expect(AnalyticsPanelEventPolicy.keepsPanelOpen(
-        for: statusItemWindow,
-        panel: panel,
-        statusItemWindow: statusItemWindow
-    ))
-    #expect(AnalyticsPanelEventPolicy.keepsPanelOpen(
-        for: companionWindow,
-        panel: panel,
+    let controller = makePanelController(
         statusItemWindow: statusItemWindow,
         companionWindows: [companionWindow]
-    ))
-    #expect(!AnalyticsPanelEventPolicy.keepsPanelOpen(
-        for: unrelatedWindow,
-        panel: panel,
-        statusItemWindow: statusItemWindow
-    ))
-    #expect(!AnalyticsPanelEventPolicy.keepsPanelOpen(
-        for: nil,
-        panel: panel,
-        statusItemWindow: statusItemWindow
-    ))
+    )
+    controller.present(anchor: nil)
+    controller.window.addChildWindow(childWindow, ordered: .above)
+    childWindow.orderFrontRegardless()
+
+    for eventWindow in [controller.window, childWindow, statusItemWindow, companionWindow] {
+        #expect(controller.handle(.pointerDown(window: eventWindow)) == .passThrough)
+        #expect(controller.isPresented)
+    }
+
+    #expect(controller.handle(.escape) == .passThrough)
+    #expect(controller.isPresented)
+    childWindow.orderOut(nil)
+    #expect(controller.handle(.escape) == .consume)
+    #expect(!controller.isPresented)
+    controller.tearDown()
+}
+
+@MainActor
+@Test func analyticsPanelControllerDismissesForOutsideAndGlobalEvents() {
+    let controller = makePanelController()
+    controller.present(anchor: nil)
+
+    #expect(controller.handle(.pointerDown(window: NSWindow())) == .passThrough)
+    #expect(!controller.isPresented)
+
+    controller.present(anchor: nil)
+    #expect(controller.handle(.globalPointerDown) == .passThrough)
+    #expect(!controller.isPresented)
+    controller.tearDown()
+}
+
+@MainActor
+private func makePanelController(
+    statusItemWindow: NSWindow? = nil,
+    companionWindows: [NSWindow] = []
+) -> AnalyticsPanelController {
+    let model = AppModel(
+        credentialStore: InMemoryCredentialStore(),
+        accountDataStore: InMemoryAccountDataStore(),
+        snapshotCacheStore: InMemorySnapshotCacheStore(),
+        launchAtLoginManager: InMemoryLaunchAtLoginManager()
+    )
+    return AnalyticsPanelController(
+        model: model,
+        chartStyle: ChartStyleStore(),
+        onOpenSettings: {},
+        setStatusItemHighlighted: { _ in },
+        statusItemWindow: { statusItemWindow },
+        companionWindows: { companionWindows }
+    )
 }
 
 @MainActor
