@@ -32,11 +32,11 @@ import Testing
     let font = AppFontRegistry.nsFont(
         postScriptName: "Geist-Regular",
         size: 12,
-        variations: [.weight: 500],
+        variations: [.weight: 450],
         openTypeFeatures: AppTypography.geistSlashedZeroFeatures
     )
 
-    #expect(resolvedVariationValue(.weight, in: font) == 500)
+    #expect(resolvedVariationValue(.weight, in: font) == 450)
     #expect(openTypeFeatureTags(in: font) == Set(["ss09"]))
 }
 
@@ -55,7 +55,7 @@ import Testing
     let comparisonFont = AppFontRegistry.nsFont(
         postScriptName: "InterVariable",
         size: 12,
-        variations: [.opticalSize: 14, .weight: 500],
+        variations: [.opticalSize: 14, .weight: 450],
         openTypeFeatures: AppTypography.interSlashedZeroFeatures
     )
     let metricFont = AppFontRegistry.nsFont(
@@ -67,7 +67,7 @@ import Testing
 
     #expect(comparisonFont.familyName == "Inter Variable")
     #expect(comparisonFont.pointSize == 12)
-    #expect(resolvedVariationValue(.weight, in: comparisonFont) == 500)
+    #expect(resolvedVariationValue(.weight, in: comparisonFont) == 450)
     #expect(resolvedVariationValue(.opticalSize, in: comparisonFont) == 14)
     #expect(openTypeFeatureTags(in: comparisonFont) == Set(["zero"]))
 
@@ -76,7 +76,7 @@ import Testing
     #expect(resolvedVariationValue(.weight, in: metricFont) == 300)
     #expect(resolvedVariationValue(.opticalSize, in: metricFont) == 32)
     #expect(openTypeFeatureTags(in: metricFont) == Set(["zero", "cv02", "cv03", "cv09"]))
-    #expect(AppTypography.comparisonTracking == -0.48)
+    #expect(AppTypography.metricHeaderTracking == -0.24)
     #expect(AppTypography.metricTracking == -1.44)
 }
 

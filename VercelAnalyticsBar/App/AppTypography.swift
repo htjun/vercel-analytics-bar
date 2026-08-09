@@ -116,7 +116,7 @@ enum AppFontRegistry {
 @MainActor
 enum AppTypography {
     static let metricTracking: CGFloat = -1.44
-    static let comparisonTracking: CGFloat = -0.48
+    static let metricHeaderTracking: CGFloat = -0.24
     static let geistSlashedZeroFeatures = ["ss09"]
     static let interSlashedZeroFeatures = ["zero"]
     static let metricFeatures = interSlashedZeroFeatures + ["cv03", "cv02", "cv09"]
@@ -145,11 +145,11 @@ enum AppTypography {
         )
     }
 
-    static var geistMedium12WithSlashedZero: Font {
+    static var geistMetricLabel12: Font {
         AppFontRegistry.font(
             postScriptName: "Geist-Regular",
             size: 12,
-            variations: [.weight: 500],
+            variations: [.weight: 450],
             openTypeFeatures: geistSlashedZeroFeatures
         )
     }
@@ -158,11 +158,11 @@ enum AppTypography {
         AppFontRegistry.font(postScriptName: "GeistMono-Regular", size: 11)
     }
 
-    static var interMedium12: Font {
+    static var interComparison12: Font {
         AppFontRegistry.font(
             postScriptName: "InterVariable",
             size: 12,
-            variations: [.opticalSize: 14, .weight: 500],
+            variations: [.opticalSize: 14, .weight: 450],
             openTypeFeatures: interSlashedZeroFeatures
         )
     }

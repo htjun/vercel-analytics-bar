@@ -262,12 +262,13 @@ struct AnalyticsCardView<SelectorContent: View>: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .top, spacing: 6) {
                 Text(metric.label)
-                    .font(AppTypography.geistMedium12WithSlashedZero)
+                    .font(AppTypography.geistMetricLabel12)
+                    .tracking(AppTypography.metricHeaderTracking)
                     .foregroundStyle(AnalyticsCardColors.secondaryText)
 
                 Text(metric.comparisonText)
-                    .font(AppTypography.interMedium12)
-                    .tracking(AppTypography.comparisonTracking)
+                    .font(AppTypography.interComparison12)
+                    .tracking(AppTypography.metricHeaderTracking)
                     .foregroundStyle(comparisonColor(for: metric.trend))
             }
             .frame(height: 16, alignment: .topLeading)
