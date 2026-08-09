@@ -1,5 +1,8 @@
 import Foundation
 
+private let breakdownDisplayLimit = 5
+private let breakdownCandidateLimit = breakdownDisplayLimit * 2
+
 public extension VercelAPIClient {
     func fetchCount(
         for project: VercelProject,
@@ -81,7 +84,7 @@ public extension VercelAPIClient {
     ) async throws -> [VercelAnalyticsBreakdown] {
         var query = analyticsQuery(for: project, window: window.aggregateWindow)
         query["by"] = dimension.rawValue
-        query["limit"] = "5"
+        query["limit"] = String(breakdownCandidateLimit)
 
         let response = try await request(
             AnalyticsBreakdownResponseDTO.self,
@@ -99,7 +102,7 @@ public extension VercelAPIClient {
                 pageViews: point.pageViews
             )
         }
-        return Array(rows.prefix(5))
+        return Array(rows.prefix(breakdownDisplayLimit))
     }
 
     private func breakdownLabel(

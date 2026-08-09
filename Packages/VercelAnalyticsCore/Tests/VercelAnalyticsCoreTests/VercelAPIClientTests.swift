@@ -210,7 +210,7 @@ func projectBuildsAnalyticsDashboardURL(range: VercelAnalyticsRange, period: Str
     #expect(queryValue("since", in: teamRequest) == "2026-07-26T00:00:00.000Z")
     #expect(queryValue("until", in: teamRequest) == "2026-08-01T23:59:59.999Z")
     #expect(queryValue("by", in: teamRequest) == "requestPath")
-    #expect(queryValue("limit", in: teamRequest) == "5")
+    #expect(queryValue("limit", in: teamRequest) == "10")
 
     let personalTransport = try FixtureTransport(
         responses: [
@@ -254,7 +254,7 @@ func projectBuildsAnalyticsDashboardURL(range: VercelAnalyticsRange, period: Str
     let requests = await transport.requests
     let request = try #require(requests.first)
     #expect(queryValue("by", in: request) == "referrerHostname")
-    #expect(queryValue("limit", in: request) == "5")
+    #expect(queryValue("limit", in: request) == "10")
 }
 
 @Test func clientMapsAuthenticationAndRedactsResponseBody() async throws {

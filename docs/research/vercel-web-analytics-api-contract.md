@@ -24,8 +24,9 @@ The live probe treats successful access to the required team-list endpoint as to
 The documented visits endpoints expose `pageviews` and `visitors`. Count responses return one total.
 Aggregate responses group by one requested dimension. Time dimensions include `hour`, `day`, `week`,
 `month`, and `year`; the app's traffic breakdowns use `requestPath` and `referrerHostname`.
-Breakdown rows include the dimension label plus both metrics. The app requests five rows, retains the
-server's order, and removes empty labels, direct referral markers, and the synthetic `Others` row.
+Breakdown rows include the dimension label plus both metrics. The app requests ten candidate rows,
+retains the server's order, removes empty labels, direct referral markers, and the synthetic `Others`
+row, then keeps the first five remaining rows.
 
 `since` and `until` accept date strings or millisecond timestamps. Vercel includes both ends of the requested interval, then adjusts aggregate results to the requested granularity. The client therefore defines every product range as an explicit half-open UTC interval, sends `endExclusive` to count queries, sends `endExclusive - 1 ms` to aggregate queries, and discards returned points outside `[start, endExclusive)`. The response's echoed query is retained for compatibility, but it must not widen the logical interval used by cards or charts.
 

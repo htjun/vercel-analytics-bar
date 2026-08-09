@@ -5,7 +5,7 @@
     "until": "2026-08-01T23:59:59.999Z",
     "groupBy": ["requestPath"],
     "filter": "environment eq 'production'",
-    "limit": 5
+    "limit": 10
   },
   "data": [
     {

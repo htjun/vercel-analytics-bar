@@ -8,6 +8,7 @@ require "uri"
 
 API_BASE_URL = "https://api.vercel.com"
 OUTPUT_PATH = ".build/vercel-api-probe.json"
+BREAKDOWN_CANDIDATE_LIMIT = 10
 SAFE_HEADER_NAMES = %w[
   retry-after
   x-ratelimit-limit
@@ -235,7 +236,7 @@ def query_breakdowns(project, token)
   SAFE_DIMENSION_KEYS.to_h do |dimension|
     breakdown_query = query.merge(
       "by" => dimension,
-      "limit" => 5,
+      "limit" => BREAKDOWN_CANDIDATE_LIMIT,
       "filter" => "environment eq 'production'",
     )
     response = request("/v1/query/web-analytics/visits/aggregate", breakdown_query, token)
