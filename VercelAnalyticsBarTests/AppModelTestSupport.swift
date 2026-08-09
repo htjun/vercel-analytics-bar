@@ -208,6 +208,44 @@ actor ManualRefreshSleeper {
     }
 }
 
+@MainActor
+struct RefreshTestHarness {
+    let provider: ControlledSnapshotProvider
+    let clock: MutableDateClock
+    let sleeper: ManualRefreshSleeper
+    let model: AppModel
+
+    init(
+        project: VercelProject = VercelProject(id: "project-alpha", name: "Alpha"),
+        provider: ControlledSnapshotProvider = ControlledSnapshotProvider(),
+        now: Date = Date(timeIntervalSince1970: 1_785_549_720),
+        cacheEntries: [SnapshotCacheEntry] = []
+    ) {
+        let clock = MutableDateClock(date: now)
+        let sleeper = ManualRefreshSleeper()
+        let cacheStore = InMemorySnapshotCacheStore(entries: cacheEntries)
+
+        self.provider = provider
+        self.clock = clock
+        self.sleeper = sleeper
+        model = AppModel(
+            credentialStore: InMemoryCredentialStore(),
+            accountDataStore: InMemoryAccountDataStore(),
+            snapshotCacheStore: cacheStore,
+            projectProviderFactory: { _ in FixtureProjectListingProvider(projects: [project]) },
+            analyticsProviderFactory: { _, _ in provider },
+            launchAtLoginManager: InMemoryLaunchAtLoginManager(),
+            now: { clock.now() },
+            sleep: { duration in try await sleeper.sleep(for: duration) },
+            tokenValidator: { _ in }
+        )
+    }
+
+    func connect() async {
+        await model.connect(token: "valid-token")
+    }
+}
+
 func makeAnalyticsSnapshot(
     projectName: String,
     visitors: Int,

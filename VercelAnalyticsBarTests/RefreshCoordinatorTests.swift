@@ -5,9 +5,6 @@ import VercelAnalyticsCore
 
 @MainActor
 @Test func appModelSkipsPopoverRefreshForFreshCachedSnapshot() async {
-    let project = VercelProject(id: "project-alpha", name: "Alpha")
-    let provider = ControlledSnapshotProvider()
-    let clock = MutableDateClock(date: Date(timeIntervalSince1970: 1_785_549_630))
     let snapshot = makeAnalyticsSnapshot(
         projectName: "Alpha",
         visitors: 100,
@@ -15,47 +12,33 @@ import VercelAnalyticsCore
         last24HoursVisitors: 11,
         refreshedAt: Date(timeIntervalSince1970: 1_785_549_600)
     )
-    let model = AppModel(
-        credentialStore: InMemoryCredentialStore(),
-        accountDataStore: InMemoryAccountDataStore(),
-        snapshotCacheStore: InMemorySnapshotCacheStore(entries: [
-            SnapshotCacheEntry(projectID: project.id, snapshot: snapshot),
-        ]),
-        projectProviderFactory: { _ in FixtureProjectListingProvider(projects: [project]) },
-        analyticsProviderFactory: { _, _ in provider },
-        now: { clock.now() },
-        tokenValidator: { _ in }
+    let harness = RefreshTestHarness(
+        now: Date(timeIntervalSince1970: 1_785_549_630),
+        cacheEntries: [
+            SnapshotCacheEntry(projectID: "project-alpha", snapshot: snapshot),
+        ]
     )
 
-    await model.connect(token: "valid-token")
-    await model.load()
+    await harness.connect()
+    await harness.model.load()
 
-    #expect(model.state == .loaded(snapshot))
-    #expect(model.snapshotFreshness == .fresh)
-    #expect(await provider.requestedRanges.isEmpty)
+    #expect(harness.model.state == .loaded(snapshot))
+    #expect(harness.model.snapshotFreshness == .fresh)
+    #expect(await harness.provider.requestedRanges.isEmpty)
 }
 
 @MainActor
 @Test func appModelCoalescesConcurrentRefreshes() async {
-    let project = VercelProject(id: "project-alpha", name: "Alpha")
-    let provider = ControlledSnapshotProvider()
-    let model = AppModel(
-        credentialStore: InMemoryCredentialStore(),
-        accountDataStore: InMemoryAccountDataStore(),
-        snapshotCacheStore: InMemorySnapshotCacheStore(),
-        projectProviderFactory: { _ in FixtureProjectListingProvider(projects: [project]) },
-        analyticsProviderFactory: { _, _ in provider },
-        tokenValidator: { _ in }
-    )
+    let harness = RefreshTestHarness()
 
-    await model.connect(token: "valid-token")
-    let firstRefresh = Task { await model.load() }
-    await provider.waitUntilRequested()
-    let secondRefresh = Task { await model.load() }
+    await harness.connect()
+    let firstRefresh = Task { await harness.model.load() }
+    await harness.provider.waitUntilRequested()
+    let secondRefresh = Task { await harness.model.load() }
 
-    #expect(await provider.requestedRanges == [.last7Days])
+    #expect(await harness.provider.requestedRanges == [.last7Days])
 
-    await provider.succeed(with: makeAnalyticsSnapshot(
+    await harness.provider.succeed(with: makeAnalyticsSnapshot(
         projectName: "Alpha",
         visitors: 100,
         pageViews: 200,
@@ -65,14 +48,61 @@ import VercelAnalyticsCore
     await firstRefresh.value
     await secondRefresh.value
 
-    #expect(await provider.requestedRanges == [.last7Days])
+    #expect(await harness.provider.requestedRanges == [.last7Days])
+}
+
+@MainActor
+@Test func appModelIgnoresAResultSupersededByProjectSelection() async {
+    let alpha = VercelProject(id: "project-alpha", name: "Alpha")
+    let beta = VercelProject(id: "project-beta", name: "Beta")
+    let alphaProvider = ControlledSnapshotProvider()
+    let betaProvider = ControlledSnapshotProvider()
+    let model = AppModel(
+        credentialStore: InMemoryCredentialStore(),
+        accountDataStore: InMemoryAccountDataStore(),
+        snapshotCacheStore: InMemorySnapshotCacheStore(),
+        projectProviderFactory: { _ in FixtureProjectListingProvider(projects: [alpha, beta]) },
+        analyticsProviderFactory: { _, project in
+            project.id == alpha.id ? alphaProvider : betaProvider
+        },
+        launchAtLoginManager: InMemoryLaunchAtLoginManager(),
+        tokenValidator: { _ in }
+    )
+
+    await model.connect(token: "valid-token")
+    model.setProjectSelected(beta.id, selected: true)
+
+    let alphaRefresh = Task { await model.load() }
+    await alphaProvider.waitUntilRequested()
+    let betaRefresh = Task { await model.selectProject(beta.id) }
+    await betaProvider.waitUntilRequested()
+
+    await alphaProvider.succeed(with: makeAnalyticsSnapshot(
+        projectName: alpha.name,
+        visitors: 100,
+        pageViews: 200,
+        last24HoursVisitors: 11,
+        refreshedAt: Date(timeIntervalSince1970: 1_785_549_600)
+    ))
+    await alphaRefresh.value
+    #expect(model.state == .loading)
+
+    let betaSnapshot = makeAnalyticsSnapshot(
+        projectName: beta.name,
+        visitors: 300,
+        pageViews: 500,
+        last24HoursVisitors: 22,
+        refreshedAt: Date(timeIntervalSince1970: 1_785_549_660)
+    )
+    await betaProvider.succeed(with: betaSnapshot)
+    await betaRefresh.value
+
+    #expect(model.currentProjectID == beta.id)
+    #expect(model.state == .loaded(betaSnapshot))
 }
 
 @MainActor
 @Test func appModelKeepsCachedSnapshotWhenTransientRefreshFails() async {
-    let project = VercelProject(id: "project-alpha", name: "Alpha")
-    let provider = ControlledSnapshotProvider()
-    let clock = MutableDateClock(date: Date(timeIntervalSince1970: 1_785_549_720))
     let snapshot = makeAnalyticsSnapshot(
         projectName: "Alpha",
         visitors: 100,
@@ -80,38 +110,27 @@ import VercelAnalyticsCore
         last24HoursVisitors: 11,
         refreshedAt: Date(timeIntervalSince1970: 1_785_549_600)
     )
-    let model = AppModel(
-        credentialStore: InMemoryCredentialStore(),
-        accountDataStore: InMemoryAccountDataStore(),
-        snapshotCacheStore: InMemorySnapshotCacheStore(),
-        projectProviderFactory: { _ in FixtureProjectListingProvider(projects: [project]) },
-        analyticsProviderFactory: { _, _ in provider },
-        now: { clock.now() },
-        tokenValidator: { _ in }
-    )
+    let harness = RefreshTestHarness()
 
-    await model.connect(token: "valid-token")
-    let initialRefresh = Task { await model.load() }
-    await provider.waitUntilRequested()
-    await provider.succeed(with: snapshot)
+    await harness.connect()
+    let initialRefresh = Task { await harness.model.load() }
+    await harness.provider.waitUntilRequested()
+    await harness.provider.succeed(with: snapshot)
     await initialRefresh.value
 
-    let failedRefresh = Task { await model.load() }
-    await provider.waitUntilRequested()
+    let failedRefresh = Task { await harness.model.load() }
+    await harness.provider.waitUntilRequested()
     let transientError = VercelAPIError.transient(status: 503, requestID: "fixture-request-id")
-    await provider.fail(with: transientError)
+    await harness.provider.fail(with: transientError)
     await failedRefresh.value
 
-    #expect(model.state == .loaded(snapshot))
-    #expect(model.snapshotFreshness == .stale)
-    #expect(model.refreshMessage == transientError.localizedDescription)
+    #expect(harness.model.state == .loaded(snapshot))
+    #expect(harness.model.snapshotFreshness == .stale)
+    #expect(harness.model.refreshMessage == transientError.localizedDescription)
 }
 
 @MainActor
 @Test func appModelAppliesRateLimitBackoffAndManualRetryLimit() async {
-    let project = VercelProject(id: "project-alpha", name: "Alpha")
-    let provider = ControlledSnapshotProvider()
-    let clock = MutableDateClock(date: Date(timeIntervalSince1970: 1_785_549_720))
     let snapshot = makeAnalyticsSnapshot(
         projectName: "Alpha",
         visitors: 100,
@@ -119,76 +138,57 @@ import VercelAnalyticsCore
         last24HoursVisitors: 11,
         refreshedAt: Date(timeIntervalSince1970: 1_785_549_600)
     )
-    let model = AppModel(
-        credentialStore: InMemoryCredentialStore(),
-        accountDataStore: InMemoryAccountDataStore(),
-        snapshotCacheStore: InMemorySnapshotCacheStore(),
-        projectProviderFactory: { _ in FixtureProjectListingProvider(projects: [project]) },
-        analyticsProviderFactory: { _, _ in provider },
-        now: { clock.now() },
-        tokenValidator: { _ in }
-    )
+    let harness = RefreshTestHarness()
     let rateLimitError = VercelAPIError.rateLimited(
         metadata: VercelRateLimitMetadata(retryAfter: 1, requestID: "fixture-request-id")
     )
 
-    await model.connect(token: "valid-token")
-    let initialRefresh = Task { await model.load() }
-    await provider.waitUntilRequested()
-    await provider.succeed(with: snapshot)
+    await harness.connect()
+    let initialRefresh = Task { await harness.model.load() }
+    await harness.provider.waitUntilRequested()
+    await harness.provider.succeed(with: snapshot)
     await initialRefresh.value
 
-    let firstLimitedRefresh = Task { await model.retryRefresh() }
-    await provider.waitUntilRequested()
-    await provider.fail(with: rateLimitError)
+    let firstLimitedRefresh = Task { await harness.model.retryRefresh() }
+    await harness.provider.waitUntilRequested()
+    await harness.provider.fail(with: rateLimitError)
     await firstLimitedRefresh.value
-    #expect(model.retryAvailableAt == clock.now().addingTimeInterval(1))
+    #expect(harness.model.retryAvailableAt == harness.clock.now().addingTimeInterval(1))
 
     for _ in 0 ..< 3 {
-        clock.advance(by: 2)
-        let retry = Task { await model.retryRefresh() }
-        await provider.waitUntilRequested()
-        await provider.fail(with: rateLimitError)
+        harness.clock.advance(by: 2)
+        let retry = Task { await harness.model.retryRefresh() }
+        await harness.provider.waitUntilRequested()
+        await harness.provider.fail(with: rateLimitError)
         await retry.value
     }
 
-    let requestCountBeforeLimit = await provider.requestedRanges.count
-    clock.advance(by: 2)
-    await model.retryRefresh()
+    let requestCountBeforeLimit = await harness.provider.requestedRanges.count
+    harness.clock.advance(by: 2)
+    await harness.model.retryRefresh()
 
-    #expect(await provider.requestedRanges.count == requestCountBeforeLimit)
-    #expect(model.refreshMessage == "Retry limit reached. Wait before trying again.")
+    #expect(await harness.provider.requestedRanges.count == requestCountBeforeLimit)
+    #expect(harness.model.refreshMessage == "Retry limit reached. Wait before trying again.")
 }
 
 @MainActor
 @Test func appModelRefreshLoopUsesFiveMinuteInterval() async {
-    let project = VercelProject(id: "project-alpha", name: "Alpha")
-    let provider = ControlledSnapshotProvider()
-    let sleeper = ManualRefreshSleeper()
-    let model = AppModel(
-        credentialStore: InMemoryCredentialStore(),
-        accountDataStore: InMemoryAccountDataStore(),
-        snapshotCacheStore: InMemorySnapshotCacheStore(),
-        projectProviderFactory: { _ in FixtureProjectListingProvider(projects: [project]) },
-        analyticsProviderFactory: { _, _ in provider },
-        sleep: { duration in try await sleeper.sleep(for: duration) },
-        tokenValidator: { _ in }
-    )
+    let harness = RefreshTestHarness()
 
-    await model.connect(token: "valid-token")
-    model.startRefreshLoop()
-    await sleeper.waitUntilSleeping()
-    #expect(await sleeper.durations == [.seconds(300)])
+    await harness.connect()
+    harness.model.startRefreshLoop()
+    await harness.sleeper.waitUntilSleeping()
+    #expect(await harness.sleeper.durations == [.seconds(300)])
 
-    await sleeper.release()
-    await provider.waitUntilRequested()
-    await provider.succeed(with: makeAnalyticsSnapshot(
+    await harness.sleeper.release()
+    await harness.provider.waitUntilRequested()
+    await harness.provider.succeed(with: makeAnalyticsSnapshot(
         projectName: "Alpha",
         visitors: 100,
         pageViews: 200,
         last24HoursVisitors: 11,
         refreshedAt: Date(timeIntervalSince1970: 1_785_549_600)
     ))
-    model.stopRefreshLoop()
-    await sleeper.release()
+    harness.model.stopRefreshLoop()
+    await harness.sleeper.release()
 }
