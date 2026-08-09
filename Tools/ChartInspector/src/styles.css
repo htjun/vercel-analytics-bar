@@ -12,3 +12,16 @@ body,
   margin: 0;
   overflow: hidden;
 }
+
+.dialkit-root[data-mode="inline"],
+.dialkit-panel[data-mode="inline"],
+.dialkit-panel[data-mode="inline"] .dialkit-panel-wrapper {
+  height: 100%;
+  min-height: 0;
+}
+
+.dialkit-panel[data-mode="inline"] .dialkit-panel-inner {
+  height: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+}
