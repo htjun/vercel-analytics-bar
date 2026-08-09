@@ -32,7 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             model: model,
             chartStyle: chartStyle,
             companionWindows: { [weak self] in
-                [self?.settingsWindowController?.window].compactMap { $0 }
+                [self?.settingsWindowController?.window].compactMap(\.self)
             },
             onOpenSettings: { [weak self] in
                 self?.settingsWindowController?.present()
