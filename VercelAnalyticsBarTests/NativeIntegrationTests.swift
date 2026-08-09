@@ -77,20 +77,51 @@ import VercelAnalyticsCore
     #expect(controller.isStatusItemVisible)
 }
 
-@Test func analyticsPanelPresentationResetsItsSessionWhenPresented() {
-    var state = AnalyticsPanelPresentationState()
-    let initialSessionID = state.sessionID
+@MainActor
+@Test func analyticsPanelControllerOwnsPresentationThroughDismissal() {
+    let model = AppModel(
+        credentialStore: InMemoryCredentialStore(),
+        accountDataStore: InMemoryAccountDataStore(),
+        snapshotCacheStore: InMemorySnapshotCacheStore(),
+        launchAtLoginManager: InMemoryLaunchAtLoginManager()
+    )
+    var highlightStates: [Bool] = []
+    let controller = AnalyticsPanelController(
+        model: model,
+        chartStyle: ChartStyleStore(),
+        onOpenSettings: {},
+        setStatusItemHighlighted: { highlightStates.append($0) }
+    )
+    let anchor = AnalyticsPanelAnchor(
+        frame: CGRect(x: 680, y: 850, width: 40, height: 24),
+        visibleFrame: CGRect(x: 100, y: 50, width: 1200, height: 800)
+    )
+    let initialSessionID = controller.sessionID
 
-    state.present()
-    #expect(state.isPresented)
-    #expect(state.sessionID != initialSessionID)
+    controller.present(anchor: anchor)
+    let presentedSessionID = controller.sessionID
+    #expect(controller.isPresented)
+    #expect(presentedSessionID != initialSessionID)
+    #expect(controller.window.frame == CGRect(x: 500, y: 284, width: 400, height: 562))
+    #expect(highlightStates == [true])
 
-    let presentedSessionID = state.sessionID
-    state.dismiss()
-    #expect(!state.isPresented)
+    controller.present(anchor: anchor)
+    #expect(controller.sessionID == presentedSessionID)
+    #expect(highlightStates == [true])
 
-    state.present()
-    #expect(state.sessionID != presentedSessionID)
+    let transientChild = NSWindow()
+    controller.window.addChildWindow(transientChild, ordered: .above)
+    transientChild.orderFrontRegardless()
+    controller.dismiss()
+
+    #expect(!controller.isPresented)
+    #expect(!transientChild.isVisible)
+    #expect(!controller.window.isVisible)
+    #expect(highlightStates == [true, false])
+
+    controller.present(anchor: anchor)
+    #expect(controller.sessionID != presentedSessionID)
+    controller.tearDown()
 }
 
 @MainActor

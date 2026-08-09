@@ -1,37 +1,5 @@
 import AppKit
 import Observation
-import SwiftUI
-
-enum AnalyticsPanelPlacement {
-    static let gap: CGFloat = 4
-    static let screenMargin: CGFloat = 8
-
-    static func frame(
-        anchor: CGRect,
-        panelSize: CGSize,
-        visibleFrame: CGRect,
-        gap: CGFloat = gap,
-        margin: CGFloat = screenMargin
-    ) -> CGRect {
-        let availableMinX = visibleFrame.minX + margin
-        let availableMaxX = visibleFrame.maxX - margin - panelSize.width
-        let proposedX = anchor.midX - panelSize.width / 2
-        let originX = min(max(proposedX, availableMinX), max(availableMinX, availableMaxX))
-
-        let availableMinY = visibleFrame.minY + margin
-        let proposedY = anchor.minY - gap - panelSize.height
-        let originY = max(proposedY, availableMinY)
-
-        return CGRect(origin: CGPoint(x: originX, y: originY), size: panelSize)
-    }
-
-    static func shadowFrame(forGlassFrame glassFrame: CGRect) -> CGRect {
-        glassFrame.insetBy(
-            dx: -AnalyticsCardLayout.panelShadowPadding,
-            dy: -AnalyticsCardLayout.panelShadowPadding
-        )
-    }
-}
 
 struct StatusItemPresentation: Equatable {
     let title: String
@@ -47,20 +15,6 @@ struct StatusItemPresentation: Equatable {
             accessibilityValue = "Visitor data unavailable"
             toolTip = "Vercel Analytics"
         }
-    }
-}
-
-struct AnalyticsPanelPresentationState {
-    private(set) var isPresented = false
-    private(set) var sessionID = UUID()
-
-    mutating func present() {
-        sessionID = UUID()
-        isPresented = true
-    }
-
-    mutating func dismiss() {
-        isPresented = false
     }
 }
 
@@ -92,18 +46,13 @@ enum AnalyticsPanelEventPolicy {
 @MainActor
 final class StatusBarController: NSObject {
     private let model: AppModel
-    private let chartStyle: ChartStyleStore
     private let companionWindows: () -> [NSWindow]
-    private let onOpenSettings: () -> Void
     private let statusBar: NSStatusBar
     private let statusItem: NSStatusItem
-    private let hostingView: NSHostingView<AnyView>
-    private let panel: AnalyticsPanel
+    private let panelController: AnalyticsPanelController
 
-    private var presentationState = AnalyticsPanelPresentationState()
     private var localEventMonitor: Any?
     private var globalEventMonitor: Any?
-    private var presentationTask: Task<Void, Never>?
     private var isInstalled = true
 
     var isStatusItemVisible: Bool {
@@ -118,32 +67,40 @@ final class StatusBarController: NSObject {
         onOpenSettings: @escaping () -> Void
     ) {
         self.model = model
-        self.chartStyle = chartStyle
         self.companionWindows = companionWindows
-        self.onOpenSettings = onOpenSettings
         self.statusBar = statusBar
-        statusItem = statusBar.statusItem(withLength: NSStatusItem.variableLength)
-        hostingView = NSHostingView(rootView: AnyView(EmptyView()))
-        panel = AnalyticsPanel(hostingView: hostingView)
+        let statusItem = statusBar.statusItem(withLength: NSStatusItem.variableLength)
+        self.statusItem = statusItem
+        let statusItemButton = statusItem.button
+        panelController = AnalyticsPanelController(
+            model: model,
+            chartStyle: chartStyle,
+            onOpenSettings: onOpenSettings,
+            setStatusItemHighlighted: { statusItemButton?.highlight($0) }
+        )
         super.init()
 
+        panelController.onPresentationChanged = { [weak self] isPresented in
+            if isPresented {
+                self?.installEventMonitors()
+            } else {
+                self?.removeEventMonitors()
+            }
+        }
         configureStatusItem()
-        updateHostedContent()
         observeStatusItemPresentation()
     }
 
     func tearDown() {
         guard isInstalled else { return }
         isInstalled = false
-        presentationTask?.cancel()
-        presentationTask = nil
-        dismissPanel()
+        panelController.tearDown()
         statusBar.removeStatusItem(statusItem)
     }
 
     @objc
     private func togglePanel() {
-        if presentationState.isPresented {
+        if panelController.isPresented {
             dismissPanel()
         } else {
             presentPanel()
@@ -183,64 +140,25 @@ final class StatusBarController: NSObject {
         button.title = presentation.title
         button.toolTip = presentation.toolTip
         button.setAccessibilityValue(presentation.accessibilityValue)
-        if presentationState.isPresented {
-            positionPanel()
+        if panelController.isPresented {
+            panelController.reposition(anchor: panelAnchor())
         }
     }
 
     private func presentPanel() {
-        presentationState.present()
-        updateHostedContent()
-        positionPanel()
-        panel.orderFrontRegardless()
-        panel.makeKey()
-        statusItem.button?.highlight(true)
-        installEventMonitors()
-
-        presentationTask?.cancel()
-        presentationTask = Task { [weak self] in
-            guard let self else { return }
-            await model.restoreConnection()
-            guard !Task.isCancelled else { return }
-            await model.load()
-        }
+        panelController.present(anchor: panelAnchor())
     }
 
     private func dismissPanel() {
-        guard presentationState.isPresented || panel.isVisible else { return }
-        presentationState.dismiss()
-        panel.orderOutTransientChildWindows()
-        panel.orderOut(nil)
-        statusItem.button?.highlight(false)
-        removeEventMonitors()
+        panelController.dismiss()
     }
 
-    private func updateHostedContent() {
-        let sessionID = presentationState.sessionID
-        hostingView.rootView = AnyView(
-            MenuBarRootView(
-                model: model,
-                chartStyle: chartStyle,
-                onOpenSettings: onOpenSettings,
-                onDismissPanel: { [weak self] in
-                    self?.dismissPanel()
-                }
-            )
-            .id(sessionID)
-        )
-    }
-
-    private func positionPanel() {
-        guard let button = statusItem.button, let buttonWindow = button.window else { return }
+    private func panelAnchor() -> AnalyticsPanelAnchor? {
+        guard let button = statusItem.button, let buttonWindow = button.window else { return nil }
         let anchorInWindow = button.convert(button.bounds, to: nil)
         let anchorOnScreen = buttonWindow.convertToScreen(anchorInWindow)
         let visibleFrame = buttonWindow.screen?.visibleFrame ?? NSScreen.main?.visibleFrame ?? anchorOnScreen
-        let glassFrame = AnalyticsPanelPlacement.frame(
-            anchor: anchorOnScreen,
-            panelSize: AnalyticsCardLayout.rootSize,
-            visibleFrame: visibleFrame
-        )
-        panel.setGlassFrame(glassFrame, display: true)
+        return AnalyticsPanelAnchor(frame: anchorOnScreen, visibleFrame: visibleFrame)
     }
 
     private func installEventMonitors() {
@@ -248,9 +166,9 @@ final class StatusBarController: NSObject {
         localEventMonitor = NSEvent.addLocalMonitorForEvents(
             matching: [.leftMouseDown, .rightMouseDown, .keyDown]
         ) { [weak self] event in
-            guard let self, presentationState.isPresented else { return event }
+            guard let self, panelController.isPresented else { return event }
             if event.type == .keyDown, event.keyCode == 53 {
-                if !panel.hasTransientChildWindows {
+                if !panelController.window.hasTransientChildWindows {
                     dismissPanel()
                     return nil
                 }
@@ -258,7 +176,7 @@ final class StatusBarController: NSObject {
             }
             guard !AnalyticsPanelEventPolicy.keepsPanelOpen(
                 for: event.window,
-                panel: panel,
+                panel: panelController.window,
                 statusItemWindow: statusItem.button?.window,
                 companionWindows: companionWindows()
             ) else {
