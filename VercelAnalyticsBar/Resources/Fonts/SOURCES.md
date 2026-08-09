@@ -8,8 +8,7 @@ for the application process only; they are not installed on the user's system.
 - Source: https://rsms.me/inter/download/
 - Archive: https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip
 - License: SIL Open Font License 1.1 (`LICENSE-Inter.txt`)
-- `Inter-Medium.otf`: `6c222ed2c3660524dd0c14fb745e00fee65c5361ab28f60fba6730bf4e648763`
-- `InterDisplay-Light.otf`: `86038978bb5204bce49cd306586d88dd325010bac065099b8588f8bbe8a94391`
+- `InterVariable.ttf`: `4989b125924991b90d05b2d16e0e388c48f7d5bb8b30539bbf9c755278d0ccaf`
 
 ## Geist 1.7.2
 

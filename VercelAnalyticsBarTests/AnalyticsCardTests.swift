@@ -37,7 +37,7 @@ import VercelAnalyticsCore
         postScriptName: "Geist-Regular",
         size: 12,
         variations: [.weight: 500],
-        openTypeFeatures: AppTypography.geistSlashedZeroFeature
+        openTypeFeatures: AppTypography.geistSlashedZeroFeatures
     )
 
     #expect(resolvedVariationValue(.weight, in: font) == 500)
@@ -45,15 +45,33 @@ import VercelAnalyticsCore
 }
 
 @MainActor
-@Test func metricFontCarriesTheFigmaOpenTypeFeatures() {
-    let font = AppFontRegistry.nsFont(
-        postScriptName: "InterDisplay-Light",
+@Test func interVariableFontsResolvePlannedAxesAndFeatures() {
+    let comparisonFont = AppFontRegistry.nsFont(
+        postScriptName: "InterVariable",
+        size: 12,
+        variations: [.opticalSize: 14, .weight: 500],
+        openTypeFeatures: AppTypography.interSlashedZeroFeatures
+    )
+    let metricFont = AppFontRegistry.nsFont(
+        postScriptName: "InterVariable",
         size: 48,
+        variations: [.opticalSize: 32, .weight: 300],
         openTypeFeatures: AppTypography.metricFeatures
     )
-    #expect(font.fontName == "InterDisplay-Light")
-    #expect(font.pointSize == 48)
-    #expect(openTypeFeatureTags(in: font) == Set(["zero", "cv02", "cv03", "cv09"]))
+
+    #expect(comparisonFont.familyName == "Inter Variable")
+    #expect(comparisonFont.pointSize == 12)
+    #expect(resolvedVariationValue(.weight, in: comparisonFont) == 500)
+    #expect(resolvedVariationValue(.opticalSize, in: comparisonFont) == 14)
+    #expect(openTypeFeatureTags(in: comparisonFont) == Set(["zero"]))
+
+    #expect(metricFont.familyName == "Inter Variable")
+    #expect(metricFont.pointSize == 48)
+    #expect(resolvedVariationValue(.weight, in: metricFont) == 300)
+    #expect(resolvedVariationValue(.opticalSize, in: metricFont) == 32)
+    #expect(openTypeFeatureTags(in: metricFont) == Set(["zero", "cv02", "cv03", "cv09"]))
+    #expect(AppTypography.comparisonTracking == -0.48)
+    #expect(AppTypography.metricTracking == -1.44)
 }
 
 @Test func analyticsCardMetricMatchesFigmaFormatting() {

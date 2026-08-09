@@ -13,8 +13,7 @@ enum AppFontRegistry {
     static let resources = [
         FontResource(fileName: "Geist[wght]", fileExtension: "ttf", postScriptName: "Geist-Regular"),
         FontResource(fileName: "GeistMono-Regular", fileExtension: "otf", postScriptName: "GeistMono-Regular"),
-        FontResource(fileName: "Inter-Medium", fileExtension: "otf", postScriptName: "Inter-Medium"),
-        FontResource(fileName: "InterDisplay-Light", fileExtension: "otf", postScriptName: "InterDisplay-Light"),
+        FontResource(fileName: "InterVariable", fileExtension: "ttf", postScriptName: "InterVariable"),
     ]
 
     enum VariationAxis: String {
@@ -118,9 +117,9 @@ enum AppFontRegistry {
 enum AppTypography {
     static let metricTracking: CGFloat = -1.44
     static let comparisonTracking: CGFloat = -0.48
-    static let metricFeatures = ["zero", "cv03", "cv02", "cv09"]
-    static let geistSlashedZeroFeature = ["ss09"]
-    static let interSlashedZeroFeature = ["zero"]
+    static let geistSlashedZeroFeatures = ["ss09"]
+    static let interSlashedZeroFeatures = ["zero"]
+    static let metricFeatures = interSlashedZeroFeatures + ["cv03", "cv02", "cv09"]
 
     static var geistRegular12: Font {
         AppFontRegistry.font(
@@ -151,7 +150,7 @@ enum AppTypography {
             postScriptName: "Geist-Regular",
             size: 12,
             variations: [.weight: 500],
-            openTypeFeatures: geistSlashedZeroFeature
+            openTypeFeatures: geistSlashedZeroFeatures
         )
     }
 
@@ -161,16 +160,18 @@ enum AppTypography {
 
     static var interMedium12: Font {
         AppFontRegistry.font(
-            postScriptName: "Inter-Medium",
+            postScriptName: "InterVariable",
             size: 12,
-            openTypeFeatures: interSlashedZeroFeature
+            variations: [.opticalSize: 14, .weight: 500],
+            openTypeFeatures: interSlashedZeroFeatures
         )
     }
 
     static var interDisplayLight48: Font {
         AppFontRegistry.font(
-            postScriptName: "InterDisplay-Light",
+            postScriptName: "InterVariable",
             size: 48,
+            variations: [.opticalSize: 32, .weight: 300],
             openTypeFeatures: metricFeatures
         )
     }
