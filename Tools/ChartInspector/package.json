@@ -9,9 +9,11 @@
     "npm": ">=10.8.1"
   },
   "scripts": {
-    "build": "tsc --noEmit && vite build",
+    "build": "npm run contract:check && tsc --noEmit && vite build",
+    "contract:check": "node ../../Scripts/generate-chart-inspector-contract.mjs --check",
+    "contract:generate": "node ../../Scripts/generate-chart-inspector-contract.mjs",
     "dev": "vite",
-    "test": "vitest run"
+    "test": "npm run contract:check && vitest run"
   },
   "dependencies": {
     "dialkit": "1.4.3",
