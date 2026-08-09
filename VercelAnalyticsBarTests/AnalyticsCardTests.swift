@@ -45,6 +45,16 @@ import VercelAnalyticsCore
 }
 
 @MainActor
+@Test func variableFontsExposeExpectedAxisRanges() {
+    let geist = AppFontRegistry.nsFont(postScriptName: "Geist-Regular", size: 12)
+    let inter = AppFontRegistry.nsFont(postScriptName: "InterVariable", size: 12)
+
+    #expect(variationRange(.weight, in: geist) == 100 ... 900)
+    #expect(variationRange(.weight, in: inter) == 100 ... 900)
+    #expect(variationRange(.opticalSize, in: inter) == 14 ... 32)
+}
+
+@MainActor
 @Test func interVariableFontsResolvePlannedAxesAndFeatures() {
     let comparisonFont = AppFontRegistry.nsFont(
         postScriptName: "InterVariable",
@@ -242,6 +252,23 @@ private func resolvedVariationValue(_ axis: AppFontRegistry.VariationAxis, in fo
         (axisDescription[kCTFontVariationAxisIdentifierKey] as? NSNumber) == axis.identifier
     }
     return (matchingAxis?[kCTFontVariationAxisDefaultValueKey] as? NSNumber).map(CGFloat.init(truncating:))
+}
+
+private func variationRange(
+    _ axis: AppFontRegistry.VariationAxis,
+    in font: NSFont
+) -> ClosedRange<CGFloat>? {
+    let axes = CTFontCopyVariationAxes(font as CTFont) as? [[CFString: Any]]
+    guard let matchingAxis = axes?.first(where: { axisDescription in
+        (axisDescription[kCTFontVariationAxisIdentifierKey] as? NSNumber) == axis.identifier
+    }),
+        let minimum = matchingAxis[kCTFontVariationAxisMinimumValueKey] as? NSNumber,
+        let maximum = matchingAxis[kCTFontVariationAxisMaximumValueKey] as? NSNumber
+    else {
+        return nil
+    }
+
+    return CGFloat(truncating: minimum) ... CGFloat(truncating: maximum)
 }
 
 private func openTypeFeatureTags(in font: NSFont) -> Set<String> {
