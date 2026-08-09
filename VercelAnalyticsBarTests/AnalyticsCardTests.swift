@@ -52,10 +52,64 @@ import VercelAnalyticsCore
     #expect(AnalyticsCardLayout.rootSize == CGSize(width: 400, height: 562))
     #expect(AnalyticsCardLayout.cardSize == CGSize(width: 384, height: 546))
     #expect(AnalyticsCardLayout.shellInset == 8)
+    #expect(AnalyticsCardLayout.outerCornerRadius == 32)
     #expect(AnalyticsCardLayout.cardCornerRadius == 24)
     #expect(AnalyticsCardLayout.chartFrame == CGRect(x: 8, y: 166, width: 368, height: 150))
     #expect(AnalyticsCardPresentation.pageFixtures.count == 5)
     #expect(!AnalyticsCardPresentation.referralsEnabled)
+}
+
+@Test func analyticsGlassAppearanceHonorsReducedTransparency() {
+    let standard = AnalyticsGlassAppearance.resolve(reduceTransparency: false)
+    let reducedTransparency = AnalyticsGlassAppearance.resolve(reduceTransparency: true)
+
+    #expect(standard == .standard)
+    #expect(standard.showsDispersion)
+    #expect(!standard.usesOpaqueBackground)
+    #expect(reducedTransparency == .reducedTransparency)
+    #expect(!reducedTransparency.showsDispersion)
+    #expect(reducedTransparency.usesOpaqueBackground)
+}
+
+@MainActor
+@Test func analyticsGlassEdgeArtworkRendersAtRetinaScale() throws {
+    let fixture = ZStack {
+        LinearGradient(
+            colors: [
+                Color(red: 236 / 255, green: 225 / 255, blue: 207 / 255),
+                Color(red: 67 / 255, green: 132 / 255, blue: 227 / 255),
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+
+        AnalyticsGlassEdgeArtwork(appearance: .standard)
+    }
+    .frame(
+        width: AnalyticsCardLayout.rootSize.width,
+        height: AnalyticsCardLayout.rootSize.height
+    )
+
+    let renderer = ImageRenderer(content: fixture)
+    renderer.scale = 2
+    renderer.proposedSize = ProposedViewSize(
+        width: AnalyticsCardLayout.rootSize.width,
+        height: AnalyticsCardLayout.rootSize.height
+    )
+
+    guard let image = renderer.nsImage,
+          let renderedImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil)
+    else {
+        Issue.record("Unable to render the glass edge artwork fixture")
+        return
+    }
+
+    #expect(renderedImage.width == 800)
+    #expect(renderedImage.height == 1124)
+
+    let outputDirectory = repositoryRoot.appendingPathComponent(".build/VisualDiff", isDirectory: true)
+    try FileManager.default.createDirectory(at: outputDirectory, withIntermediateDirectories: true)
+    try writePNG(renderedImage, to: outputDirectory.appendingPathComponent("glass-edge-current-2x.png"))
 }
 
 @MainActor

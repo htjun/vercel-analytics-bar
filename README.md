@@ -42,11 +42,11 @@ The app intentionally uses only Vercel's documented public PAT endpoints. Vercel
 ## Requirements
 
 - macOS 14 or later
-- Xcode 16.4 or later with Swift 6 support
+- Xcode 26 or later with Swift 6 support
 - [Homebrew](https://brew.sh/) for development-tool bootstrap
 - Node.js 20.16 or later for Chart Inspector development and verification
 
-The project currently targets Swift 6 language mode while remaining compatible with the locally validated Xcode 16.4 and Swift 6.1.2 toolchain.
+The project targets Swift 6 language mode and keeps a macOS 14 deployment target. Xcode 26 is required so the system-owned `MenuBarExtra` panel adopts native Liquid Glass when the app runs on macOS 26 while retaining the standard system material on macOS 14 through macOS 25.
 
 ## Bootstrap
 
