@@ -31,8 +31,7 @@ final class AppModel {
     var state: State = .idle
     private(set) var accountState: AccountState = .disconnected
     private(set) var projectState: ProjectState = .idle
-    private(set) var selectedProjectIDs: Set<String> = []
-    private(set) var currentProjectID: String?
+    private(set) var projectCatalog: ProjectCatalog
     private(set) var selectedRange: VercelAnalyticsRange
     private(set) var projectSelectionError: String?
     var snapshotFreshness: SnapshotFreshness = .fresh
@@ -61,6 +60,14 @@ final class AppModel {
     private(set) var launchAtLoginError: String?
     private var didAttemptRestore = false
 
+    var selectedProjectIDs: Set<String> {
+        projectCatalog.selectedProjectIDs
+    }
+
+    var currentProjectID: String? {
+        projectCatalog.currentProjectID
+    }
+
     init(
         provider: (any AnalyticsSnapshotProviding)? = nil,
         credentialStore: any VercelCredentialStore = KeychainVercelCredentialStore(),
@@ -87,7 +94,9 @@ final class AppModel {
         self.now = now
         self.sleep = sleep
         self.tokenValidator = tokenValidator
-        currentProjectID = try? accountDataStore.readCurrentProjectID()
+        projectCatalog = ProjectCatalog(
+            selection: (try? accountDataStore.readProjectSelection()) ?? .empty
+        )
         selectedRange = (try? accountDataStore.readAnalyticsRange()) ?? .last7Days
         snapshotCache = Self.cacheDictionary(from: (try? snapshotCacheStore.read()) ?? [])
         launchAtLoginStatus = launchAtLoginManager.status
@@ -176,43 +185,31 @@ extension AppModel {
     }
 
     func setProjectSelected(_ projectID: String, selected: Bool) {
-        guard case let .loaded(projects) = projectState,
-              projects.contains(where: { $0.id == projectID })
-        else {
-            return
-        }
+        guard case .loaded = projectState else { return }
 
-        if selected {
-            updateProjectSelection(
-                selectedProjectIDs.union([projectID]),
-                currentProjectID: currentProjectID ?? projectID
-            )
-        } else {
-            guard selectedProjectIDs.count > 1 else { return }
-            let nextSelectedProjectIDs = selectedProjectIDs.subtracting([projectID])
-            let nextCurrentProjectID = currentProjectID == projectID
-                ? nextSelectedProjectIDs.sorted().first
-                : currentProjectID
-            updateProjectSelection(
-                nextSelectedProjectIDs,
-                currentProjectID: nextCurrentProjectID
-            )
+        var updatedCatalog = projectCatalog
+        guard updatedCatalog.setProject(projectID, selected: selected) else { return }
+
+        do {
+            try accountDataStore.saveProjectSelection(updatedCatalog.selection)
+            projectCatalog = updatedCatalog
+            projectSelectionError = nil
+            state = .idle
+        } catch {
+            projectSelectionError = error.localizedDescription
         }
     }
 
     func selectProject(_ projectID: String) async {
-        guard case let .loaded(projects) = projectState,
-              selectedProjectIDs.contains(projectID),
-              projects.contains(where: { $0.id == projectID })
-        else {
-            return
-        }
+        guard case .loaded = projectState else { return }
 
-        guard projectID != currentProjectID else { return }
+        var updatedCatalog = projectCatalog
+        guard updatedCatalog.selectCurrentProject(projectID) else { return }
 
         do {
-            try accountDataStore.saveCurrentProjectID(projectID)
-            currentProjectID = projectID
+            try accountDataStore.saveProjectSelection(updatedCatalog.selection)
+            projectCatalog = updatedCatalog
+            projectSelectionError = nil
         } catch {
             projectSelectionError = error.localizedDescription
             return
@@ -235,21 +232,13 @@ extension AppModel {
     }
 
     func projects(matching searchQuery: String) -> [VercelProject] {
-        guard case let .loaded(projects) = projectState else { return [] }
-
-        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !query.isEmpty else { return projects }
-        return projects.filter { project in
-            project.name.localizedCaseInsensitiveContains(query)
-                || (project.teamName?.localizedCaseInsensitiveContains(query) ?? false)
-        }
+        guard case .loaded = projectState else { return [] }
+        return projectCatalog.projects(matching: searchQuery)
     }
 
     func teamMetadata(for project: VercelProject) -> String? {
-        guard case let .loaded(projects) = projectState else { return nil }
-        let matchingProjects = projects.filter { $0.name == project.name }
-        guard matchingProjects.count > 1 else { return nil }
-        return project.teamName ?? "Personal account"
+        guard case .loaded = projectState else { return nil }
+        return projectCatalog.teamMetadata(for: project)
     }
 
     func disconnect() {
@@ -281,8 +270,7 @@ extension AppModel {
             state = .idle
             accountState = .disconnected
             projectState = .idle
-            selectedProjectIDs = []
-            currentProjectID = nil
+            projectCatalog = ProjectCatalog()
             snapshotCache.removeAll()
             snapshotFreshness = .fresh
             refreshMessage = nil
@@ -304,26 +292,13 @@ extension AppModel {
 
         do {
             let projects = try await projectProviderFactory(token).listAccessibleProjects()
-            let sortedProjects = VercelProject.sorted(projects)
-            let availableProjectIDs = Set(sortedProjects.map(\.id))
-            var restoredIDs = selectedProjectIDs.intersection(availableProjectIDs)
-
-            if restoredIDs.isEmpty, let firstProject = sortedProjects.first {
-                restoredIDs = [firstProject.id]
-            }
-
-            let nextCurrentProjectID = if let currentProjectID, restoredIDs.contains(currentProjectID) {
-                currentProjectID
-            } else {
-                restoredIDs.sorted().first
-            }
-            try accountDataStore.saveCurrentProjectID(nextCurrentProjectID)
-            try accountDataStore.saveSelectedProjectIDs(restoredIDs)
-            selectedProjectIDs = restoredIDs
-            currentProjectID = nextCurrentProjectID
+            var updatedCatalog = projectCatalog
+            updatedCatalog.reconcile(with: projects)
+            try accountDataStore.saveProjectSelection(updatedCatalog.selection)
+            projectCatalog = updatedCatalog
             projectSelectionError = nil
             state = .idle
-            projectState = .loaded(sortedProjects)
+            projectState = .loaded(updatedCatalog.projects)
         } catch {
             projectState = .failed(error.localizedDescription)
         }
@@ -331,25 +306,11 @@ extension AppModel {
 
     private func restoreSelectedProjects() {
         do {
-            selectedProjectIDs = try accountDataStore.readSelectedProjectIDs()
-            currentProjectID = try accountDataStore.readCurrentProjectID()
+            let selection = try accountDataStore.readProjectSelection()
+            projectCatalog.restore(selection)
             projectSelectionError = nil
         } catch {
-            selectedProjectIDs = []
-            currentProjectID = nil
-            projectSelectionError = error.localizedDescription
-        }
-    }
-
-    private func updateProjectSelection(_ projectIDs: Set<String>, currentProjectID: String?) {
-        do {
-            try accountDataStore.saveSelectedProjectIDs(projectIDs)
-            try accountDataStore.saveCurrentProjectID(currentProjectID)
-            selectedProjectIDs = projectIDs
-            self.currentProjectID = currentProjectID
-            projectSelectionError = nil
-            state = .idle
-        } catch {
+            projectCatalog.restore(.empty)
             projectSelectionError = error.localizedDescription
         }
     }

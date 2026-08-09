@@ -24,23 +24,13 @@ extension AppModel {
     }
 
     var currentProject: VercelProject? {
-        guard case let .loaded(projects) = projectState else { return nil }
-        if let currentProjectID {
-            let currentProject = projects.first(where: { $0.id == currentProjectID })
-            if selectedProjectIDs.contains(currentProjectID), let currentProject {
-                return currentProject
-            }
-        }
-        return projects.first { selectedProjectIDs.contains($0.id) }
+        guard case .loaded = projectState else { return nil }
+        return projectCatalog.currentProject
     }
 
     func selectedProjects(matching searchQuery: String) -> [VercelProject] {
-        guard case let .loaded(projects) = projectState else { return [] }
-
-        let selectedProjects = projects.filter { selectedProjectIDs.contains($0.id) }
-        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !query.isEmpty else { return selectedProjects }
-        return selectedProjects.filter { $0.name.localizedCaseInsensitiveContains(query) }
+        guard case .loaded = projectState else { return [] }
+        return projectCatalog.selectedProjects(matching: searchQuery)
     }
 
     var abbreviatedVisitors: String? {

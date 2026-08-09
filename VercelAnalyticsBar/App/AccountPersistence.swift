@@ -107,26 +107,21 @@ struct KeychainVercelCredentialStore: VercelCredentialStore {
 }
 
 protocol VercelAccountDataStore {
-    func readSelectedProjectIDs() throws -> Set<String>
-    func saveSelectedProjectIDs(_ projectIDs: Set<String>) throws
-    func readCurrentProjectID() throws -> String?
-    func saveCurrentProjectID(_ projectID: String?) throws
+    func readProjectSelection() throws -> ProjectSelection
+    func saveProjectSelection(_ selection: ProjectSelection) throws
     func readAnalyticsRange() throws -> VercelAnalyticsRange
     func saveAnalyticsRange(_ range: VercelAnalyticsRange) throws
     func clear() throws
 }
 
 enum AccountDataStoreError: Error, Equatable, LocalizedError {
-    case invalidSelectedProjectIDs
-    case invalidCurrentProjectID
+    case invalidProjectSelection
     case invalidAnalyticsRange
 
     var errorDescription: String? {
         switch self {
-        case .invalidSelectedProjectIDs:
+        case .invalidProjectSelection:
             "The saved Vercel project selection could not be read."
-        case .invalidCurrentProjectID:
-            "The saved current Vercel project could not be read."
         case .invalidAnalyticsRange:
             "The saved analytics range could not be read."
         }
@@ -134,6 +129,7 @@ enum AccountDataStoreError: Error, Equatable, LocalizedError {
 }
 
 struct UserDefaultsVercelAccountDataStore: VercelAccountDataStore {
+    static let projectSelectionKey = "VercelAnalyticsBar.projectSelection"
     static let selectedProjectIDsKey = "VercelAnalyticsBar.selectedProjectIDs"
     static let currentProjectIDKey = "VercelAnalyticsBar.currentProjectID"
     static let analyticsRangeKey = "VercelAnalyticsBar.analyticsRange"
@@ -158,38 +154,39 @@ struct UserDefaultsVercelAccountDataStore: VercelAccountDataStore {
             .appendingPathComponent("Cache", isDirectory: true)
     }
 
-    func readSelectedProjectIDs() throws -> Set<String> {
-        guard let value = userDefaults.object(forKey: Self.selectedProjectIDsKey) else {
-            return []
+    func readProjectSelection() throws -> ProjectSelection {
+        if let value = userDefaults.object(forKey: Self.projectSelectionKey) {
+            guard let data = value as? Data,
+                  let record = try? JSONDecoder().decode(ProjectSelectionRecord.self, from: data),
+                  record.version == ProjectSelectionRecord.currentVersion,
+                  record.selectedProjectIDs.allSatisfy(Self.isValidProjectID),
+                  record.currentProjectID.map(Self.isValidProjectID) ?? true,
+                  record.currentProjectID.map(record.selectedProjectIDs.contains) ?? true
+            else {
+                throw AccountDataStoreError.invalidProjectSelection
+            }
+            return record.selection
         }
-        guard let projectIDs = value as? [String] else {
-            throw AccountDataStoreError.invalidSelectedProjectIDs
-        }
-        return Set(projectIDs)
+
+        return try migrateLegacyProjectSelection()
     }
 
-    func saveSelectedProjectIDs(_ projectIDs: Set<String>) throws {
-        userDefaults.set(projectIDs.sorted(), forKey: Self.selectedProjectIDsKey)
-    }
-
-    func readCurrentProjectID() throws -> String? {
-        guard let value = userDefaults.object(forKey: Self.currentProjectIDKey) else {
-            return nil
-        }
-        guard let projectID = value as? String,
-              !projectID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    func saveProjectSelection(_ selection: ProjectSelection) throws {
+        guard selection.selectedProjectIDs.allSatisfy(Self.isValidProjectID),
+              selection.currentProjectID.map(Self.isValidProjectID) ?? true,
+              selection.currentProjectID.map(selection.selectedProjectIDs.contains) ?? true
         else {
-            throw AccountDataStoreError.invalidCurrentProjectID
+            throw AccountDataStoreError.invalidProjectSelection
         }
-        return projectID
-    }
 
-    func saveCurrentProjectID(_ projectID: String?) throws {
-        if let projectID {
-            userDefaults.set(projectID, forKey: Self.currentProjectIDKey)
-        } else {
-            userDefaults.removeObject(forKey: Self.currentProjectIDKey)
+        let record = ProjectSelectionRecord(selection: selection)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        guard let data = try? encoder.encode(record) else {
+            throw AccountDataStoreError.invalidProjectSelection
         }
+        userDefaults.set(data, forKey: Self.projectSelectionKey)
+        removeLegacyProjectSelection()
     }
 
     func readAnalyticsRange() throws -> VercelAnalyticsRange {
@@ -210,6 +207,7 @@ struct UserDefaultsVercelAccountDataStore: VercelAccountDataStore {
 
     func clear() throws {
         [
+            Self.projectSelectionKey,
             Self.selectedProjectIDsKey,
             Self.currentProjectIDKey,
             Self.analyticsRangeKey,
@@ -219,5 +217,66 @@ struct UserDefaultsVercelAccountDataStore: VercelAccountDataStore {
             return
         }
         try fileManager.removeItem(at: cacheDirectoryURL)
+    }
+
+    private func migrateLegacyProjectSelection() throws -> ProjectSelection {
+        let selectedValue = userDefaults.object(forKey: Self.selectedProjectIDsKey)
+        let currentValue = userDefaults.object(forKey: Self.currentProjectIDKey)
+        guard selectedValue != nil || currentValue != nil else { return .empty }
+
+        guard selectedValue == nil || selectedValue is [String],
+              currentValue == nil || currentValue is String
+        else {
+            throw AccountDataStoreError.invalidProjectSelection
+        }
+
+        let legacySelectedProjectIDs = selectedValue as? [String] ?? []
+        let legacyCurrentProjectID = currentValue as? String
+        guard legacySelectedProjectIDs.allSatisfy(Self.isValidProjectID),
+              legacyCurrentProjectID.map(Self.isValidProjectID) ?? true
+        else {
+            throw AccountDataStoreError.invalidProjectSelection
+        }
+
+        var selectedProjectIDs = Set(legacySelectedProjectIDs)
+        if let legacyCurrentProjectID {
+            selectedProjectIDs.insert(legacyCurrentProjectID)
+        }
+        let selection = ProjectSelection(
+            selectedProjectIDs: selectedProjectIDs,
+            currentProjectID: legacyCurrentProjectID
+        )
+        try saveProjectSelection(selection)
+        return selection
+    }
+
+    private func removeLegacyProjectSelection() {
+        userDefaults.removeObject(forKey: Self.selectedProjectIDsKey)
+        userDefaults.removeObject(forKey: Self.currentProjectIDKey)
+    }
+
+    private static func isValidProjectID(_ projectID: String) -> Bool {
+        !projectID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+}
+
+private struct ProjectSelectionRecord: Codable {
+    static let currentVersion = 1
+
+    let version: Int
+    let selectedProjectIDs: [String]
+    let currentProjectID: String?
+
+    init(selection: ProjectSelection) {
+        version = Self.currentVersion
+        selectedProjectIDs = selection.selectedProjectIDs.sorted()
+        currentProjectID = selection.currentProjectID
+    }
+
+    var selection: ProjectSelection {
+        ProjectSelection(
+            selectedProjectIDs: Set(selectedProjectIDs),
+            currentProjectID: currentProjectID
+        )
     }
 }

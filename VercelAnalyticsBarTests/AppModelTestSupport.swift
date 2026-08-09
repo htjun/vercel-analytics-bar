@@ -78,9 +78,17 @@ final class InMemoryCredentialStore: VercelCredentialStore {
 
 final class InMemoryAccountDataStore: VercelAccountDataStore {
     var hasData: Bool
-    var selectedProjectIDs: Set<String>
-    var currentProjectID: String?
+    var projectSelection: ProjectSelection
     var analyticsRange: VercelAnalyticsRange
+    var failProjectSelectionSave = false
+
+    var selectedProjectIDs: Set<String> {
+        projectSelection.selectedProjectIDs
+    }
+
+    var currentProjectID: String? {
+        projectSelection.currentProjectID
+    }
 
     init(
         hasData: Bool = false,
@@ -89,25 +97,22 @@ final class InMemoryAccountDataStore: VercelAccountDataStore {
         analyticsRange: VercelAnalyticsRange = .last7Days
     ) {
         self.hasData = hasData
-        self.selectedProjectIDs = selectedProjectIDs
-        self.currentProjectID = currentProjectID
+        projectSelection = ProjectSelection(
+            selectedProjectIDs: selectedProjectIDs,
+            currentProjectID: currentProjectID
+        )
         self.analyticsRange = analyticsRange
     }
 
-    func readSelectedProjectIDs() throws -> Set<String> {
-        selectedProjectIDs
+    func readProjectSelection() throws -> ProjectSelection {
+        projectSelection
     }
 
-    func saveSelectedProjectIDs(_ projectIDs: Set<String>) throws {
-        selectedProjectIDs = projectIDs
-    }
-
-    func readCurrentProjectID() throws -> String? {
-        currentProjectID
-    }
-
-    func saveCurrentProjectID(_ projectID: String?) throws {
-        currentProjectID = projectID
+    func saveProjectSelection(_ selection: ProjectSelection) throws {
+        if failProjectSelectionSave {
+            throw AccountDataStoreError.invalidProjectSelection
+        }
+        projectSelection = selection
     }
 
     func readAnalyticsRange() throws -> VercelAnalyticsRange {
@@ -120,8 +125,7 @@ final class InMemoryAccountDataStore: VercelAccountDataStore {
 
     func clear() throws {
         hasData = false
-        selectedProjectIDs = []
-        currentProjectID = nil
+        projectSelection = .empty
         analyticsRange = .last7Days
     }
 }
@@ -266,7 +270,7 @@ func makeAnalyticsSnapshot(
     )
 }
 
-@Test func accountDataStoreClearsPreferencesAndCache() throws {
+@Test func accountDataStoreMigratesSelectionAndClearsPreferencesAndCache() throws {
     let suiteName = "VercelAnalyticsBarTests.\(UUID().uuidString)"
     let userDefaults = try #require(UserDefaults(suiteName: suiteName))
     let supportURL = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
@@ -289,20 +293,46 @@ func makeAnalyticsSnapshot(
         userDefaults: userDefaults,
         applicationSupportURL: supportURL
     )
-    try store.saveSelectedProjectIDs(["project-b", "project-a"])
-    #expect(try store.readSelectedProjectIDs() == ["project-a", "project-b"])
-    try store.saveCurrentProjectID("project-b")
-    #expect(try store.readCurrentProjectID() == "project-b")
+    let migratedSelection = try store.readProjectSelection()
+    #expect(migratedSelection.selectedProjectIDs == ["project-id"])
+    #expect(migratedSelection.currentProjectID == "project-id")
+    #expect(userDefaults.data(forKey: UserDefaultsVercelAccountDataStore.projectSelectionKey) != nil)
+    #expect(userDefaults.object(forKey: UserDefaultsVercelAccountDataStore.selectedProjectIDsKey) == nil)
+    #expect(userDefaults.object(forKey: UserDefaultsVercelAccountDataStore.currentProjectIDKey) == nil)
+
+    let updatedSelection = ProjectSelection(
+        selectedProjectIDs: ["project-a", "project-b"],
+        currentProjectID: "project-b"
+    )
+    try store.saveProjectSelection(updatedSelection)
+    #expect(try store.readProjectSelection() == updatedSelection)
     #expect(try store.readAnalyticsRange() == .last7Days)
     try store.saveAnalyticsRange(.last30Days)
     #expect(try store.readAnalyticsRange() == .last30Days)
 
     try store.clear()
 
+    #expect(userDefaults.object(forKey: UserDefaultsVercelAccountDataStore.projectSelectionKey) == nil)
     #expect(userDefaults.object(forKey: UserDefaultsVercelAccountDataStore.selectedProjectIDsKey) == nil)
     #expect(userDefaults.object(forKey: UserDefaultsVercelAccountDataStore.currentProjectIDKey) == nil)
     #expect(userDefaults.object(forKey: UserDefaultsVercelAccountDataStore.analyticsRangeKey) == nil)
     #expect(FileManager.default.fileExists(atPath: cacheURL.path) == false)
+}
+
+@Test func accountDataStoreRejectsUnsupportedSelectionVersion() throws {
+    let suiteName = "VercelAnalyticsBarTests.\(UUID().uuidString)"
+    let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+    defer { userDefaults.removePersistentDomain(forName: suiteName) }
+
+    let unsupportedRecord = Data(
+        #"{"currentProjectID":"project-a","selectedProjectIDs":["project-a"],"version":2}"#.utf8
+    )
+    userDefaults.set(unsupportedRecord, forKey: UserDefaultsVercelAccountDataStore.projectSelectionKey)
+    let store = UserDefaultsVercelAccountDataStore(userDefaults: userDefaults)
+
+    #expect(throws: AccountDataStoreError.invalidProjectSelection) {
+        try store.readProjectSelection()
+    }
 }
 
 @Test func snapshotCacheStoreIsVersionedAndKeepsProjectRangeKeysSeparate() throws {

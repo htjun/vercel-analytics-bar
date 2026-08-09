@@ -2,6 +2,51 @@ import Testing
 @testable import VercelAnalyticsBar
 import VercelAnalyticsCore
 
+@Test func projectCatalogReconcilesUnavailableSelectionDeterministically() {
+    var catalog = ProjectCatalog(
+        selection: ProjectSelection(
+            selectedProjectIDs: ["unavailable-project"],
+            currentProjectID: "unavailable-project"
+        )
+    )
+
+    catalog.reconcile(with: [
+        VercelProject(id: "project-b", name: "Beta"),
+        VercelProject(id: "project-a", name: "Alpha"),
+    ])
+
+    #expect(catalog.projects.map(\.id) == ["project-a", "project-b"])
+    #expect(catalog.selectedProjectIDs == ["project-a"])
+    #expect(catalog.currentProjectID == "project-a")
+}
+
+@MainActor
+@Test func appModelKeepsProjectSelectionAtomicWhenPersistenceFails() async {
+    let accountDataStore = InMemoryAccountDataStore()
+    let projects = [
+        VercelProject(id: "project-a", name: "Alpha"),
+        VercelProject(id: "project-b", name: "Beta"),
+    ]
+    let model = AppModel(
+        provider: FixtureAnalyticsSnapshotProvider(),
+        credentialStore: InMemoryCredentialStore(),
+        accountDataStore: accountDataStore,
+        snapshotCacheStore: InMemorySnapshotCacheStore(),
+        projectProviderFactory: { _ in FixtureProjectListingProvider(projects: projects) },
+        tokenValidator: { _ in }
+    )
+
+    await model.connect(token: "valid-token")
+    accountDataStore.failProjectSelectionSave = true
+    model.setProjectSelected("project-b", selected: true)
+
+    #expect(model.selectedProjectIDs == ["project-a"])
+    #expect(model.currentProjectID == "project-a")
+    #expect(accountDataStore.selectedProjectIDs == ["project-a"])
+    #expect(accountDataStore.currentProjectID == "project-a")
+    #expect(model.projectSelectionError != nil)
+}
+
 @MainActor
 @Test func appModelShowsEmptyStateWhenNoProjectIsSelected() async {
     let model = AppModel(
