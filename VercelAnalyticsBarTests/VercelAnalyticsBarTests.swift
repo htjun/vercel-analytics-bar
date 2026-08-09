@@ -362,48 +362,6 @@ import VercelAnalyticsCore
 }
 
 @MainActor
-@Test func appModelLoadsRenderedAnalyticsContentThroughFixtureTransport() async {
-    let transport = StaticAnalyticsTransport()
-    let project = VercelProject(id: "project-a", name: "Alpha")
-    let model = AppModel(
-        credentialStore: InMemoryCredentialStore(),
-        accountDataStore: InMemoryAccountDataStore(),
-        snapshotCacheStore: InMemorySnapshotCacheStore(),
-        projectProviderFactory: { _ in FixtureProjectListingProvider(projects: [project]) },
-        analyticsProviderFactory: { token, selectedProject in
-            VercelAnalyticsSnapshotProvider(
-                token: token,
-                project: selectedProject,
-                now: { Date(timeIntervalSince1970: 1_785_628_800) },
-                transport: transport
-            )
-        },
-        tokenValidator: { _ in }
-    )
-
-    await model.connect(token: "fixture-token")
-    await model.load()
-
-    guard case let .loaded(snapshot) = model.state else {
-        Issue.record("Expected loaded analytics content")
-        return
-    }
-    #expect(snapshot.projectName == "Alpha")
-    #expect(snapshot.range == .last7Days)
-    #expect(snapshot.visitors.value == 165)
-    #expect(snapshot.pageViews.value == 284)
-    #expect(snapshot.series.count == 1)
-    #expect(snapshot.topPages == [
-        VercelAnalyticsBreakdown(label: "/products", visitors: 80, pageViews: 128),
-    ])
-    #expect(snapshot.topReferrers == [
-        VercelAnalyticsBreakdown(label: "google.com", visitors: 48, pageViews: 64),
-    ])
-    #expect(model.abbreviatedVisitors == "24")
-    #expect(await transport.requests.count == 6)
-}
-
-@MainActor
 @Test func appModelDisconnectsCredentialAndAccountData() async {
     let credentialStore = InMemoryCredentialStore(token: "stored-token")
     let accountDataStore = InMemoryAccountDataStore(hasData: true)

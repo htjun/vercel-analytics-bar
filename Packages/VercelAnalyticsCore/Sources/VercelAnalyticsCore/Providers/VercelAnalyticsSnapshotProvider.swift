@@ -133,7 +133,25 @@ public struct VercelAnalyticsSnapshotProvider: AnalyticsSnapshotProviding {
             topPages,
             topReferrers
         )
-        let data = SnapshotData(
+        let data = completedDaysData(
+            count: count,
+            previous: previous,
+            series: series,
+            last24: last24,
+            breakdowns: (pages: pages, referrers: referrers)
+        )
+
+        return makeSnapshot(range: range, data: data, refreshedAt: refreshedAt)
+    }
+
+    private func completedDaysData(
+        count: VercelAnalyticsCount,
+        previous: VercelAnalyticsCount,
+        series: VercelAnalyticsSeries,
+        last24: VercelAnalyticsSeries,
+        breakdowns: (pages: [VercelAnalyticsBreakdown], referrers: [VercelAnalyticsBreakdown])
+    ) -> SnapshotData {
+        SnapshotData(
             visitors: AnalyticsMetric(
                 label: "Visitors",
                 value: count.visitors,
@@ -145,12 +163,10 @@ public struct VercelAnalyticsSnapshotProvider: AnalyticsSnapshotProviding {
                 previousValue: previous.pageViews
             ),
             series: series.points,
-            topPages: pages,
-            topReferrers: referrers,
+            topPages: breakdowns.pages,
+            topReferrers: breakdowns.referrers,
             last24HoursVisitors: totals(from: last24).visitors
         )
-
-        return makeSnapshot(range: range, data: data, refreshedAt: refreshedAt)
     }
 
     private func totals(from series: VercelAnalyticsSeries) -> (visitors: Int, pageViews: Int) {

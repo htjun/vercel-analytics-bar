@@ -131,12 +131,12 @@ struct AnalyticsCardPresentation: Equatable {
     }
 }
 
-struct AnalyticsCardView<ProjectSelectorContent: View>: View {
+struct AnalyticsCardView<SelectorContent: View>: View {
     let presentation: AnalyticsCardPresentation
     let chartStyle: ChartStyle
     @Binding var isProjectSelectorPresented: Bool
     @Binding var selectedBreakdown: AnalyticsBreakdownSelection
-    @ViewBuilder let projectSelectorContent: () -> ProjectSelectorContent
+    @ViewBuilder let projectSelectorContent: () -> SelectorContent
     let onSelectProject: () -> Void
     let onSelectRange: (VercelAnalyticsRange) -> Void
     let onOpenSettings: () -> Void
@@ -388,18 +388,4 @@ struct AnalyticsCardView<ProjectSelectorContent: View>: View {
             AnalyticsCardColors.secondaryText
         }
     }
-}
-
-enum AnalyticsCardColors {
-    static let cardBackground = Color.white.opacity(0.94)
-    static let glassRim = Color.white.opacity(0.32)
-    static let glassCyanFringe = Color(red: 104 / 255, green: 222 / 255, blue: 1).opacity(0.18)
-    static let glassWarmFringe = Color(red: 1, green: 206 / 255, blue: 156 / 255).opacity(0.14)
-    static let reducedTransparencyShell = Color(red: 246 / 255, green: 246 / 255, blue: 244 / 255)
-    static let reducedTransparencyOutline = Color.black.opacity(0.28)
-    static let primaryText = Color(red: 38 / 255, green: 38 / 255, blue: 38 / 255)
-    static let secondaryText = Color(red: 114 / 255, green: 119 / 255, blue: 123 / 255)
-    static let positive = Color(red: 36 / 255, green: 202 / 255, blue: 105 / 255)
-    static let negative = Color(red: 235 / 255, green: 101 / 255, blue: 100 / 255)
-    static let border = Color(red: 117 / 255, green: 117 / 255, blue: 117 / 255).opacity(0.1)
 }

@@ -40,6 +40,7 @@
 		A10000000000000000000023 /* AnalyticsGlassShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000023 /* AnalyticsGlassShell.swift */; };
 		A10000000000000000000024 /* StatusBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000024 /* StatusBarController.swift */; };
 		A10000000000000000000025 /* HostedWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000025 /* HostedWindowController.swift */; };
+		A10000000000000000000026 /* AnalyticsCardIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000026 /* AnalyticsCardIntegrationTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -92,6 +93,7 @@
 		A30000000000000000000023 /* AnalyticsGlassShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsGlassShell.swift; sourceTree = "<group>"; };
 		A30000000000000000000024 /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarController.swift; sourceTree = "<group>"; };
 		A30000000000000000000025 /* HostedWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostedWindowController.swift; sourceTree = "<group>"; };
+		A30000000000000000000026 /* AnalyticsCardIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsCardIntegrationTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -165,6 +167,7 @@
 			children = (
 				A30000000000000000000002 /* VercelAnalyticsBarTests.swift */,
 				A30000000000000000000022 /* AnalyticsCardTests.swift */,
+				A30000000000000000000026 /* AnalyticsCardIntegrationTests.swift */,
 				A3000000000000000000000D /* AppModelTestSupport.swift */,
 				A30000000000000000000011 /* RefreshCoordinatorTests.swift */,
 				A30000000000000000000012 /* ConnectionErrorTests.swift */,
@@ -393,6 +396,7 @@
 			files = (
 				A10000000000000000000003 /* VercelAnalyticsBarTests.swift in Sources */,
 				A10000000000000000000022 /* AnalyticsCardTests.swift in Sources */,
+				A10000000000000000000026 /* AnalyticsCardIntegrationTests.swift in Sources */,
 				A10000000000000000000009 /* AppModelTestSupport.swift in Sources */,
 				A10000000000000000000011 /* RefreshCoordinatorTests.swift in Sources */,
 				A10000000000000000000012 /* ConnectionErrorTests.swift in Sources */,

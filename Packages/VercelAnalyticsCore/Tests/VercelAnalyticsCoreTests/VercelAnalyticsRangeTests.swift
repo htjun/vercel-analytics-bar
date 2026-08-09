@@ -131,40 +131,7 @@ func clientFiltersRoundedAggregateRowsToLogicalBucketCount(
 
     let snapshot = try await provider.snapshot(for: .last24Hours)
 
-    #expect(try snapshot == AnalyticsSnapshot(
-        projectName: "Team Dashboard",
-        range: .last24Hours,
-        visitors: AnalyticsMetric(label: "Visitors", value: 22, previousValue: 0),
-        pageViews: AnalyticsMetric(label: "Page Views", value: 39, previousValue: 0),
-        series: [
-            VercelAnalyticsPoint(
-                timestamp: date("2026-08-01T23:00:00.000Z"),
-                visitors: 10,
-                pageViews: 18
-            ),
-            VercelAnalyticsPoint(
-                timestamp: date("2026-08-02T00:00:00.000Z"),
-                visitors: 12,
-                pageViews: 21
-            ),
-        ],
-        topPages: [
-            VercelAnalyticsBreakdown(label: "/products", visitors: 820, pageViews: 1280),
-            VercelAnalyticsBreakdown(label: "/pricing", visitors: 615, pageViews: 940),
-            VercelAnalyticsBreakdown(label: "/docs", visitors: 410, pageViews: 690),
-            VercelAnalyticsBreakdown(label: "/blog", visitors: 330, pageViews: 520),
-            VercelAnalyticsBreakdown(label: "/about", visitors: 180, pageViews: 240),
-        ],
-        topReferrers: [
-            VercelAnalyticsBreakdown(label: "google.com", visitors: 510, pageViews: 640),
-            VercelAnalyticsBreakdown(label: "news.ycombinator.com", visitors: 205, pageViews: 260),
-            VercelAnalyticsBreakdown(label: "github.com", visitors: 160, pageViews: 195),
-            VercelAnalyticsBreakdown(label: "linkedin.com", visitors: 95, pageViews: 120),
-            VercelAnalyticsBreakdown(label: "example.com", visitors: 40, pageViews: 55),
-        ],
-        last24HoursVisitors: 22,
-        refreshedAt: now
-    ))
+    #expect(try snapshot == expectedLast24Snapshot(refreshedAt: now))
     let requests = await transport.requests
     #expect(requests.count == 4)
     #expect(requests.allSatisfy { queryValue("projectId", in: $0) == "prj_team_fixture_1" })
@@ -195,11 +162,7 @@ func clientFiltersRoundedAggregateRowsToLogicalBucketCount(
             ],
         ]
     )
-    let project = VercelProject(
-        id: "prj_team_fixture_1",
-        name: "Team Dashboard",
-        teamID: "team_fixture"
-    )
+    let project = VercelProject(id: "prj_team_fixture_1", name: "Team Dashboard", teamID: "team_fixture")
     let now = try date("2026-08-02T00:00:00.000Z")
     let provider = VercelAnalyticsSnapshotProvider(
         token: "fixture-token",
@@ -209,13 +172,7 @@ func clientFiltersRoundedAggregateRowsToLogicalBucketCount(
     )
 
     let snapshot = try await provider.snapshot(for: .last7Days)
-    let expectedSeries = try [
-        VercelAnalyticsPoint(
-            timestamp: date("2026-08-01T23:00:00.000Z"),
-            visitors: 10,
-            pageViews: 18
-        ),
-    ]
+    let expectedSeries = try expectedLastCompletedDaySeries()
 
     #expect(snapshot.visitors == AnalyticsMetric(label: "Visitors", value: 165, previousValue: 165))
     #expect(snapshot.pageViews == AnalyticsMetric(label: "Page Views", value: 284, previousValue: 284))
@@ -256,26 +213,8 @@ func clientFiltersRoundedAggregateRowsToLogicalBucketCount(
             "/v1/query/web-analytics/visits/aggregate": [
                 emptyAggregate,
                 emptyAggregate,
-                .response(statusCode: 200, body: """
-                {
-                  "version": 1,
-                  "query": {
-                    "since": "2026-08-01T01:00:00.000Z",
-                    "until": "2026-08-02T00:59:59.999Z"
-                  },
-                  "data": []
-                }
-                """),
-                .response(statusCode: 200, body: """
-                {
-                  "version": 1,
-                  "query": {
-                    "since": "2026-08-01T01:00:00.000Z",
-                    "until": "2026-08-02T00:59:59.999Z"
-                  },
-                  "data": []
-                }
-                """),
+                emptyAggregate,
+                emptyAggregate,
             ],
         ]
     )
@@ -295,4 +234,51 @@ func clientFiltersRoundedAggregateRowsToLogicalBucketCount(
     #expect(snapshot.topPages.isEmpty)
     #expect(snapshot.topReferrers.isEmpty)
     #expect(snapshot.last24HoursVisitors == 0)
+}
+
+private func expectedLast24Snapshot(refreshedAt: Date) throws -> AnalyticsSnapshot {
+    try AnalyticsSnapshot(
+        projectName: "Team Dashboard",
+        range: .last24Hours,
+        visitors: AnalyticsMetric(label: "Visitors", value: 22, previousValue: 0),
+        pageViews: AnalyticsMetric(label: "Page Views", value: 39, previousValue: 0),
+        series: [
+            VercelAnalyticsPoint(
+                timestamp: date("2026-08-01T23:00:00.000Z"),
+                visitors: 10,
+                pageViews: 18
+            ),
+            VercelAnalyticsPoint(
+                timestamp: date("2026-08-02T00:00:00.000Z"),
+                visitors: 12,
+                pageViews: 21
+            ),
+        ],
+        topPages: [
+            VercelAnalyticsBreakdown(label: "/products", visitors: 820, pageViews: 1280),
+            VercelAnalyticsBreakdown(label: "/pricing", visitors: 615, pageViews: 940),
+            VercelAnalyticsBreakdown(label: "/docs", visitors: 410, pageViews: 690),
+            VercelAnalyticsBreakdown(label: "/blog", visitors: 330, pageViews: 520),
+            VercelAnalyticsBreakdown(label: "/about", visitors: 180, pageViews: 240),
+        ],
+        topReferrers: [
+            VercelAnalyticsBreakdown(label: "google.com", visitors: 510, pageViews: 640),
+            VercelAnalyticsBreakdown(label: "news.ycombinator.com", visitors: 205, pageViews: 260),
+            VercelAnalyticsBreakdown(label: "github.com", visitors: 160, pageViews: 195),
+            VercelAnalyticsBreakdown(label: "linkedin.com", visitors: 95, pageViews: 120),
+            VercelAnalyticsBreakdown(label: "example.com", visitors: 40, pageViews: 55),
+        ],
+        last24HoursVisitors: 22,
+        refreshedAt: refreshedAt
+    )
+}
+
+private func expectedLastCompletedDaySeries() throws -> [VercelAnalyticsPoint] {
+    try [
+        VercelAnalyticsPoint(
+            timestamp: date("2026-08-01T23:00:00.000Z"),
+            visitors: 10,
+            pageViews: 18
+        ),
+    ]
 }
