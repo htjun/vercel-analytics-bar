@@ -4,10 +4,10 @@ import VercelAnalyticsCore
 struct MenuBarRootView: View {
     let model: AppModel
     let chartStyle: ChartStyleStore
+    let onOpenSettings: () -> Void
     let onDismissPanel: () -> Void
     @State private var isProjectSelectorPresented = false
     @State private var projectSearchQuery = ""
-    @Environment(\.openSettings) private var openSettings
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -63,10 +63,7 @@ struct MenuBarRootView: View {
                     await model.selectAnalyticsRange(range)
                 }
             },
-            onOpenSettings: {
-                onDismissPanel()
-                openSettings()
-            },
+            onOpenSettings: openSettings,
             onOpenDashboard: { url in
                 onDismissPanel()
                 openURL(url)
@@ -121,8 +118,15 @@ struct MenuBarRootView: View {
                     }
                 }
             }
+
+            Button("Open Settings", action: openSettings)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func openSettings() {
+        onDismissPanel()
+        onOpenSettings()
     }
 }
 

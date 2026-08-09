@@ -39,6 +39,7 @@
 		A10000000000000000000022 /* AnalyticsCardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000022 /* AnalyticsCardTests.swift */; };
 		A10000000000000000000023 /* AnalyticsGlassShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000023 /* AnalyticsGlassShell.swift */; };
 		A10000000000000000000024 /* StatusBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000024 /* StatusBarController.swift */; };
+		A10000000000000000000025 /* HostedWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000025 /* HostedWindowController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -90,6 +91,7 @@
 		A30000000000000000000022 /* AnalyticsCardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsCardTests.swift; sourceTree = "<group>"; };
 		A30000000000000000000023 /* AnalyticsGlassShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsGlassShell.swift; sourceTree = "<group>"; };
 		A30000000000000000000024 /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarController.swift; sourceTree = "<group>"; };
+		A30000000000000000000025 /* HostedWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostedWindowController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -137,6 +139,7 @@
 			isa = PBXGroup;
 			children = (
 				A30000000000000000000001 /* VercelAnalyticsBarApp.swift */,
+				A30000000000000000000025 /* HostedWindowController.swift */,
 				A3000000000000000000001F /* AppTypography.swift */,
 				A30000000000000000000009 /* AppModel.swift */,
 				A3000000000000000000000C /* AccountPersistence.swift */,
@@ -378,6 +381,7 @@
 				A10000000000000000000020 /* AnalyticsCardView.swift in Sources */,
 				A10000000000000000000023 /* AnalyticsGlassShell.swift in Sources */,
 				A10000000000000000000024 /* StatusBarController.swift in Sources */,
+				A10000000000000000000025 /* HostedWindowController.swift in Sources */,
 				A10000000000000000000006 /* MenuBarRootView.swift in Sources */,
 				A10000000000000000000007 /* SettingsRootView.swift in Sources */,
 			);

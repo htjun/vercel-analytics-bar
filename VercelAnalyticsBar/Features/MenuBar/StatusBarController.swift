@@ -140,6 +140,7 @@ final class AnalyticsPanel: NSPanel {
 final class StatusBarController: NSObject {
     private let model: AppModel
     private let chartStyle: ChartStyleStore
+    private let onOpenSettings: () -> Void
     private let statusBar: NSStatusBar
     private let statusItem: NSStatusItem
     private let hostingView: NSHostingView<AnyView>
@@ -151,9 +152,19 @@ final class StatusBarController: NSObject {
     private var presentationTask: Task<Void, Never>?
     private var isInstalled = true
 
-    init(model: AppModel, chartStyle: ChartStyleStore, statusBar: NSStatusBar = .system) {
+    var isStatusItemVisible: Bool {
+        statusItem.isVisible
+    }
+
+    init(
+        model: AppModel,
+        chartStyle: ChartStyleStore,
+        statusBar: NSStatusBar = .system,
+        onOpenSettings: @escaping () -> Void
+    ) {
         self.model = model
         self.chartStyle = chartStyle
+        self.onOpenSettings = onOpenSettings
         self.statusBar = statusBar
         statusItem = statusBar.statusItem(withLength: NSStatusItem.variableLength)
         hostingView = NSHostingView(rootView: AnyView(EmptyView()))
@@ -186,6 +197,7 @@ final class StatusBarController: NSObject {
     private func configureStatusItem() {
         statusItem.autosaveName = "VercelAnalyticsBar.StatusItem"
         statusItem.behavior = [.removalAllowed, .terminationOnRemoval]
+        statusItem.isVisible = true
 
         guard let button = statusItem.button else { return }
         let image = NSImage(named: "MenuBarChart")
@@ -253,6 +265,7 @@ final class StatusBarController: NSObject {
             MenuBarRootView(
                 model: model,
                 chartStyle: chartStyle,
+                onOpenSettings: onOpenSettings,
                 onDismissPanel: { [weak self] in
                     self?.dismissPanel()
                 }

@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import SwiftUI
 import Testing
 @testable import VercelAnalyticsBar
 import VercelAnalyticsCore
@@ -52,6 +53,24 @@ import VercelAnalyticsCore
     #expect(loaded.toolTip == "Vercel Analytics — 1.8K visitors")
 }
 
+@MainActor
+@Test func statusBarControllerMakesItsStatusItemVisibleOnLaunch() {
+    let model = AppModel(
+        credentialStore: InMemoryCredentialStore(),
+        accountDataStore: InMemoryAccountDataStore(),
+        snapshotCacheStore: InMemorySnapshotCacheStore(),
+        launchAtLoginManager: InMemoryLaunchAtLoginManager()
+    )
+    let controller = StatusBarController(
+        model: model,
+        chartStyle: ChartStyleStore(),
+        onOpenSettings: {}
+    )
+    defer { controller.tearDown() }
+
+    #expect(controller.isStatusItemVisible)
+}
+
 @Test func analyticsPanelPresentationResetsItsSessionWhenPresented() {
     var state = AnalyticsPanelPresentationState()
     let initialSessionID = state.sessionID
@@ -95,6 +114,49 @@ import VercelAnalyticsCore
     #else
         #expect(panel.contentView is NSVisualEffectView)
     #endif
+}
+
+@MainActor
+@Test func appDelegateKeepsRunningAfterTheLastWindowCloses() {
+    let appDelegate = AppDelegate()
+
+    #expect(!appDelegate.applicationShouldTerminateAfterLastWindowClosed(.shared))
+}
+
+@MainActor
+@Test func hostedWindowControllerRetainsAndReusesItsWindow() throws {
+    let controller = HostedWindowController(
+        title: "Test Settings",
+        contentSize: CGSize(width: 520, height: 680),
+        rootView: EmptyView()
+    )
+    let window = try #require(controller.window)
+
+    #expect(window.title == "Test Settings")
+    #expect(window.contentMinSize == CGSize(width: 520, height: 680))
+    #expect(window.contentMaxSize == CGSize(width: 520, height: 680))
+    #expect(!window.isReleasedWhenClosed)
+    #expect(!window.styleMask.contains(.resizable))
+
+    window.close()
+
+    #expect(controller.window === window)
+}
+
+@MainActor
+@Test func hostedWindowControllerSupportsResizableInspectorWindows() throws {
+    let controller = HostedWindowController(
+        title: "Chart Inspector",
+        contentSize: CGSize(width: 820, height: 640),
+        minimumContentSize: CGSize(width: 740, height: 560),
+        isResizable: true,
+        rootView: EmptyView()
+    )
+    let window = try #require(controller.window)
+
+    #expect(window.styleMask.contains(.resizable))
+    #expect(window.styleMask.contains(.miniaturizable))
+    #expect(window.contentMinSize == CGSize(width: 740, height: 560))
 }
 
 @MainActor

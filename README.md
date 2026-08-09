@@ -46,7 +46,7 @@ The app intentionally uses only Vercel's documented public PAT endpoints. Vercel
 - [Homebrew](https://brew.sh/) for development-tool bootstrap
 - Node.js 20.16 or later for Chart Inspector development and verification
 
-The project targets Swift 6 language mode and keeps a macOS 14 deployment target. Xcode 26 is required so the system-owned `MenuBarExtra` panel adopts native Liquid Glass when the app runs on macOS 26 while retaining the standard system material on macOS 14 through macOS 25.
+The project targets Swift 6 language mode and keeps a macOS 14 deployment target. Xcode 26 is required so the custom AppKit menu-bar panel uses native Liquid Glass when the app runs on macOS 26 while retaining the standard system material on macOS 14 through macOS 25.
 
 ## Bootstrap
 
@@ -155,8 +155,8 @@ make test
 
 ## Architecture
 
-The checked-in Xcode project owns the application bundle, SwiftUI lifecycle, menu bar UI, Settings
-scene, Debug-only Chart Inspector scene and WebKit bridge, Login Items integration, asset catalog,
+The checked-in Xcode project owns the application bundle, AppKit lifecycle, menu bar UI, hosted SwiftUI
+Settings and Debug-only Chart Inspector windows, WebKit bridge, Login Items integration, asset catalog,
 sandbox metadata, signing configuration, and app tests.
 
 The local `VercelAnalyticsCore` Swift package owns stable analytics domain values, the typed `VercelAPIClient`, project discovery, ranged snapshots, equal-period comparison calculation, and the `AnalyticsSnapshotProviding` boundary. The app injects token-based project and analytics providers into a main-actor observable model, which owns account connection, project selection, current-project switching, persisted range selection, refresh coordination, and menu-bar metric state. Fixture providers remain test-only. The API client accepts an injected HTTP transport for deterministic tests; its Vercel DTOs stay internal and tokens or response bodies are never included in client errors. The app's credential boundary uses Security Keychain APIs, while selected project IDs, the current project, account preferences, and versioned snapshot cache use injected stores so disconnect and recovery behavior are testable. Snapshot cache entries are keyed by project and analytics range and are persisted under Application Support; corrupt or incompatible files are discarded.

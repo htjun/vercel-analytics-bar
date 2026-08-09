@@ -4,17 +4,13 @@
     import SwiftUI
     import VercelAnalyticsCore
 
-    enum ChartInspectorScene {
-        static let id = "chart-inspector"
-    }
-
     struct ChartInspectorView: View {
-        let analyticsState: AppModel.State
+        let model: AppModel
         let styleStore: ChartStyleStore
         @State private var pageState = ChartInspectorPageState()
 
         var body: some View {
-            let preview = ChartInspectorPreview(analyticsState: analyticsState)
+            let preview = ChartInspectorPreview(analyticsState: model.state)
 
             HSplitView {
                 ChartInspectorPreviewView(preview: preview, style: styleStore.style)

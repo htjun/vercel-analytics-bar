@@ -5,6 +5,7 @@ import VercelAnalyticsCore
 struct SettingsRootView: View {
     let model: AppModel
     let isChartInspectorEnabled: Bool
+    let onOpenChartInspector: () -> Void
     @State private var token = ""
     @State private var searchQuery = ""
     var body: some View {
@@ -15,7 +16,10 @@ struct SettingsRootView: View {
             accountContent
 
             Divider()
-            ApplicationControls(isChartInspectorEnabled: isChartInspectorEnabled)
+            ApplicationControls(
+                isChartInspectorEnabled: isChartInspectorEnabled,
+                onOpenChartInspector: onOpenChartInspector
+            )
 
             IndependenceNotice()
         }
@@ -287,17 +291,13 @@ struct SettingsRootView: View {
 
 private struct ApplicationControls: View {
     let isChartInspectorEnabled: Bool
-    #if CHART_INSPECTOR
-        @Environment(\.openWindow) private var openWindow
-    #endif
+    let onOpenChartInspector: () -> Void
 
     var body: some View {
         HStack {
             #if CHART_INSPECTOR
                 if isChartInspectorEnabled {
-                    Button("Chart Inspector") {
-                        openWindow(id: ChartInspectorScene.id)
-                    }
+                    Button("Chart Inspector", action: onOpenChartInspector)
                 }
             #endif
 

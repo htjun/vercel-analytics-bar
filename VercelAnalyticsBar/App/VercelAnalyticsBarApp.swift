@@ -1,5 +1,4 @@
 import AppKit
-import SwiftUI
 import VercelAnalyticsCore
 
 @MainActor
@@ -7,6 +6,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let model: AppModel
     let chartStyle: ChartStyleStore
     private var statusBarController: StatusBarController?
+    private var settingsWindowController: HostedWindowController?
+    #if CHART_INSPECTOR
+        private var chartInspectorWindowController: HostedWindowController?
+    #endif
 
     override init() {
         AppFontRegistry.registerBundledFonts()
@@ -24,38 +27,60 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_: Notification) {
         model.startRefreshLoop()
-        statusBarController = StatusBarController(model: model, chartStyle: chartStyle)
+        settingsWindowController = makeSettingsWindowController()
+        statusBarController = StatusBarController(
+            model: model,
+            chartStyle: chartStyle,
+            onOpenSettings: { [weak self] in
+                self?.settingsWindowController?.present()
+            }
+        )
+    }
+
+    func applicationShouldTerminateAfterLastWindowClosed(_: NSApplication) -> Bool {
+        false
     }
 
     func applicationWillTerminate(_: Notification) {
         statusBarController?.tearDown()
         statusBarController = nil
+        settingsWindowController = nil
+        #if CHART_INSPECTOR
+            chartInspectorWindowController = nil
+        #endif
         model.stopRefreshLoop()
     }
-}
 
-@main
-@MainActor
-struct VercelAnalyticsBarApp: App {
-    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-
-    var body: some Scene {
-        Settings {
-            SettingsRootView(
-                model: appDelegate.model,
-                isChartInspectorEnabled: isChartInspectorEnabled
+    private func makeSettingsWindowController() -> HostedWindowController {
+        HostedWindowController(
+            title: "\(ProductInfo.name) Settings",
+            contentSize: CGSize(width: 520, height: 680),
+            rootView: SettingsRootView(
+                model: model,
+                isChartInspectorEnabled: isChartInspectorEnabled,
+                onOpenChartInspector: { [weak self] in
+                    self?.presentChartInspector()
+                }
             )
-        }
+        )
+    }
 
+    private func presentChartInspector() {
         #if CHART_INSPECTOR
-            Window("Chart Inspector", id: ChartInspectorScene.id) {
-                ChartInspectorView(
-                    analyticsState: appDelegate.model.state,
-                    styleStore: appDelegate.chartStyle
+            guard isChartInspectorEnabled else { return }
+            if chartInspectorWindowController == nil {
+                chartInspectorWindowController = HostedWindowController(
+                    title: "Chart Inspector",
+                    contentSize: CGSize(width: 820, height: 640),
+                    minimumContentSize: CGSize(width: 740, height: 560),
+                    isResizable: true,
+                    rootView: ChartInspectorView(
+                        model: model,
+                        styleStore: chartStyle
+                    )
                 )
             }
-            .defaultSize(width: 820, height: 640)
-            .windowResizability(.contentMinSize)
+            chartInspectorWindowController?.present()
         #endif
     }
 
@@ -65,5 +90,19 @@ struct VercelAnalyticsBarApp: App {
         #else
             false
         #endif
+    }
+}
+
+@main
+@MainActor
+enum VercelAnalyticsBarApplication {
+    static func main() {
+        let application = NSApplication.shared
+        let appDelegate = AppDelegate()
+        application.delegate = appDelegate
+
+        withExtendedLifetime(appDelegate) {
+            application.run()
+        }
     }
 }
