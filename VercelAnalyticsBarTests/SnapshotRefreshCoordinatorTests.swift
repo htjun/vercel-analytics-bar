@@ -93,6 +93,20 @@ import VercelAnalyticsCore
 }
 
 @MainActor
+@Test func snapshotRefreshCoordinatorStopCancelsAnActiveRequest() async {
+    let driver = SnapshotRefreshTestDriver()
+    let refresh = driver.start(refreshRequest(trigger: .periodic))
+    await driver.provider.waitUntilRequested()
+
+    driver.coordinator.stop()
+    let snapshot = refreshFixture()
+    await driver.provider.succeed(with: snapshot)
+    await refresh.value
+
+    #expect(driver.events.contains(.succeeded(snapshot)) == false)
+}
+
+@MainActor
 @Test func snapshotRefreshCoordinatorAppliesRateLimitAndManualRetryPolicy() async {
     let snapshot = refreshFixture()
     let clock = MutableDateClock(date: refreshNow)

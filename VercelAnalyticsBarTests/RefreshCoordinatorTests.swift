@@ -70,6 +70,7 @@ import VercelAnalyticsCore
 
     await harness.connect()
     harness.model.startRefreshLoop()
+    harness.model.startRefreshLoop()
     await harness.sleeper.waitUntilSleeping()
     #expect(await harness.sleeper.durations == [.seconds(300)])
 
@@ -82,6 +83,32 @@ import VercelAnalyticsCore
         last24HoursVisitors: 11,
         refreshedAt: Date(timeIntervalSince1970: 1_785_549_600)
     ))
+    await harness.sleeper.waitUntilSleeping()
+    #expect(await harness.sleeper.durations == [.seconds(300), .seconds(300)])
     harness.model.stopRefreshLoop()
     await harness.sleeper.release()
+    await Task.yield()
+    #expect(await harness.provider.requestedRanges == [.last7Days])
+}
+
+@MainActor
+@Test func appModelDisconnectResetsAnActiveRefresh() async {
+    let harness = RefreshTestHarness()
+
+    await harness.connect()
+    let refresh = Task { await harness.model.load() }
+    await harness.provider.waitUntilRequested()
+
+    harness.model.disconnect()
+    await harness.provider.succeed(with: makeAnalyticsSnapshot(
+        projectName: "Alpha",
+        visitors: 100,
+        pageViews: 200,
+        last24HoursVisitors: 11,
+        refreshedAt: Date(timeIntervalSince1970: 1_785_549_600)
+    ))
+    await refresh.value
+
+    #expect(harness.model.accountState == .disconnected)
+    #expect(harness.model.state == .idle)
 }

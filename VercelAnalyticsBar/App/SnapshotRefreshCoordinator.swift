@@ -1,6 +1,14 @@
 import Foundation
 import VercelAnalyticsCore
 
+enum RefreshTrigger: Equatable {
+    case popoverOpen
+    case periodic
+    case projectSwitch
+    case rangeChanged
+    case manual
+}
+
 struct SnapshotCacheKey: Hashable {
     let projectID: String
     let range: VercelAnalyticsRange
@@ -48,8 +56,10 @@ final class SnapshotRefreshCoordinator {
 
     private let cacheStore: any AnalyticsSnapshotCacheStore
     private let now: @Sendable () -> Date
+    private let sleep: @Sendable (Duration) async throws -> Void
     private var cache: [SnapshotCacheKey: AnalyticsSnapshot]
     private var activeRefresh: ActiveRefresh?
+    private var periodicRefreshTask: Task<Void, Never>?
     private var manualRetryCount = 0
     private var manualRetryWindowEndsAt: Date?
     private var nextRefreshAllowedAt: Date?
@@ -57,10 +67,14 @@ final class SnapshotRefreshCoordinator {
 
     init(
         cacheStore: any AnalyticsSnapshotCacheStore,
-        now: @escaping @Sendable () -> Date
+        now: @escaping @Sendable () -> Date,
+        sleep: @escaping @Sendable (Duration) async throws -> Void = {
+            try await Task.sleep(for: $0)
+        }
     ) {
         self.cacheStore = cacheStore
         self.now = now
+        self.sleep = sleep
         cache = Self.cacheDictionary(from: (try? cacheStore.read()) ?? [])
     }
 
@@ -129,9 +143,31 @@ final class SnapshotRefreshCoordinator {
     }
 
     func reset() {
-        activeRefresh?.task.cancel()
-        activeRefresh = nil
+        cancelActiveRefresh()
         resetRetryPolicy()
+    }
+
+    func startPeriodicRefresh(_ refresh: @escaping @MainActor () async -> Void) {
+        guard periodicRefreshTask == nil else { return }
+
+        let sleep = sleep
+        periodicRefreshTask = Task { [weak self] in
+            while !Task.isCancelled {
+                do {
+                    try await sleep(.seconds(300))
+                } catch {
+                    return
+                }
+                guard !Task.isCancelled, self != nil else { return }
+                await refresh()
+            }
+        }
+    }
+
+    func stop() {
+        periodicRefreshTask?.cancel()
+        periodicRefreshTask = nil
+        cancelActiveRefresh()
     }
 
     private func cachedSnapshot(projectID: String, range: VercelAnalyticsRange) -> AnalyticsSnapshot? {
@@ -169,7 +205,38 @@ final class SnapshotRefreshCoordinator {
         }
     }
 
-    private func authorizeRefresh(
+    private func cancelActiveRefresh() {
+        activeRefresh?.task.cancel()
+        activeRefresh = nil
+    }
+
+    private func cachedSnapshot(for request: SnapshotRefreshRequest) -> AnalyticsSnapshot? {
+        guard let projectID = request.projectID else { return nil }
+        return cachedSnapshot(projectID: projectID, range: request.range)
+    }
+
+    private func isStale(_ snapshot: AnalyticsSnapshot) -> Bool {
+        now().timeIntervalSince(snapshot.refreshedAt) > 60
+    }
+
+    private func persistCache() {
+        let entries = cache.map { key, snapshot in
+            SnapshotCacheEntry(projectID: key.projectID, snapshot: snapshot)
+        }
+        try? cacheStore.write(entries)
+    }
+
+    private static func cacheDictionary(
+        from entries: [SnapshotCacheEntry]
+    ) -> [SnapshotCacheKey: AnalyticsSnapshot] {
+        entries.reduce(into: [:]) { result, entry in
+            result[entry.key] = entry.snapshot
+        }
+    }
+}
+
+private extension SnapshotRefreshCoordinator {
+    func authorizeRefresh(
         trigger: RefreshTrigger,
         eventHandler: @MainActor (SnapshotRefreshEvent) -> Void
     ) -> Bool {
@@ -205,7 +272,7 @@ final class SnapshotRefreshCoordinator {
         return true
     }
 
-    private func handleFailure(
+    func handleFailure(
         _ error: any Error,
         request: SnapshotRefreshRequest,
         eventHandler: @MainActor (SnapshotRefreshEvent) -> Void
@@ -244,7 +311,7 @@ final class SnapshotRefreshCoordinator {
         }
     }
 
-    private func isRecoverable(_ error: any Error) -> Bool {
+    func isRecoverable(_ error: any Error) -> Bool {
         guard let error = error as? VercelAPIError else { return false }
         switch error {
         case .network, .transient, .rateLimited:
@@ -255,44 +322,20 @@ final class SnapshotRefreshCoordinator {
         }
     }
 
-    private func rateLimitDate(from metadata: VercelRateLimitMetadata) -> Date {
+    func rateLimitDate(from metadata: VercelRateLimitMetadata) -> Date {
         let currentDate = now()
         let retryAfterDate = metadata.retryAfter.map { currentDate.addingTimeInterval($0) }
         return max(retryAfterDate ?? currentDate.addingTimeInterval(60), metadata.resetAt ?? .distantPast)
     }
 
-    private func rateLimitMessage(for date: Date) -> String {
+    func rateLimitMessage(for date: Date) -> String {
         "Refresh paused until \(date.formatted(date: .omitted, time: .shortened))."
     }
 
-    private func resetRetryPolicy() {
+    func resetRetryPolicy() {
         retryAvailableAt = nil
         nextRefreshAllowedAt = nil
         manualRetryCount = 0
         manualRetryWindowEndsAt = nil
-    }
-
-    private func cachedSnapshot(for request: SnapshotRefreshRequest) -> AnalyticsSnapshot? {
-        guard let projectID = request.projectID else { return nil }
-        return cachedSnapshot(projectID: projectID, range: request.range)
-    }
-
-    private func isStale(_ snapshot: AnalyticsSnapshot) -> Bool {
-        now().timeIntervalSince(snapshot.refreshedAt) > 60
-    }
-
-    private func persistCache() {
-        let entries = cache.map { key, snapshot in
-            SnapshotCacheEntry(projectID: key.projectID, snapshot: snapshot)
-        }
-        try? cacheStore.write(entries)
-    }
-
-    private static func cacheDictionary(
-        from entries: [SnapshotCacheEntry]
-    ) -> [SnapshotCacheKey: AnalyticsSnapshot] {
-        entries.reduce(into: [:]) { result, entry in
-            result[entry.key] = entry.snapshot
-        }
     }
 }

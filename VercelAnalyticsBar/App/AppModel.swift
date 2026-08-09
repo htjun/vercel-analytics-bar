@@ -46,8 +46,6 @@ final class AppModel {
     let projectProviderFactory: (@Sendable (String) -> any VercelProjectListingProviding)?
     let analyticsProviderFactory: (@Sendable (String, VercelProject) -> any AnalyticsSnapshotProviding)?
     let launchAtLoginManager: any LaunchAtLoginManaging
-    let sleep: @Sendable (Duration) async throws -> Void
-    var refreshLoopTask: Task<Void, Never>?
     private(set) var launchAtLoginStatus: LaunchAtLoginStatus
     private(set) var launchAtLoginError: String?
     private var didAttemptRestore = false
@@ -81,12 +79,12 @@ final class AppModel {
         self.accountDataStore = accountDataStore
         snapshotRefreshCoordinator = SnapshotRefreshCoordinator(
             cacheStore: snapshotCacheStore,
-            now: now
+            now: now,
+            sleep: sleep
         )
         self.projectProviderFactory = projectProviderFactory
         self.analyticsProviderFactory = analyticsProviderFactory
         self.launchAtLoginManager = launchAtLoginManager
-        self.sleep = sleep
         self.tokenValidator = tokenValidator
         projectCatalog = ProjectCatalog(
             selection: (try? accountDataStore.readProjectSelection()) ?? .empty

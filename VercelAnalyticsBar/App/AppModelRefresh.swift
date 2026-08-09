@@ -1,13 +1,4 @@
-import Foundation
 import VercelAnalyticsCore
-
-enum RefreshTrigger: Equatable {
-    case popoverOpen
-    case periodic
-    case projectSwitch
-    case rangeChanged
-    case manual
-}
 
 extension AppModel {
     func load() async {
@@ -15,25 +6,13 @@ extension AppModel {
     }
 
     func startRefreshLoop() {
-        guard refreshLoopTask == nil else { return }
-
-        let sleep = sleep
-        refreshLoopTask = Task { [weak self] in
-            while !Task.isCancelled {
-                do {
-                    try await sleep(.seconds(300))
-                } catch {
-                    return
-                }
-                guard !Task.isCancelled, let self else { return }
-                await load(trigger: .periodic)
-            }
+        snapshotRefreshCoordinator.startPeriodicRefresh { [weak self] in
+            await self?.load(trigger: .periodic)
         }
     }
 
     func stopRefreshLoop() {
-        refreshLoopTask?.cancel()
-        refreshLoopTask = nil
+        snapshotRefreshCoordinator.stop()
     }
 
     func retryRefresh() async {
