@@ -13,6 +13,15 @@ enum AnalyticsCardLayout {
     static let glassSpecularPeakOpacity: CGFloat = 0.8
     static let glassDispersionWidth: CGFloat = 0.5
     static let glassDispersionOffset: CGFloat = 0.5
+
+    static let panelShadowOpacity: Float = 0.03
+    static let panelShadowRadius: CGFloat = 12
+    static let panelShadowOffset = CGSize(width: 0, height: -2)
+    static let panelShadowPadding: CGFloat = 16
+    static let panelShadowWindowSize = CGSize(
+        width: rootSize.width + panelShadowPadding * 2,
+        height: rootSize.height + panelShadowPadding * 2
+    )
 }
 
 enum AnalyticsGlassAppearance: Equatable {
@@ -135,7 +144,16 @@ struct AnalyticsCardShell<Content: View>: View {
                     width: AnalyticsCardLayout.cardSize.width,
                     height: AnalyticsCardLayout.cardSize.height
                 )
-                .background(AnalyticsCardColors.cardBackground)
+                .background {
+                    ZStack {
+                        if !reduceTransparency {
+                            Rectangle()
+                                .fill(.regularMaterial)
+                        }
+
+                        AnalyticsCardColors.cardBackground
+                    }
+                }
                 .clipShape(RoundedRectangle(cornerRadius: AnalyticsCardLayout.cardCornerRadius, style: .continuous))
         }
         .frame(

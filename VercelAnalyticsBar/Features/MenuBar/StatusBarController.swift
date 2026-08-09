@@ -24,6 +24,13 @@ enum AnalyticsPanelPlacement {
 
         return CGRect(origin: CGPoint(x: originX, y: originY), size: panelSize)
     }
+
+    static func shadowFrame(forGlassFrame glassFrame: CGRect) -> CGRect {
+        glassFrame.insetBy(
+            dx: -AnalyticsCardLayout.panelShadowPadding,
+            dy: -AnalyticsCardLayout.panelShadowPadding
+        )
+    }
 }
 
 struct StatusItemPresentation: Equatable {
@@ -79,11 +86,72 @@ enum AnalyticsPanelEventPolicy {
 }
 
 @MainActor
+final class AnalyticsPanelShadowView: NSView {
+    let shadowLayer = CALayer()
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        wantsLayer = true
+
+        let padding = AnalyticsCardLayout.panelShadowPadding
+        let glassFrame = bounds.insetBy(dx: padding, dy: padding)
+        shadowLayer.frame = glassFrame
+        shadowLayer.shadowColor = NSColor.black.cgColor
+        shadowLayer.shadowOpacity = AnalyticsCardLayout.panelShadowOpacity
+        shadowLayer.shadowRadius = AnalyticsCardLayout.panelShadowRadius
+        shadowLayer.shadowOffset = AnalyticsCardLayout.panelShadowOffset
+        shadowLayer.shadowPath = CGPath(
+            roundedRect: shadowLayer.bounds,
+            cornerWidth: AnalyticsCardLayout.outerCornerRadius,
+            cornerHeight: AnalyticsCardLayout.outerCornerRadius,
+            transform: nil
+        )
+        layer?.addSublayer(shadowLayer)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+}
+
+@MainActor
+final class AnalyticsPanelShadowWindow: NSPanel {
+    let shadowView: AnalyticsPanelShadowView
+
+    init() {
+        shadowView = AnalyticsPanelShadowView(
+            frame: CGRect(origin: .zero, size: AnalyticsCardLayout.panelShadowWindowSize)
+        )
+        super.init(
+            contentRect: CGRect(origin: .zero, size: AnalyticsCardLayout.panelShadowWindowSize),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+
+        isOpaque = false
+        backgroundColor = .clear
+        hasShadow = false
+        ignoresMouseEvents = true
+        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
+        isFloatingPanel = true
+        level = .popUpMenu
+        contentView = shadowView
+    }
+}
+
+@MainActor
 final class AnalyticsPanel: NSPanel {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
 
+    let materialView: NSView
+    let shadowWindow: AnalyticsPanelShadowWindow
+
     init(hostingView: NSView) {
+        materialView = Self.makeMaterialView(hosting: hostingView)
+        shadowWindow = AnalyticsPanelShadowWindow()
         super.init(
             contentRect: CGRect(origin: .zero, size: AnalyticsCardLayout.rootSize),
             styleMask: [.borderless, .nonactivatingPanel],
@@ -99,7 +167,26 @@ final class AnalyticsPanel: NSPanel {
         isFloatingPanel = true
         level = .popUpMenu
         becomesKeyOnlyIfNeeded = true
-        contentView = Self.makeMaterialView(hosting: hostingView)
+        contentView = materialView
+        addChildWindow(shadowWindow, ordered: .below)
+    }
+
+    var hasTransientChildWindows: Bool {
+        childWindows?.contains { $0 !== shadowWindow && $0.isVisible } == true
+    }
+
+    func orderOutTransientChildWindows() {
+        childWindows?
+            .filter { $0 !== shadowWindow }
+            .forEach { $0.orderOut(nil) }
+    }
+
+    func setGlassFrame(_ glassFrame: CGRect, display: Bool) {
+        setFrame(glassFrame, display: display)
+        shadowWindow.setFrame(
+            AnalyticsPanelPlacement.shadowFrame(forGlassFrame: glassFrame),
+            display: display
+        )
     }
 
     private static func makeMaterialView(hosting hostingView: NSView) -> NSView {
@@ -252,7 +339,7 @@ final class StatusBarController: NSObject {
     private func dismissPanel() {
         guard presentationState.isPresented || panel.isVisible else { return }
         presentationState.dismiss()
-        panel.childWindows?.forEach { $0.orderOut(nil) }
+        panel.orderOutTransientChildWindows()
         panel.orderOut(nil)
         statusItem.button?.highlight(false)
         removeEventMonitors()
@@ -278,14 +365,12 @@ final class StatusBarController: NSObject {
         let anchorInWindow = button.convert(button.bounds, to: nil)
         let anchorOnScreen = buttonWindow.convertToScreen(anchorInWindow)
         let visibleFrame = buttonWindow.screen?.visibleFrame ?? NSScreen.main?.visibleFrame ?? anchorOnScreen
-        panel.setFrame(
-            AnalyticsPanelPlacement.frame(
-                anchor: anchorOnScreen,
-                panelSize: AnalyticsCardLayout.rootSize,
-                visibleFrame: visibleFrame
-            ),
-            display: true
+        let glassFrame = AnalyticsPanelPlacement.frame(
+            anchor: anchorOnScreen,
+            panelSize: AnalyticsCardLayout.rootSize,
+            visibleFrame: visibleFrame
         )
+        panel.setGlassFrame(glassFrame, display: true)
     }
 
     private func installEventMonitors() {
@@ -295,7 +380,7 @@ final class StatusBarController: NSObject {
         ) { [weak self] event in
             guard let self, presentationState.isPresented else { return event }
             if event.type == .keyDown, event.keyCode == 53 {
-                if panel.childWindows?.isEmpty != false {
+                if !panel.hasTransientChildWindows {
                     dismissPanel()
                     return nil
                 }

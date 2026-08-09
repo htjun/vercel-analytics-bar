@@ -29,6 +29,12 @@ import VercelAnalyticsCore
         visibleFrame: visibleFrame
     )
     #expect(rightClamped.maxX == 1292)
+
+    let shadowFrame = AnalyticsPanelPlacement.shadowFrame(forGlassFrame: centered)
+    #expect(shadowFrame.insetBy(
+        dx: AnalyticsCardLayout.panelShadowPadding,
+        dy: AnalyticsCardLayout.panelShadowPadding
+    ) == centered)
 }
 
 @Test func analyticsPanelPlacementUsesTheProvidedDisplayCoordinates() {
@@ -97,11 +103,19 @@ import VercelAnalyticsCore
     #expect(!panel.isOpaque)
     #expect(panel.backgroundColor == .clear)
     #expect(!panel.hasShadow)
+    #expect(panel.shadowWindow.frame.size == AnalyticsCardLayout.panelShadowWindowSize)
+    #expect(panel.shadowWindow.ignoresMouseEvents)
+    #expect(panel.shadowWindow.parent === panel)
+    #expect(panel.shadowWindow.shadowView.shadowLayer.shadowOpacity == 0.03)
+    #expect(panel.shadowWindow.shadowView.shadowLayer.shadowRadius == 12)
+    #expect(panel.shadowWindow.shadowView.shadowLayer.shadowOffset == CGSize(width: 0, height: -2))
+    #expect(panel.shadowWindow.shadowView.shadowLayer.shadowPath != nil)
+    #expect(panel.materialView === panel.contentView)
     #expect(panel.level == .popUpMenu)
     #expect(panel.canBecomeKey)
     #expect(!panel.canBecomeMain)
 
-    if let materialView = panel.contentView as? NSVisualEffectView {
+    if let materialView = panel.materialView as? NSVisualEffectView {
         #expect(materialView.material == .underWindowBackground)
         #expect(materialView.blendingMode == .behindWindow)
         #expect(materialView.state == .active)
@@ -109,10 +123,10 @@ import VercelAnalyticsCore
 
     #if compiler(>=6.2)
         if #available(macOS 26, *) {
-            #expect(panel.contentView is NSGlassEffectView)
+            #expect((panel.materialView as? NSGlassEffectView)?.style == .clear)
         }
     #else
-        #expect(panel.contentView is NSVisualEffectView)
+        #expect(panel.materialView is NSVisualEffectView)
     #endif
 }
 
