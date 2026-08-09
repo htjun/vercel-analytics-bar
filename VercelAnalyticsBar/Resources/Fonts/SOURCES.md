@@ -1,8 +1,7 @@
 # Bundled font sources
 
-The application bundles static font faces from the official releases below. The
-files are registered for the application process only; they are not installed on
-the user's system.
+The application bundles font resources from the official releases below. The files are registered
+for the application process only; they are not installed on the user's system.
 
 ## Inter 4.1
 
@@ -17,6 +16,5 @@ the user's system.
 - Source: https://vercel.com/font
 - Archive: https://github.com/vercel/geist-font/releases/download/v1.7.2/geist-font-v1.7.2.zip
 - License: SIL Open Font License 1.1 (`LICENSE-Geist.txt`)
-- `Geist-Regular.otf`: `16cb657f0dde448dccfe57cbe39a5b59c03cb709922a3451914495c273359f51`
-- `Geist-Medium.otf`: `b873cb8f4eae2e34ca8fcc8a9d3caef7bd8f4dceb2b2a4a18422dc0d7376a398`
+- `Geist[wght].ttf`: `cdcc4815cbf5f9882fa74e48f8ab410a0495781a58ff7316570f664e7e987753`
 - `GeistMono-Regular.otf`: `1901cc38fc520e53a6ab4f19528f32cf7228dfcac676466377ca0816de03b49c`

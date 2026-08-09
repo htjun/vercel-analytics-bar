@@ -8,12 +8,40 @@ import Testing
 import VercelAnalyticsCore
 
 @MainActor
-@Test func bundledFigmaFontsRegisterWithExpectedPostScriptNames() {
+@Test func bundledFontsRegisterWithExpectedPostScriptNames() {
     AppFontRegistry.registerBundledFonts()
 
     for resource in AppFontRegistry.resources {
         #expect(NSFont(name: resource.postScriptName, size: 12) != nil)
     }
+}
+
+@MainActor
+@Test func geistVariableFontSupportsEveryPlannedWeight() {
+    for weight: CGFloat in [400, 450, 500] {
+        let font = AppFontRegistry.nsFont(
+            postScriptName: "Geist-Regular",
+            size: 12,
+            variations: [.weight: weight]
+        )
+
+        #expect(font.familyName == "Geist")
+        #expect(font.pointSize == 12)
+        #expect(resolvedVariationValue(.weight, in: font) == weight)
+    }
+}
+
+@MainActor
+@Test func geistVariableFontCombinesWeightAndOpenTypeFeatures() {
+    let font = AppFontRegistry.nsFont(
+        postScriptName: "Geist-Regular",
+        size: 12,
+        variations: [.weight: 500],
+        openTypeFeatures: AppTypography.geistSlashedZeroFeature
+    )
+
+    #expect(resolvedVariationValue(.weight, in: font) == 500)
+    #expect(openTypeFeatureTags(in: font) == Set(["ss09"]))
 }
 
 @MainActor
@@ -23,13 +51,9 @@ import VercelAnalyticsCore
         size: 48,
         openTypeFeatures: AppTypography.metricFeatures
     )
-    let featureKey = NSFontDescriptor.AttributeName(kCTFontFeatureSettingsAttribute as String)
-    let settings = font.fontDescriptor.object(forKey: featureKey) as? [[String: Any]]
-    let tags = Set(settings?.compactMap { $0[kCTFontOpenTypeFeatureTag as String] as? String } ?? [])
-
     #expect(font.fontName == "InterDisplay-Light")
     #expect(font.pointSize == 48)
-    #expect(tags == Set(["zero", "cv02", "cv03", "cv09"]))
+    #expect(openTypeFeatureTags(in: font) == Set(["zero", "cv02", "cv03", "cv09"]))
 }
 
 @Test func analyticsCardMetricMatchesFigmaFormatting() {
@@ -188,6 +212,25 @@ private struct VisualDiffResult {
 private let repositoryRoot = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
     .deletingLastPathComponent()
+
+private func resolvedVariationValue(_ axis: AppFontRegistry.VariationAxis, in font: NSFont) -> CGFloat? {
+    let variations = CTFontCopyVariation(font as CTFont) as? [NSNumber: NSNumber]
+    if let value = variations?[axis.identifier] {
+        return CGFloat(truncating: value)
+    }
+
+    let axes = CTFontCopyVariationAxes(font as CTFont) as? [[CFString: Any]]
+    let matchingAxis = axes?.first { axisDescription in
+        (axisDescription[kCTFontVariationAxisIdentifierKey] as? NSNumber) == axis.identifier
+    }
+    return (matchingAxis?[kCTFontVariationAxisDefaultValueKey] as? NSNumber).map(CGFloat.init(truncating:))
+}
+
+private func openTypeFeatureTags(in font: NSFont) -> Set<String> {
+    let featureKey = NSFontDescriptor.AttributeName(kCTFontFeatureSettingsAttribute as String)
+    let settings = font.fontDescriptor.object(forKey: featureKey) as? [[String: Any]]
+    return Set(settings?.compactMap { $0[kCTFontOpenTypeFeatureTag as String] as? String } ?? [])
+}
 
 private func loadImage(at url: URL) -> CGImage? {
     guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }

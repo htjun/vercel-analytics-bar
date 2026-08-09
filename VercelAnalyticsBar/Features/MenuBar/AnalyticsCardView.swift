@@ -241,7 +241,7 @@ struct AnalyticsCardView<SelectorContent: View>: View {
     private func selectorLabel(title: String, width: CGFloat) -> some View {
         ZStack(alignment: .topLeading) {
             Text(title)
-                .font(AppTypography.geistMedium12)
+                .font(AppTypography.geistSelector12)
                 .foregroundStyle(AnalyticsCardColors.primaryText)
                 .lineLimit(1)
                 .allowsTightening(true)
