@@ -1,17 +1,21 @@
+import AppKit
 import SwiftUI
 import VercelAnalyticsCore
 
 struct SettingsRootView: View {
     let model: AppModel
+    let isChartInspectorEnabled: Bool
     @State private var token = ""
     @State private var searchQuery = ""
-
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(ProductInfo.name)
                 .font(.title2.weight(.semibold))
 
             accountContent
+
+            Divider()
+            ApplicationControls(isChartInspectorEnabled: isChartInspectorEnabled)
 
             IndependenceNotice()
         }
@@ -278,6 +282,31 @@ struct SettingsRootView: View {
 
     private var tokenSettingsURL: URL {
         URL(string: "https://vercel.com/account/tokens")!
+    }
+}
+
+private struct ApplicationControls: View {
+    let isChartInspectorEnabled: Bool
+    #if CHART_INSPECTOR
+        @Environment(\.openWindow) private var openWindow
+    #endif
+
+    var body: some View {
+        HStack {
+            #if CHART_INSPECTOR
+                if isChartInspectorEnabled {
+                    Button("Chart Inspector") {
+                        openWindow(id: ChartInspectorScene.id)
+                    }
+                }
+            #endif
+
+            Spacer()
+
+            Button("Quit Vercel Analytics Bar") {
+                NSApplication.shared.terminate(nil)
+            }
+        }
     }
 }
 

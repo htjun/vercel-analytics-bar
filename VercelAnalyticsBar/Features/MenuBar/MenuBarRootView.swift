@@ -1,193 +1,74 @@
-import AppKit
 import SwiftUI
 import VercelAnalyticsCore
 
 struct MenuBarRootView: View {
     let model: AppModel
     let chartStyle: ChartStyleStore
-    let isChartInspectorEnabled: Bool
     @State private var isProjectSelectorPresented = false
     @State private var projectSearchQuery = ""
-    #if CHART_INSPECTOR
-        @Environment(\.openWindow) private var openWindow
-    #endif
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            content
-
-            Divider()
-
-            HStack {
-                SettingsLink {
-                    Text("Settings")
-                }
-
-                #if CHART_INSPECTOR
-                    if isChartInspectorEnabled {
-                        Button("Chart Inspector") {
-                            openWindow(id: ChartInspectorScene.id)
-                        }
-                    }
-                #endif
-
-                Spacer()
-
-                Button("Quit") {
-                    NSApplication.shared.terminate(nil)
-                }
+        content
+            .task {
+                await model.restoreConnection()
+                guard model.state == .idle else { return }
+                await model.load()
             }
-        }
-        .padding(16)
-        .frame(width: 380)
-        .task {
-            await model.restoreConnection()
-            guard model.state == .idle else { return }
-            await model.load()
-        }
     }
 
     @ViewBuilder
     private var content: some View {
         switch model.state {
         case .idle, .loading:
-            HStack(spacing: 10) {
+            AnalyticsCardShell {
                 ProgressView()
                     .controlSize(.small)
-                Text("Loading analytics…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .accessibilityLabel("Loading analytics")
             }
 
         case let .empty(message):
-            VStack(alignment: .leading, spacing: 10) {
-                Label("No analytics data", systemImage: "chart.line.uptrend.xyaxis")
-                    .font(.headline)
-                Text(message)
-                    .foregroundStyle(.secondary)
+            AnalyticsCardShell {
+                statusContent(
+                    title: "No analytics data",
+                    message: message,
+                    systemImage: "chart.line.uptrend.xyaxis"
+                )
             }
 
         case let .loaded(snapshot):
             snapshotContent(snapshot)
 
         case let .failed(message):
-            VStack(alignment: .leading, spacing: 10) {
-                Label("Analytics unavailable", systemImage: "exclamationmark.triangle")
-                    .font(.headline)
-                Text(message)
-                    .foregroundStyle(.secondary)
-                if let refreshMessage = model.refreshMessage, refreshMessage != message {
-                    Text(refreshMessage)
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                }
-                Button("Retry") {
-                    Task {
-                        await model.retryRefresh()
-                    }
-                }
+            AnalyticsCardShell {
+                statusContent(
+                    title: "Analytics unavailable",
+                    message: message,
+                    systemImage: "exclamationmark.triangle",
+                    showsRetry: true
+                )
             }
         }
     }
 
     private func snapshotContent(_ snapshot: AnalyticsSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 12) {
-                if let currentProject = model.currentProject {
-                    projectSelectorButton(for: currentProject)
-                } else {
-                    Text(snapshot.projectName)
-                        .font(.headline)
-                        .lineLimit(1)
-                }
-
-                Spacer()
-
-                Picker("Range", selection: rangeSelection) {
-                    ForEach(VercelAnalyticsRange.allCases, id: \.self) { range in
-                        Text(range.title)
-                            .tag(range)
-                    }
-                }
-                .labelsHidden()
-                .pickerStyle(.menu)
-                .fixedSize()
-            }
-
-            if model.snapshotFreshness == .stale {
-                staleRefreshContent
-            }
-
-            HStack(alignment: .top, spacing: 12) {
-                MetricSummaryView(metric: snapshot.visitors)
-                MetricSummaryView(metric: snapshot.pageViews)
-            }
-
-            VisitorsChartSection(points: snapshot.series, style: chartStyle.style)
-
-            snapshotFooter(snapshot)
-        }
-    }
-
-    private func snapshotFooter(_ snapshot: AnalyticsSnapshot) -> some View {
-        let dashboardURL = model.currentProject?.analyticsDashboardURL(for: snapshot.range)
-
-        return HStack {
-            Text(snapshot.range.title)
-                .foregroundStyle(.secondary)
-
-            if let dashboardURL {
-                Link(destination: dashboardURL) {
-                    Label("View in Vercel", systemImage: "arrow.up.right.square")
-                }
-                .help("Open this project's analytics in Vercel")
-            }
-
-            Spacer()
-
-            Text(updatedText(for: snapshot))
-        }
-        .font(.caption)
-        .foregroundStyle(.tertiary)
-    }
-
-    private func updatedText(for snapshot: AnalyticsSnapshot) -> String {
-        let timestamp = snapshot.refreshedAt.formatted(date: .omitted, time: .shortened)
-        return model.snapshotFreshness == .stale ? "Stale · Updated \(timestamp)" : "Updated \(timestamp)"
-    }
-
-    private var staleRefreshContent: some View {
-        HStack(spacing: 8) {
-            Label("Stale data", systemImage: "clock.badge.exclamationmark")
-            if let refreshMessage = model.refreshMessage {
-                Text(refreshMessage)
-                    .lineLimit(1)
-            }
-            Spacer()
-            Button("Retry") {
+        AnalyticsCardView(
+            presentation: presentation(for: snapshot),
+            chartStyle: chartStyle.style,
+            onSelectProject: {
+                projectSearchQuery = ""
+                isProjectSelectorPresented = true
+            },
+            onSelectRange: { range in
                 Task {
-                    await model.retryRefresh()
+                    await model.selectAnalyticsRange(range)
                 }
+            },
+            onOpenSettings: {
+                openSettings()
             }
-            .buttonStyle(.link)
-        }
-        .font(.caption)
-        .foregroundStyle(.orange)
-    }
-
-    private func projectSelectorButton(for project: VercelProject) -> some View {
-        Button {
-            projectSearchQuery = ""
-            isProjectSelectorPresented = true
-        } label: {
-            HStack(spacing: 5) {
-                Text(project.name)
-                    .font(.headline)
-                    .lineLimit(1)
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .buttonStyle(.plain)
+        )
         .popover(isPresented: $isProjectSelectorPresented, arrowEdge: .top) {
             ProjectSelectorView(
                 model: model,
@@ -195,50 +76,50 @@ struct MenuBarRootView: View {
                 isPresented: $isProjectSelectorPresented
             )
         }
-        .help("Switch project")
     }
 
-    private var rangeSelection: Binding<VercelAnalyticsRange> {
-        Binding(
-            get: { model.selectedRange },
-            set: { range in
-                Task {
-                    await model.selectAnalyticsRange(range)
-                }
-            }
+    private func presentation(for snapshot: AnalyticsSnapshot) -> AnalyticsCardPresentation {
+        AnalyticsCardPresentation(
+            projectName: model.currentProject?.name ?? snapshot.projectName,
+            selectedRange: snapshot.range,
+            visitors: AnalyticsCardMetric(metric: snapshot.visitors),
+            pageViews: AnalyticsCardMetric(metric: snapshot.pageViews),
+            series: snapshot.series,
+            breakdownRows: AnalyticsCardPresentation.pageFixtures,
+            updatedText: updatedText(for: snapshot),
+            dashboardURL: model.currentProject?.analyticsDashboardURL(for: snapshot.range)
         )
     }
-}
 
-private struct MetricSummaryView: View {
-    let metric: AnalyticsMetric
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(metric.label)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Text(metric.value, format: .number)
-                .font(.system(size: 26, weight: .semibold, design: .rounded))
-
-            Text(comparisonText)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
+    private func updatedText(for snapshot: AnalyticsSnapshot) -> String {
+        let timestamp = snapshot.refreshedAt.formatted(date: .omitted, time: .shortened)
+        return model.snapshotFreshness == .stale ? "Stale · Updated \(timestamp)" : "Updated \(timestamp)"
     }
 
-    private var comparisonText: String {
-        switch metric.comparison {
-        case let .percentage(change):
-            let sign = change > 0 ? "+" : ""
-            let value = change.formatted(.number.precision(.fractionLength(0 ... 1)))
-            return "\(sign)\(value)% vs previous period"
-        case .new:
-            return "New vs previous period"
+    private func statusContent(
+        title: String,
+        message: String,
+        systemImage: String,
+        showsRetry: Bool = false
+    ) -> some View {
+        VStack(spacing: 10) {
+            Label(title, systemImage: systemImage)
+                .font(.headline)
+
+            Text(message)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: 300)
+
+            if showsRetry {
+                Button("Retry") {
+                    Task {
+                        await model.retryRefresh()
+                    }
+                }
+            }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

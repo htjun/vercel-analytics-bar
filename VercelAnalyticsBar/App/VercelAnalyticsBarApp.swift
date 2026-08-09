@@ -8,6 +8,7 @@ struct VercelAnalyticsBarApp: App {
     @State private var chartStyle = ChartStyleStore()
 
     init() {
+        AppFontRegistry.registerBundledFonts()
         let model = AppModel(
             projectProviderFactory: { token in
                 VercelAPIClient(token: token)
@@ -24,8 +25,7 @@ struct VercelAnalyticsBarApp: App {
         MenuBarExtra {
             MenuBarRootView(
                 model: model,
-                chartStyle: chartStyle,
-                isChartInspectorEnabled: isChartInspectorEnabled
+                chartStyle: chartStyle
             )
         } label: {
             HStack(spacing: 4) {
@@ -42,7 +42,10 @@ struct VercelAnalyticsBarApp: App {
         .menuBarExtraStyle(.window)
 
         Settings {
-            SettingsRootView(model: model)
+            SettingsRootView(
+                model: model,
+                isChartInspectorEnabled: isChartInspectorEnabled
+            )
         }
 
         #if CHART_INSPECTOR
