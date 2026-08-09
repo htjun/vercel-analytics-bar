@@ -118,6 +118,8 @@ import VercelAnalyticsCore
     let renderer = ImageRenderer(content: AnalyticsCardView(
         presentation: .figmaFixture,
         chartStyle: .default,
+        isProjectSelectorPresented: .constant(false),
+        projectSelectorContent: { EmptyView() },
         onSelectProject: {},
         onSelectRange: { _ in },
         onOpenSettings: {},

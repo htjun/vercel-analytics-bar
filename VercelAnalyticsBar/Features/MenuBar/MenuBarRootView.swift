@@ -54,6 +54,14 @@ struct MenuBarRootView: View {
         AnalyticsCardView(
             presentation: presentation(for: snapshot),
             chartStyle: chartStyle.style,
+            isProjectSelectorPresented: $isProjectSelectorPresented,
+            projectSelectorContent: {
+                ProjectSelectorView(
+                    model: model,
+                    searchQuery: $projectSearchQuery,
+                    isPresented: $isProjectSelectorPresented
+                )
+            },
             onSelectProject: {
                 projectSearchQuery = ""
                 isProjectSelectorPresented = true
@@ -69,13 +77,6 @@ struct MenuBarRootView: View {
                 openURL(url)
             }
         )
-        .popover(isPresented: $isProjectSelectorPresented, arrowEdge: .top) {
-            ProjectSelectorView(
-                model: model,
-                searchQuery: $projectSearchQuery,
-                isPresented: $isProjectSelectorPresented
-            )
-        }
     }
 
     private func presentation(for snapshot: AnalyticsSnapshot) -> AnalyticsCardPresentation {

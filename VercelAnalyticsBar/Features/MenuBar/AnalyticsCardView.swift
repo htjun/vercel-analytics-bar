@@ -97,9 +97,11 @@ struct AnalyticsCardPresentation: Equatable {
     }()
 }
 
-struct AnalyticsCardView: View {
+struct AnalyticsCardView<ProjectSelectorContent: View>: View {
     let presentation: AnalyticsCardPresentation
     let chartStyle: ChartStyle
+    @Binding var isProjectSelectorPresented: Bool
+    @ViewBuilder let projectSelectorContent: () -> ProjectSelectorContent
     let onSelectProject: () -> Void
     let onSelectRange: (VercelAnalyticsRange) -> Void
     let onOpenSettings: () -> Void
@@ -161,6 +163,9 @@ struct AnalyticsCardView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Project: \(presentation.projectName)")
+            .popover(isPresented: $isProjectSelectorPresented, arrowEdge: .top) {
+                projectSelectorContent()
+            }
 
             Button {
                 isRangeSelectorPresented.toggle()
