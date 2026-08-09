@@ -78,14 +78,14 @@ struct ChartStyle: Codable, Equatable, Sendable {
     static let `default`: ChartStyle = {
         do {
             return try ChartStyle(
-                lineColor: .accent,
-                lineWidth: 2,
-                lineCap: .butt,
-                lineJoin: .miter,
-                areaTopOpacity: 0.24,
-                areaBottomOpacity: 0.03,
+                lineColor: .rgb(red: 2, green: 192, blue: 108),
+                lineWidth: 1,
+                lineCap: .round,
+                lineJoin: .round,
+                areaTopOpacity: 0.2,
+                areaBottomOpacity: 0,
                 chartHeight: 140,
-                axisMarkCount: 4,
+                axisMarkCount: 3,
                 yScaleHeadroom: 0.1,
                 showsGridLines: true,
                 showsXAxisLabels: true,

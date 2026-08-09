@@ -13,28 +13,28 @@ import {
 const bridge = createBrowserBridge();
 const chartConfig = {
   line: {
-    color: { type: "color" as const, default: "#007AFF" },
-    width: [2, 0.5, 12, 0.5] as [number, number, number, number],
+    color: { type: "color" as const, default: "#02C06C" },
+    width: [1, 0.5, 12, 0.5] as [number, number, number, number],
     cap: {
       type: "select" as const,
       options: ["butt", "round", "square"],
-      default: "butt",
+      default: "round",
     },
     join: {
       type: "select" as const,
       options: ["miter", "round", "bevel"],
-      default: "miter",
+      default: "round",
     },
   },
   area: {
-    topOpacity: [0.24, 0, 1, 0.01] as [number, number, number, number],
-    bottomOpacity: [0.03, 0, 1, 0.01] as [number, number, number, number],
+    topOpacity: [0.2, 0, 1, 0.01] as [number, number, number, number],
+    bottomOpacity: [0, 0, 1, 0.01] as [number, number, number, number],
   },
   layout: {
     height: [140, 80, 360, 1] as [number, number, number, number],
   },
   axes: {
-    markCount: [4, 2, 12, 1] as [number, number, number, number],
+    markCount: [3, 2, 12, 1] as [number, number, number, number],
     yScaleHeadroom: [0.1, 0, 1, 0.01] as [number, number, number, number],
     gridLines: true,
     xLabels: true,

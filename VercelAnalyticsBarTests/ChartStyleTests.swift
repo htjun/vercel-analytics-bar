@@ -4,17 +4,17 @@ import Testing
 
 @Suite("Chart style")
 struct ChartStyleTests {
-    @Test func defaultsPreserveTheExistingChartPresentation() {
+    @Test func defaultsMatchTheCanonicalChartPresentation() {
         let style = ChartStyle.default
 
-        #expect(style.lineColor == .accent)
-        #expect(style.lineWidth == 2)
-        #expect(style.lineCap == .butt)
-        #expect(style.lineJoin == .miter)
-        #expect(style.areaTopOpacity == 0.24)
-        #expect(style.areaBottomOpacity == 0.03)
+        #expect(style.lineColor.rawValue == "#02C06C")
+        #expect(style.lineWidth == 1)
+        #expect(style.lineCap == .round)
+        #expect(style.lineJoin == .round)
+        #expect(style.areaTopOpacity == 0.2)
+        #expect(style.areaBottomOpacity == 0)
         #expect(style.chartHeight == 140)
-        #expect(style.axisMarkCount == 4)
+        #expect(style.axisMarkCount == 3)
         #expect(style.yScaleHeadroom == 0.1)
         #expect(style.showsGridLines)
         #expect(style.showsXAxisLabels)
