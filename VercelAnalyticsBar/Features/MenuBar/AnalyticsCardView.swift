@@ -311,7 +311,7 @@ struct AnalyticsCardView<SelectorContent: View>: View {
 
                             Spacer(minLength: 0)
 
-                            Text(row.pageViews.formatted(.number.grouping(.never)))
+                            Text(row.visitors.formatted(.number.grouping(.never)))
                                 .font(AppTypography.geistMedium12)
                         }
                         .foregroundStyle(AnalyticsCardColors.primaryText)

@@ -30,7 +30,7 @@ import VercelAnalyticsCore
     #expect(AnalyticsCardLayout.cardCornerRadius == 24)
     #expect(AnalyticsCardLayout.chartFrame == CGRect(x: 8, y: 166, width: 368, height: 150))
     #expect(AnalyticsCardPresentation.pageFixtures.count == 5)
-    #expect(AnalyticsCardPresentation.figmaFixture.topPages.first?.pageViews == 872)
+    #expect(AnalyticsCardPresentation.figmaFixture.topPages.first?.visitors == 710)
     #expect(AnalyticsCardPresentation.figmaFixture.breakdownRows(for: .pages) ==
         AnalyticsCardPresentation.pageFixtures)
     #expect(AnalyticsCardPresentation.figmaFixture.breakdownRows(for: .referrals) ==
