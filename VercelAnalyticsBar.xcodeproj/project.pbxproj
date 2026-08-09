@@ -46,6 +46,7 @@
 		A10000000000000000000024 /* StatusBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000024 /* StatusBarController.swift */; };
 		A10000000000000000000025 /* HostedWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000025 /* HostedWindowController.swift */; };
 		A10000000000000000000026 /* AnalyticsCardIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000026 /* AnalyticsCardIntegrationTests.swift */; };
+		A1000000000000000000002C /* AppTypographyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000002C /* AppTypographyTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -104,6 +105,7 @@
 		A30000000000000000000024 /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarController.swift; sourceTree = "<group>"; };
 		A30000000000000000000025 /* HostedWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostedWindowController.swift; sourceTree = "<group>"; };
 		A30000000000000000000026 /* AnalyticsCardIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsCardIntegrationTests.swift; sourceTree = "<group>"; };
+		A3000000000000000000002C /* AppTypographyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTypographyTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -178,6 +180,7 @@
 			isa = PBXGroup;
 			children = (
 				A30000000000000000000002 /* VercelAnalyticsBarTests.swift */,
+				A3000000000000000000002C /* AppTypographyTests.swift */,
 				A30000000000000000000022 /* AnalyticsCardTests.swift */,
 				A30000000000000000000026 /* AnalyticsCardIntegrationTests.swift */,
 				A3000000000000000000000D /* AppModelTestSupport.swift */,
@@ -414,6 +417,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000003 /* VercelAnalyticsBarTests.swift in Sources */,
+				A1000000000000000000002C /* AppTypographyTests.swift in Sources */,
 				A10000000000000000000022 /* AnalyticsCardTests.swift in Sources */,
 				A10000000000000000000026 /* AnalyticsCardIntegrationTests.swift in Sources */,
 				A10000000000000000000009 /* AppModelTestSupport.swift in Sources */,
