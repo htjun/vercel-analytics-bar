@@ -1,29 +1,22 @@
 import Foundation
 
-private struct AnalyticsQueryWindow: Sendable {
-    let start: Date
-    let endExclusive: Date
-
-    var countWindow: VercelAnalyticsWindow {
-        VercelAnalyticsWindow(since: start, until: endExclusive)
-    }
-
-    var aggregateWindow: VercelAnalyticsWindow {
-        VercelAnalyticsWindow(since: start, until: endExclusive.addingTimeInterval(-0.001))
-    }
-}
-
 public extension VercelAPIClient {
     func fetchCount(
         for project: VercelProject,
         range: VercelAnalyticsRange,
         now: Date
     ) async throws -> VercelAnalyticsCount {
-        let queryWindow = queryWindow(for: range, now: now)
+        try await fetchCount(for: project, window: range.plan(at: now).currentWindow)
+    }
+
+    internal func fetchCount(
+        for project: VercelProject,
+        window: VercelAnalyticsInterval
+    ) async throws -> VercelAnalyticsCount {
         let response = try await request(
             AnalyticsCountResponseDTO.self,
             path: "/v1/query/web-analytics/visits/count",
-            query: analyticsQuery(for: project, window: queryWindow.countWindow)
+            query: analyticsQuery(for: project, window: window.countWindow)
         )
 
         return VercelAnalyticsCount(
@@ -38,9 +31,17 @@ public extension VercelAPIClient {
         range: VercelAnalyticsRange,
         now: Date
     ) async throws -> VercelAnalyticsSeries {
-        let queryWindow = queryWindow(for: range, now: now)
-        var query = analyticsQuery(for: project, window: queryWindow.aggregateWindow)
-        query["by"] = range.aggregateBy
+        let plan = range.plan(at: now)
+        return try await fetchSeries(for: project, window: plan.currentWindow, bucket: plan.bucket)
+    }
+
+    internal func fetchSeries(
+        for project: VercelProject,
+        window: VercelAnalyticsInterval,
+        bucket: VercelAnalyticsBucket
+    ) async throws -> VercelAnalyticsSeries {
+        var query = analyticsQuery(for: project, window: window.aggregateWindow)
+        query["by"] = bucket.queryValue
 
         let response = try await request(
             AnalyticsSeriesResponseDTO.self,
@@ -51,7 +52,7 @@ public extension VercelAPIClient {
         return VercelAnalyticsSeries(
             points: response.data.compactMap { point in
                 let timestamp = point.timestamp.value
-                guard timestamp >= queryWindow.start, timestamp < queryWindow.endExclusive else {
+                guard timestamp >= window.start, timestamp < window.endExclusive else {
                     return nil
                 }
                 return VercelAnalyticsPoint(timestamp: timestamp, visitors: point.visitors, pageViews: point.pageViews)
@@ -66,8 +67,19 @@ public extension VercelAPIClient {
         range: VercelAnalyticsRange,
         now: Date
     ) async throws -> [VercelAnalyticsBreakdown] {
-        let queryWindow = queryWindow(for: range, now: now)
-        var query = analyticsQuery(for: project, window: queryWindow.aggregateWindow)
+        try await fetchTopBreakdown(
+            for: project,
+            dimension: dimension,
+            window: range.plan(at: now).currentWindow
+        )
+    }
+
+    internal func fetchTopBreakdown(
+        for project: VercelProject,
+        dimension: VercelAnalyticsDimension,
+        window: VercelAnalyticsInterval
+    ) async throws -> [VercelAnalyticsBreakdown] {
+        var query = analyticsQuery(for: project, window: window.aggregateWindow)
         query["by"] = dimension.rawValue
         query["limit"] = "5"
 
@@ -137,24 +149,25 @@ public extension VercelAPIClient {
         }
         return label
     }
+}
 
-    private func queryWindow(for range: VercelAnalyticsRange, now: Date) -> AnalyticsQueryWindow {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+private extension VercelAnalyticsInterval {
+    var countWindow: VercelAnalyticsWindow {
+        VercelAnalyticsWindow(since: start, until: endExclusive)
+    }
 
-        let hourStart = calendar.dateInterval(of: .hour, for: now)?.start ?? now
-        let dayStart = calendar.startOfDay(for: now)
+    var aggregateWindow: VercelAnalyticsWindow {
+        VercelAnalyticsWindow(since: start, until: endExclusive.addingTimeInterval(-0.001))
+    }
+}
 
-        switch range {
-        case .last24Hours:
-            let start = calendar.date(byAdding: .hour, value: -23, to: hourStart) ?? now
-                .addingTimeInterval(-range.duration)
-            let endExclusive = calendar.date(byAdding: .hour, value: 1, to: hourStart) ?? now
-            return AnalyticsQueryWindow(start: start, endExclusive: endExclusive)
-        case .last7Days, .last30Days:
-            let start = calendar.date(byAdding: .day, value: -Int(range.duration / (24 * 60 * 60)), to: dayStart)
-                ?? now.addingTimeInterval(-range.duration)
-            return AnalyticsQueryWindow(start: start, endExclusive: dayStart)
+private extension VercelAnalyticsBucket {
+    var queryValue: String {
+        switch self {
+        case .hour:
+            "hour"
+        case .day:
+            "day"
         }
     }
 }

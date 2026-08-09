@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-import VercelAnalyticsCore
+@testable import VercelAnalyticsCore
 
 struct AnalyticsRangeExpectation: Sendable {
     let range: VercelAnalyticsRange
@@ -10,6 +10,64 @@ struct AnalyticsRangeExpectation: Sendable {
     let expectedAggregateSince: String
     let expectedAggregateUntil: String
     let expectedAggregate: String
+}
+
+struct AnalyticsRangePlanExpectation: Sendable {
+    let range: VercelAnalyticsRange
+    let now: String
+    let expectedCurrentStart: String
+    let expectedCurrentEnd: String
+    let expectedPreviousStart: String
+    let expectedPreviousEnd: String
+    let expectedBucket: VercelAnalyticsBucket
+    let expectedTotalsSource: VercelAnalyticsTotalsSource
+}
+
+@Test(arguments: [
+    AnalyticsRangePlanExpectation(
+        range: .last24Hours,
+        now: "2026-08-02T00:17:30.000Z",
+        expectedCurrentStart: "2026-08-01T01:00:00.000Z",
+        expectedCurrentEnd: "2026-08-02T01:00:00.000Z",
+        expectedPreviousStart: "2026-07-31T01:00:00.000Z",
+        expectedPreviousEnd: "2026-08-01T01:00:00.000Z",
+        expectedBucket: .hour,
+        expectedTotalsSource: .aggregate
+    ),
+    AnalyticsRangePlanExpectation(
+        range: .last7Days,
+        now: "2026-08-02T12:17:30.000Z",
+        expectedCurrentStart: "2026-07-26T00:00:00.000Z",
+        expectedCurrentEnd: "2026-08-02T00:00:00.000Z",
+        expectedPreviousStart: "2026-07-19T00:00:00.000Z",
+        expectedPreviousEnd: "2026-07-26T00:00:00.000Z",
+        expectedBucket: .day,
+        expectedTotalsSource: .count
+    ),
+    AnalyticsRangePlanExpectation(
+        range: .last30Days,
+        now: "2026-08-02T12:17:30.000Z",
+        expectedCurrentStart: "2026-07-03T00:00:00.000Z",
+        expectedCurrentEnd: "2026-08-02T00:00:00.000Z",
+        expectedPreviousStart: "2026-06-03T00:00:00.000Z",
+        expectedPreviousEnd: "2026-07-03T00:00:00.000Z",
+        expectedBucket: .day,
+        expectedTotalsSource: .count
+    ),
+])
+func analyticsRangeOwnsAlignedCurrentAndPreviousWindows(expectation: AnalyticsRangePlanExpectation) throws {
+    let plan = try expectation.range.plan(at: date(expectation.now))
+    let expectedCurrentStart = try date(expectation.expectedCurrentStart)
+    let expectedCurrentEnd = try date(expectation.expectedCurrentEnd)
+    let expectedPreviousStart = try date(expectation.expectedPreviousStart)
+    let expectedPreviousEnd = try date(expectation.expectedPreviousEnd)
+
+    #expect(plan.currentWindow.start == expectedCurrentStart)
+    #expect(plan.currentWindow.endExclusive == expectedCurrentEnd)
+    #expect(plan.previousWindow.start == expectedPreviousStart)
+    #expect(plan.previousWindow.endExclusive == expectedPreviousEnd)
+    #expect(plan.bucket == expectation.expectedBucket)
+    #expect(plan.totalsSource == expectation.expectedTotalsSource)
 }
 
 @Test(arguments: [

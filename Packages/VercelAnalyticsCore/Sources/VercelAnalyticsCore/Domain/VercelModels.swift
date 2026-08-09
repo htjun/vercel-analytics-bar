@@ -87,54 +87,6 @@ public enum VercelAnalyticsDimension: String, Equatable, Sendable {
     case referrerHostname
 }
 
-public enum VercelAnalyticsRange: String, CaseIterable, Codable, Equatable, Hashable, Sendable {
-    case last24Hours
-    case last7Days
-    case last30Days
-
-    public var aggregateBy: String {
-        switch self {
-        case .last24Hours:
-            "hour"
-        case .last7Days, .last30Days:
-            "day"
-        }
-    }
-
-    public var title: String {
-        switch self {
-        case .last24Hours:
-            "Last 24 Hours"
-        case .last7Days:
-            "Last 7 Days"
-        case .last30Days:
-            "Last 30 Days"
-        }
-    }
-
-    public var duration: TimeInterval {
-        switch self {
-        case .last24Hours:
-            24 * 60 * 60
-        case .last7Days:
-            7 * 24 * 60 * 60
-        case .last30Days:
-            30 * 24 * 60 * 60
-        }
-    }
-
-    fileprivate var dashboardPeriod: String {
-        switch self {
-        case .last24Hours:
-            "24h"
-        case .last7Days:
-            "7d"
-        case .last30Days:
-            "30d"
-        }
-    }
-}
-
 public struct VercelAnalyticsWindow: Equatable, Sendable {
     public let since: Date
     public let until: Date

@@ -28,36 +28,39 @@ public struct VercelAnalyticsSnapshotProvider: AnalyticsSnapshotProviding {
 
     public func snapshot(for range: VercelAnalyticsRange) async throws -> AnalyticsSnapshot {
         let refreshedAt = now()
-        switch range {
-        case .last24Hours:
-            return try await snapshotForLast24Hours(refreshedAt: refreshedAt)
-        case .last7Days, .last30Days:
-            return try await snapshotForCompletedDays(range: range, refreshedAt: refreshedAt)
+        let plan = range.plan(at: refreshedAt)
+        switch plan.totalsSource {
+        case .aggregate:
+            return try await snapshotFromAggregateTotals(range: range, plan: plan, refreshedAt: refreshedAt)
+        case .count:
+            return try await snapshotFromCountTotals(range: range, plan: plan, refreshedAt: refreshedAt)
         }
     }
 
-    private func snapshotForLast24Hours(refreshedAt: Date) async throws -> AnalyticsSnapshot {
+    private func snapshotFromAggregateTotals(
+        range: VercelAnalyticsRange,
+        plan: VercelAnalyticsRangePlan,
+        refreshedAt: Date
+    ) async throws -> AnalyticsSnapshot {
         async let currentSeries = client.fetchSeries(
             for: project,
-            range: .last24Hours,
-            now: refreshedAt
+            window: plan.currentWindow,
+            bucket: plan.bucket
         )
         async let previousSeries = client.fetchSeries(
             for: project,
-            range: .last24Hours,
-            now: refreshedAt.addingTimeInterval(-VercelAnalyticsRange.last24Hours.duration)
+            window: plan.previousWindow,
+            bucket: plan.bucket
         )
         async let topPages = client.fetchTopBreakdown(
             for: project,
             dimension: .requestPath,
-            range: .last24Hours,
-            now: refreshedAt
+            window: plan.currentWindow
         )
         async let topReferrers = client.fetchTopBreakdown(
             for: project,
             dimension: .referrerHostname,
-            range: .last24Hours,
-            now: refreshedAt
+            window: plan.currentWindow
         )
 
         let (current, previous, pages, referrers) = try await (
@@ -85,44 +88,42 @@ public struct VercelAnalyticsSnapshotProvider: AnalyticsSnapshotProviding {
             last24HoursVisitors: currentTotals.visitors
         )
 
-        return makeSnapshot(range: .last24Hours, data: data, refreshedAt: refreshedAt)
+        return makeSnapshot(range: range, data: data, refreshedAt: refreshedAt)
     }
 
-    private func snapshotForCompletedDays(
+    private func snapshotFromCountTotals(
         range: VercelAnalyticsRange,
+        plan: VercelAnalyticsRangePlan,
         refreshedAt: Date
     ) async throws -> AnalyticsSnapshot {
         async let currentCount = client.fetchCount(
             for: project,
-            range: range,
-            now: refreshedAt
+            window: plan.currentWindow
         )
         async let previousCount = client.fetchCount(
             for: project,
-            range: range,
-            now: refreshedAt.addingTimeInterval(-range.duration)
+            window: plan.previousWindow
         )
         async let currentSeries = client.fetchSeries(
             for: project,
-            range: range,
-            now: refreshedAt
+            window: plan.currentWindow,
+            bucket: plan.bucket
         )
+        let last24HoursPlan = VercelAnalyticsRange.last24Hours.plan(at: refreshedAt)
         async let last24HoursSeries = client.fetchSeries(
             for: project,
-            range: .last24Hours,
-            now: refreshedAt
+            window: last24HoursPlan.currentWindow,
+            bucket: last24HoursPlan.bucket
         )
         async let topPages = client.fetchTopBreakdown(
             for: project,
             dimension: .requestPath,
-            range: range,
-            now: refreshedAt
+            window: plan.currentWindow
         )
         async let topReferrers = client.fetchTopBreakdown(
             for: project,
             dimension: .referrerHostname,
-            range: range,
-            now: refreshedAt
+            window: plan.currentWindow
         )
 
         let (count, previous, series, last24, pages, referrers) = try await (
