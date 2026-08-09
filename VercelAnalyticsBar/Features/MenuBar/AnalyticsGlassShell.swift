@@ -13,8 +13,6 @@ enum AnalyticsCardLayout {
     static let glassSpecularPeakOpacity: CGFloat = 0.8
     static let glassDispersionWidth: CGFloat = 0.5
     static let glassDispersionOffset: CGFloat = 0.5
-    static let glassBevelWidth: CGFloat = 2
-    static let glassBevelInset: CGFloat = shellInset - glassBevelWidth
 }
 
 enum AnalyticsGlassAppearance: Equatable {
@@ -50,7 +48,6 @@ struct AnalyticsGlassEdgeArtwork: View {
                     )
             } else {
                 dispersionFringes
-                innerBevel
 
                 outerShape
                     .strokeBorder(
@@ -104,23 +101,6 @@ struct AnalyticsGlassEdgeArtwork: View {
                     y: AnalyticsCardLayout.glassDispersionOffset
                 )
         }
-    }
-
-    private var innerBevel: some View {
-        outerShape
-            .inset(by: AnalyticsCardLayout.glassBevelInset)
-            .strokeBorder(
-                LinearGradient(
-                    stops: [
-                        .init(color: .white.opacity(0.28), location: 0),
-                        .init(color: .white.opacity(0.08), location: 0.45),
-                        .init(color: .black.opacity(0.08), location: 1),
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                ),
-                lineWidth: AnalyticsCardLayout.glassBevelWidth
-            )
     }
 
     private var specularGradient: AngularGradient {

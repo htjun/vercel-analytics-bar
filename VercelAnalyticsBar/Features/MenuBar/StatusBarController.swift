@@ -109,7 +109,6 @@ final class AnalyticsPanel: NSPanel {
                 glassView.style = .clear
                 glassView.tintColor = nil
                 glassView.cornerRadius = AnalyticsCardLayout.outerCornerRadius
-                glassView.effectIsInteractive = false
                 glassView.contentView = hostingView
                 return glassView
             }
