@@ -35,7 +35,12 @@ extension AppModel {
     }
 
     func selectedProjects(matching searchQuery: String) -> [VercelProject] {
-        projects(matching: searchQuery).filter { selectedProjectIDs.contains($0.id) }
+        guard case let .loaded(projects) = projectState else { return [] }
+
+        let selectedProjects = projects.filter { selectedProjectIDs.contains($0.id) }
+        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return selectedProjects }
+        return selectedProjects.filter { $0.name.localizedCaseInsensitiveContains(query) }
     }
 
     var abbreviatedVisitors: String? {

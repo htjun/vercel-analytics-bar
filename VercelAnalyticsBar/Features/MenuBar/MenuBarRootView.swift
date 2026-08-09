@@ -132,35 +132,82 @@ struct MenuBarRootView: View {
 }
 
 private struct ProjectSelectorView: View {
+    private static let titleHeight: CGFloat = 17
+    private static let searchFieldHeight: CGFloat = 22
+    private static let emptyResultHeight: CGFloat = 17
+    private static let projectRowHeight: CGFloat = 28
+    private static let projectRowWithMetadataHeight: CGFloat = 44
+    private static let rowSpacing: CGFloat = 2
+    private static let contentSpacing: CGFloat = 10
+    private static let verticalPadding: CGFloat = 24
+    private static let maxProjectListHeight: CGFloat = 240
+
     let model: AppModel
     @Binding var searchQuery: String
     @Binding var isPresented: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        let projects = model.selectedProjects(matching: searchQuery)
+
+        VStack(alignment: .leading, spacing: Self.contentSpacing) {
             Text("Projects")
                 .font(.headline)
+                .frame(height: Self.titleHeight)
 
             TextField("Find Project…", text: $searchQuery)
                 .textFieldStyle(.roundedBorder)
+                .frame(height: Self.searchFieldHeight)
 
-            let projects = model.selectedProjects(matching: searchQuery)
             if projects.isEmpty {
                 Text("No selected projects match this search.")
-                    .frame(maxWidth: .infinity, minHeight: 80)
+                    .frame(maxWidth: .infinity, minHeight: Self.emptyResultHeight, alignment: .leading)
                     .foregroundStyle(.secondary)
             } else {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 2) {
-                        ForEach(projects) { project in
-                            projectRow(project)
-                        }
+                if projectListHeight(projects) <= Self.maxProjectListHeight {
+                    projectList(projects)
+                } else {
+                    ScrollView {
+                        projectList(projects)
                     }
+                    .frame(height: Self.maxProjectListHeight)
                 }
             }
         }
         .padding(12)
-        .frame(width: 300, height: 340)
+        .frame(width: 300, height: selectorHeight(projects), alignment: .topLeading)
+    }
+
+    private func projectList(_ projects: [VercelProject]) -> some View {
+        VStack(alignment: .leading, spacing: Self.rowSpacing) {
+            ForEach(projects) { project in
+                projectRow(project)
+            }
+        }
+    }
+
+    private func projectListHeight(_ projects: [VercelProject]) -> CGFloat {
+        let rowsHeight = projects.reduce(CGFloat.zero) { height, project in
+            height + rowHeight(project)
+        }
+        let spacingHeight = CGFloat(max(projects.count - 1, 0)) * Self.rowSpacing
+        return rowsHeight + spacingHeight
+    }
+
+    private func selectorHeight(_ projects: [VercelProject]) -> CGFloat {
+        let resultsHeight = projects.isEmpty
+            ? Self.emptyResultHeight
+            : min(projectListHeight(projects), Self.maxProjectListHeight)
+        return Self.titleHeight
+            + Self.searchFieldHeight
+            + resultsHeight
+            + Self.contentSpacing * 2
+            + Self.verticalPadding
+    }
+
+    private func rowHeight(_ project: VercelProject) -> CGFloat {
+        model.teamMetadata(for: project) == nil
+            ? Self.projectRowHeight
+            : Self.projectRowWithMetadataHeight
     }
 
     private func projectRow(_ project: VercelProject) -> some View {
@@ -197,5 +244,6 @@ private struct ProjectSelectorView: View {
             RoundedRectangle(cornerRadius: 6)
                 .fill(project.id == model.currentProjectID ? Color.primary.opacity(0.08) : .clear)
         )
+        .frame(height: rowHeight(project))
     }
 }

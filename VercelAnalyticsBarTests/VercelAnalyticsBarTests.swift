@@ -209,6 +209,28 @@ import VercelAnalyticsCore
 }
 
 @MainActor
+@Test func appModelFiltersSelectedProjectsByVisibleNameOnly() async {
+    let projects = [
+        VercelProject(id: "project-jason", name: "jasonjun-dev-2024", teamID: "team", teamName: "jasonjun"),
+        VercelProject(id: "project-node", name: "nodejourney-web", teamID: "team", teamName: "jasonjun"),
+    ]
+    let model = AppModel(
+        provider: FixtureAnalyticsSnapshotProvider(),
+        credentialStore: InMemoryCredentialStore(),
+        accountDataStore: InMemoryAccountDataStore(),
+        snapshotCacheStore: InMemorySnapshotCacheStore(),
+        projectProviderFactory: { _ in FixtureProjectListingProvider(projects: projects) },
+        tokenValidator: { _ in }
+    )
+
+    await model.connect(token: "valid-token")
+    model.setProjectSelected("project-node", selected: true)
+
+    #expect(model.selectedProjects(matching: "no").map(\.id) == ["project-node"])
+    #expect(model.selectedProjects(matching: "jason").map(\.id) == ["project-jason"])
+}
+
+@MainActor
 @Test func appModelSwitchesProjectsWithCachedFirstRefresh() async {
     let projects = [
         VercelProject(id: "project-alpha", name: "Alpha"),
