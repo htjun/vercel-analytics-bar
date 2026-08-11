@@ -1,6 +1,6 @@
 # Architecture
 
-Vercel Analytics Bar concentrates domain rules in five deep modules. Composition code supplies
+Vercel Analytics Bar concentrates domain rules in six deep modules. Composition code supplies
 dependencies and translates module output into presentation state; it does not reproduce their
 invariants.
 
@@ -26,6 +26,7 @@ Inspector scene, bridge identity, runtime strings, and web resources.
 | Term | Owner | Narrow seam | Invariants kept inside |
 | --- | --- | --- | --- |
 | Analytics range plan | `VercelAnalyticsRange` in `VercelAnalyticsCore` | A selected range, clock date, and client timezone produce current/previous intervals and bucket cadence. | Dashboard-aligned local-hour boundaries, equal elapsed comparison windows, and half-open internal intervals. The Vercel adapter alone converts them to the dashboard overview and public aggregate boundary conventions. |
+| Project discovery | `VercelAPIClient` in `VercelAnalyticsCore` | `VercelProjectListingProviding` returns one complete, stable list of accessible projects. | Optional personal scope, team enumeration, cursor pagination and cycle rejection, scope metadata enrichment, team-preferred deduplication, stable ordering, and atomic failure for every attempted scope. |
 | Project catalog | `ProjectCatalog` plus the versioned account selection record | Account/project orchestration supplies discovered projects and selection intents, then reads the reconciled selection and filtered views. | Stable sorting, inaccessible-selection removal, non-empty selection when projects exist, deterministic current fallback, search, duplicate-name metadata, and atomic selected/current persistence with legacy migration. |
 | Snapshot refresh | `SnapshotRefreshCoordinator` | `SnapshotRefreshRequest` and an `AnalyticsSnapshotProviding` adapter produce `SnapshotRefreshEvent` values. | Cache freshness, cache-before-live presentation, request identity, coalescing, supersession, cancellation, persistence, stale fallback, retry limits, rate-limit backoff, and one five-minute schedule. |
 | Analytics panel | `AnalyticsPanelController` | Status-item code supplies an anchor and owned companion windows, then calls present, reposition, dismiss, or teardown. | Session identity, hosted content, placement, visibility, highlighting, load task, local/global monitor pair, owned-window rules, transient-child Escape handling, child-first dismissal, and cleanup. |

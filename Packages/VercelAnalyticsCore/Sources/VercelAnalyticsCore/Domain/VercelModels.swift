@@ -1,17 +1,5 @@
 import Foundation
 
-public struct VercelTeam: Equatable, Identifiable, Sendable {
-    public let id: String
-    public let name: String
-    public let slug: String?
-
-    public init(id: String, name: String, slug: String? = nil) {
-        self.id = id
-        self.name = name
-        self.slug = slug
-    }
-}
-
 public struct VercelProject: Equatable, Identifiable, Sendable {
     public let id: String
     public let name: String

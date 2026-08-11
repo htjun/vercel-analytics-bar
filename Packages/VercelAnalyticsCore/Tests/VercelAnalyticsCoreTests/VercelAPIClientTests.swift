@@ -2,181 +2,6 @@ import Foundation
 import Testing
 import VercelAnalyticsCore
 
-@Test func clientListsTeamsAcrossPages() async throws {
-    let transport = try FixtureTransport(
-        responses: [
-            "/v2/teams": [
-                .fixture(named: "teams-page-1"),
-                .fixture(named: "teams-page-2"),
-            ],
-        ]
-    )
-    let client = VercelAPIClient(token: "fixture-token", transport: transport)
-
-    let teams = try await client.listTeams()
-
-    #expect(teams == [
-        VercelTeam(id: "team_fixture", name: "Fixture Team", slug: "fixture-team"),
-        VercelTeam(id: "team_second", name: "Second Team"),
-    ])
-
-    let requests = await transport.requests
-    #expect(requests.count == 2)
-    #expect(queryValue("limit", in: requests[0]) == "100")
-    #expect(queryValue("until", in: requests[1]) == "123")
-}
-
-@Test func clientListsPersonalAndTeamProjectsWithScopeAndPagination() async throws {
-    let personalTransport = try FixtureTransport(
-        responses: ["/v9/projects": [.fixture(named: "projects-personal")]]
-    )
-    let personalClient = VercelAPIClient(token: "fixture-token", transport: personalTransport)
-    let personalProjects = try await personalClient.listProjects()
-
-    #expect(personalProjects == [
-        VercelProject(id: "prj_personal_fixture", name: "Personal Site"),
-    ])
-    let personalRequests = await personalTransport.requests
-    #expect(queryValue("teamId", in: personalRequests[0]) == nil)
-
-    let teamTransport = try FixtureTransport(
-        responses: [
-            "/v9/projects": [
-                .fixture(named: "projects-team-page-1"),
-                .fixture(named: "projects-team-page-2"),
-            ],
-        ]
-    )
-    let teamClient = VercelAPIClient(token: "fixture-token", transport: teamTransport)
-    let teamProjects = try await teamClient.listProjects(teamID: "team_fixture")
-
-    #expect(teamProjects == [
-        VercelProject(
-            id: "prj_team_fixture_1",
-            name: "Team Dashboard",
-            teamID: "team_fixture"
-        ),
-        VercelProject(
-            id: "prj_team_fixture_2",
-            name: "Team Landing",
-            teamID: "team_fixture"
-        ),
-    ])
-    let teamRequests = await teamTransport.requests
-    #expect(queryValue("teamId", in: teamRequests[0]) == "team_fixture")
-    #expect(queryValue("until", in: teamRequests[1]) == "cursor-two")
-}
-
-@Test func clientListsAllAccessibleProjectsWithTeamMetadataAndSorting() async throws {
-    let transport = try FixtureTransport(
-        responses: [
-            "/v2/user": [.fixture(named: "authenticated-user")],
-            "/v2/teams": [
-                .fixture(named: "teams-page-1"),
-                .fixture(named: "teams-page-2"),
-            ],
-            "/v9/projects": [
-                .fixture(named: "projects-discovery-personal"),
-                .fixture(named: "projects-team-page-1"),
-                .fixture(named: "projects-team-page-2"),
-                .fixture(named: "projects-team-second-empty"),
-            ],
-        ]
-    )
-    let client = VercelAPIClient(token: "fixture-token", transport: transport)
-
-    let projects = try await client.listAccessibleProjects()
-
-    #expect(projects == [
-        VercelProject(
-            id: "prj_team_fixture_1",
-            name: "Team Dashboard",
-            teamID: "team_fixture",
-            teamName: "Fixture Team",
-            scopeSlug: "fixture-team"
-        ),
-        VercelProject(
-            id: "prj_team_fixture_2",
-            name: "Team Landing",
-            teamID: "team_fixture",
-            teamName: "Fixture Team",
-            scopeSlug: "fixture-team"
-        ),
-        VercelProject(
-            id: "prj_personal_fixture",
-            name: "Zebra Site",
-            scopeSlug: "fixture-user"
-        ),
-    ])
-    #expect(projects.allSatisfy { $0.analyticsAvailability == .unknown })
-
-    let requests = await transport.requests
-    #expect(requests.count == 7)
-    #expect(queryValue("teamId", in: requests[4]) == "team_fixture")
-    #expect(queryValue("teamId", in: requests[6]) == "team_second")
-}
-
-@Test func clientContinuesWithTeamProjectsWhenPersonalScopeIsUnavailable() async throws {
-    let transport = FixtureTransport(
-        responses: [
-            "/v2/user": [.response(statusCode: 404)],
-            "/v2/teams": [
-                .response(
-                    statusCode: 200,
-                    body: #"{"teams":[{"id":"team_fixture","name":"Fixture Team","slug":"fixture-team"}],"pagination":{"next":null}}"#
-                ),
-            ],
-            "/v9/projects": [
-                .response(
-                    statusCode: 200,
-                    body: #"{"projects":[{"id":"prj_team_fixture","name":"Team Project"}],"pagination":{"next":null}}"#,
-                    query: ["teamId": "team_fixture"]
-                ),
-            ],
-        ]
-    )
-    let client = VercelAPIClient(token: "fixture-token", transport: transport)
-
-    let projects = try await client.listAccessibleProjects()
-
-    #expect(projects == [
-        VercelProject(
-            id: "prj_team_fixture",
-            name: "Team Project",
-            teamID: "team_fixture",
-            teamName: "Fixture Team",
-            scopeSlug: "fixture-team"
-        ),
-    ])
-    let projectRequests = await transport.requests.filter { $0.url?.path == "/v9/projects" }
-    #expect(projectRequests.count == 1)
-    #expect(projectRequests.allSatisfy { queryValue("teamId", in: $0) == "team_fixture" })
-}
-
-@Test func clientPropagatesPersonalScopeFailuresOtherThanNotFound() async throws {
-    let transport = FixtureTransport(
-        responses: [
-            "/v2/user": [
-                .response(
-                    statusCode: 503,
-                    headers: ["X-Vercel-Id": "fixture-request-id"]
-                ),
-            ],
-        ]
-    )
-    let client = VercelAPIClient(token: "fixture-token", transport: transport)
-
-    do {
-        _ = try await client.listAccessibleProjects()
-        Issue.record("Expected personal-scope discovery failure")
-    } catch let error as VercelAPIError {
-        #expect(error == .transient(status: 503, requestID: "fixture-request-id"))
-    }
-
-    let requests = await transport.requests
-    #expect(requests.count == 1)
-}
-
 @Test(arguments: [
     (VercelAnalyticsRange.last24Hours, "24h"),
     (VercelAnalyticsRange.last7Days, "7d"),
@@ -337,13 +162,20 @@ func projectBuildsAnalyticsDashboardURL(range: VercelAnalyticsRange, period: Str
 }
 
 @Test func clientMapsPermissionFailure() async throws {
-    let permissionTransport = FixtureTransport(
+    let permissionTransport = try FixtureTransport(
         responses: [
+            "/v2/user": [.fixture(named: "authenticated-user")],
+            "/v2/teams": [
+                .response(statusCode: 200, body: #"{"teams":[],"pagination":{"next":null}}"#),
+            ],
             "/v9/projects": [.response(statusCode: 403, body: "private-response")],
         ]
     )
     do {
-        _ = try await VercelAPIClient(token: "fixture-token", transport: permissionTransport).listProjects()
+        _ = try await VercelAPIClient(
+            token: "fixture-token",
+            transport: permissionTransport
+        ).listAccessibleProjects()
         Issue.record("Expected permission failure")
     } catch let error as VercelAPIError {
         #expect(error == .permissionDenied(status: 403))

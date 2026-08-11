@@ -34,12 +34,21 @@ struct PaginationDTO: Decodable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        if let string = try? container.decodeIfPresent(String.self, forKey: .next) {
+        guard container.contains(.next), try !container.decodeNil(forKey: .next) else {
+            next = nil
+            return
+        }
+
+        if let string = try? container.decode(String.self, forKey: .next) {
             next = string
-        } else if let number = try? container.decodeIfPresent(Int.self, forKey: .next) {
+        } else if let number = try? container.decode(Int.self, forKey: .next) {
             next = String(number)
         } else {
-            next = nil
+            throw DecodingError.dataCorruptedError(
+                forKey: .next,
+                in: container,
+                debugDescription: "Expected a string, integer, or null pagination cursor"
+            )
         }
     }
 

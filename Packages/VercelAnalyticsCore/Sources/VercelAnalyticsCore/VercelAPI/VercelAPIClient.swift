@@ -98,90 +98,17 @@ public struct VercelAPIClient: Sendable, VercelProjectListingProviding {
         _ = try await request(TeamsResponseDTO.self, path: "/v2/teams", query: ["limit": "1"])
     }
 
-    public func listTeams() async throws -> [VercelTeam] {
-        var teams: [VercelTeam] = []
-        var cursor: String?
-        var seenCursors = Set<String>()
-
-        while true {
-            var query = ["limit": "100"]
-            if let cursor {
-                query["until"] = cursor
-            }
-
-            let response = try await request(TeamsResponseDTO.self, path: "/v2/teams", query: query)
-            teams.append(contentsOf: response.teams.map { VercelTeam(id: $0.id, name: $0.name, slug: $0.slug) })
-
-            guard let next = response.pagination.next else {
-                return teams
-            }
-            guard seenCursors.insert(next).inserted else {
-                throw VercelAPIError.malformedResponse(endpoint: "/v2/teams")
-            }
-            cursor = next
-        }
-    }
-
-    public func listProjects(
-        teamID: String? = nil,
-        teamName: String? = nil,
-        scopeSlug: String? = nil
-    ) async throws -> [VercelProject] {
-        var projects: [VercelProject] = []
-        var cursor: String?
-        var seenCursors = Set<String>()
-
-        while true {
-            var query = ["limit": "100"]
-            if let teamID {
-                query["teamId"] = teamID
-            }
-            if let cursor {
-                query["until"] = cursor
-            }
-
-            let response = try await request(ProjectsResponseDTO.self, path: "/v9/projects", query: query)
-            projects.append(contentsOf: response.projects.map {
-                VercelProject(
-                    id: $0.id,
-                    name: $0.name,
-                    teamID: teamID,
-                    teamName: teamName,
-                    scopeSlug: scopeSlug
-                )
-            })
-
-            guard let next = response.pagination.next else {
-                return projects
-            }
-            guard seenCursors.insert(next).inserted else {
-                throw VercelAPIError.malformedResponse(endpoint: "/v9/projects")
-            }
-            cursor = next
-        }
-    }
-
     public func listAccessibleProjects() async throws -> [VercelProject] {
-        let user: AuthenticatedUserDTO?
-        do {
-            user = try await request(AuthenticatedUserResponseDTO.self, path: "/v2/user", query: [:]).user
-        } catch VercelAPIError.resourceNotFound(status: 404) {
-            user = nil
-        }
-
-        let teams = try await listTeams()
+        let personalScope = try await personalProjectScope()
+        let teamScopes = try await teamProjectScopes()
         var projects: [VercelProject] = []
-        if let user {
-            projects = try await listProjects(scopeSlug: user.username)
+        if let personalScope {
+            projects = try await listProjects(in: personalScope)
         }
 
-        for team in teams {
-            let teamProjects = try await listProjects(
-                teamID: team.id,
-                teamName: team.name,
-                scopeSlug: team.slug
-            )
-            projects.append(contentsOf: teamProjects)
+        for scope in teamScopes {
+            let scopeProjects = try await listProjects(in: scope)
+            projects.append(contentsOf: scopeProjects)
         }
 
         var uniqueProjectsByID: [String: VercelProject] = [:]
@@ -192,6 +119,80 @@ public struct VercelAPIClient: Sendable, VercelProjectListingProviding {
         }
 
         return VercelProject.sorted(Array(uniqueProjectsByID.values))
+    }
+
+    private func personalProjectScope() async throws -> ProjectDiscoveryScope? {
+        do {
+            let response = try await request(AuthenticatedUserResponseDTO.self, path: "/v2/user", query: [:])
+            return ProjectDiscoveryScope(teamID: nil, teamName: nil, scopeSlug: response.user.username)
+        } catch VercelAPIError.resourceNotFound(status: 404) {
+            return nil
+        }
+    }
+
+    private func teamProjectScopes() async throws -> [ProjectDiscoveryScope] {
+        let teams = try await paginate(
+            TeamsResponseDTO.self,
+            path: "/v2/teams",
+            query: [:]
+        ) { response in
+            (response.teams, response.pagination.next)
+        }
+
+        return teams.map { team in
+            ProjectDiscoveryScope(teamID: team.id, teamName: team.name, scopeSlug: team.slug)
+        }
+    }
+
+    private func listProjects(in scope: ProjectDiscoveryScope) async throws -> [VercelProject] {
+        var query: [String: String] = [:]
+        if let teamID = scope.teamID {
+            query["teamId"] = teamID
+        }
+
+        let projects = try await paginate(
+            ProjectsResponseDTO.self,
+            path: "/v9/projects",
+            query: query
+        ) { response in
+            (response.projects, response.pagination.next)
+        }
+
+        return projects.map { project in
+            VercelProject(
+                id: project.id,
+                name: project.name,
+                teamID: scope.teamID,
+                teamName: scope.teamName,
+                scopeSlug: scope.scopeSlug
+            )
+        }
+    }
+
+    private func paginate<Response: Decodable, Item>(
+        _ responseType: Response.Type,
+        path: String,
+        query baseQuery: [String: String],
+        page: (Response) -> (items: [Item], next: String?)
+    ) async throws -> [Item] {
+        var items: [Item] = []
+        var query = baseQuery
+        query["limit"] = "100"
+        var seenCursors = Set<String>()
+
+        while true {
+            let response = try await request(responseType, path: path, query: query)
+            let result = page(response)
+            items.append(contentsOf: result.items)
+
+            guard let next = result.next else {
+                return items
+            }
+            guard seenCursors.insert(next).inserted else {
+                throw VercelAPIError.malformedResponse(endpoint: path)
+            }
+            query["until"] = next
+        }
     }
 
     func request<Response: Decodable>(
@@ -289,4 +290,10 @@ public struct VercelAPIClient: Sendable, VercelProjectListingProviding {
     private func requestID(from response: HTTPURLResponse) -> String? {
         response.value(forHTTPHeaderField: "X-Vercel-Id")
     }
+}
+
+private struct ProjectDiscoveryScope {
+    let teamID: String?
+    let teamName: String?
+    let scopeSlug: String?
 }
