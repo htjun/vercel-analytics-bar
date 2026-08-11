@@ -10,10 +10,10 @@ struct StatusItemPresentation: Equatable {
         title = abbreviatedVisitors ?? ""
         if let abbreviatedVisitors {
             accessibilityValue = "\(abbreviatedVisitors) visitors in the last 24 hours"
-            toolTip = "Vercel Analytics — \(abbreviatedVisitors) visitors"
+            toolTip = "Vercel Analytics Bar — \(abbreviatedVisitors) visitors"
         } else {
             accessibilityValue = "Visitor data unavailable"
-            toolTip = "Vercel Analytics"
+            toolTip = "Vercel Analytics Bar"
         }
     }
 }
@@ -87,7 +87,7 @@ final class StatusBarController: NSObject {
         button.target = self
         button.action = #selector(togglePanel)
         button.sendAction(on: [.leftMouseUp])
-        button.setAccessibilityLabel("Vercel Analytics")
+        button.setAccessibilityLabel("Vercel Analytics Bar")
     }
 
     private func observeStatusItemPresentation() {
