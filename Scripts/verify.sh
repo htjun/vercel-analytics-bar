@@ -62,9 +62,18 @@ for configuration in Release-Direct Release-AppStore; do
         echo "$configuration unexpectedly contains Chart Inspector resources." >&2
         exit 1
     fi
+    if [[ -e "$RELEASE_APP_PATH/Contents/Resources/DemoFixture.json" ]]; then
+        echo "$configuration unexpectedly contains a demo fixture." >&2
+        exit 1
+    fi
     if strings "$RELEASE_APP_PATH/Contents/MacOS/VercelAnalyticsBar" \
         | grep -Eq "chart-inspector|Chart Inspector|CHART_INSPECTOR_DEV_SERVER"; then
         echo "$configuration unexpectedly contains Chart Inspector runtime strings." >&2
+        exit 1
+    fi
+    if strings "$RELEASE_APP_PATH/Contents/MacOS/VercelAnalyticsBar" \
+        | grep -Eq "DemoFixture|demo fixture|MOCK_MODE"; then
+        echo "$configuration unexpectedly contains demo runtime strings." >&2
         exit 1
     fi
 done

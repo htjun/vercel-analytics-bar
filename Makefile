@@ -5,7 +5,9 @@ DERIVED_DATA_PATH := .build/DerivedData
 DEBUG_APP_PATH := $(DERIVED_DATA_PATH)/Build/Products/Debug/VercelAnalyticsBar.app
 XCODEBUILD := xcodebuild -project $(PROJECT) -scheme $(SCHEME) -destination 'platform=macOS,arch=$(HOST_ARCHITECTURE)' CODE_SIGNING_ALLOWED=NO
 
-.PHONY: bootstrap format inspector-build inspector-dev open probe run run-inspector run-inspector-bundled test verify
+.PHONY: bootstrap format inspector-build inspector-dev open probe run run-inspector run-inspector-bundled run-mock test verify
+
+FIXTURE ?= ideal
 
 bootstrap:
 	Scripts/bootstrap.sh
@@ -36,6 +38,9 @@ run-inspector:
 run-inspector-bundled:
 	$(XCODEBUILD) -configuration Debug -derivedDataPath $(DERIVED_DATA_PATH) build
 	open $(DEBUG_APP_PATH) --args --chart-inspector
+
+run-mock:
+	Scripts/run_mock.sh "$(FIXTURE)"
 
 test:
 	npm --prefix Tools/ChartInspector test

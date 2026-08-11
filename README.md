@@ -89,6 +89,25 @@ make open
 
 The Debug configuration uses the temporary development bundle identifier `com.jasonjun.VercelAnalyticsBar`. A final identifier and Apple Developer Team are required only before distribution.
 
+## Run with demo data
+
+Launch an isolated mock build with the default screenshot fixture:
+
+```sh
+make run-mock
+```
+
+Choose another editable scenario with `FIXTURE`:
+
+```sh
+make run-mock FIXTURE=long-values
+make run-mock FIXTURE=empty-breakdowns
+```
+
+The JSON scenarios live in `DemoFixtures`. Edit one and rerun its command to inspect different
+values, labels, chart series, or breakdowns. Quit any running copy of the app before switching
+between normal, Inspector, and mock builds.
+
 ## Tune the chart
 
 The normal application launch keeps development controls out of the menu-bar panel:

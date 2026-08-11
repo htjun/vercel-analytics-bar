@@ -1,0 +1,44 @@
+{
+  "projectName": "jasonjun-dev-2024",
+  "range": "last30Days",
+  "visitors": {
+    "label": "Visitors",
+    "value": 3234,
+    "previousValue": 1168
+  },
+  "pageViews": {
+    "label": "Page Views",
+    "value": 6423,
+    "previousValue": 6554
+  },
+  "series": [
+    { "timestamp": "2026-07-31T00:00:00Z", "visitors": 120, "pageViews": 241 },
+    { "timestamp": "2026-08-01T00:00:00Z", "visitors": 165, "pageViews": 302 },
+    { "timestamp": "2026-08-02T00:00:00Z", "visitors": 142, "pageViews": 279 },
+    { "timestamp": "2026-08-03T00:00:00Z", "visitors": 198, "pageViews": 388 },
+    { "timestamp": "2026-08-04T00:00:00Z", "visitors": 176, "pageViews": 341 },
+    { "timestamp": "2026-08-05T00:00:00Z", "visitors": 234, "pageViews": 451 },
+    { "timestamp": "2026-08-06T00:00:00Z", "visitors": 215, "pageViews": 429 },
+    { "timestamp": "2026-08-07T00:00:00Z", "visitors": 286, "pageViews": 572 },
+    { "timestamp": "2026-08-08T00:00:00Z", "visitors": 249, "pageViews": 486 },
+    { "timestamp": "2026-08-09T00:00:00Z", "visitors": 312, "pageViews": 615 },
+    { "timestamp": "2026-08-10T00:00:00Z", "visitors": 278, "pageViews": 544 },
+    { "timestamp": "2026-08-11T00:00:00Z", "visitors": 354, "pageViews": 688 }
+  ],
+  "topPages": [
+    { "label": "/reading/the-almanack-of-naval-ravikant", "visitors": 710, "pageViews": 872 },
+    { "label": "/reading/tiny-experiments", "visitors": 175, "pageViews": 202 },
+    { "label": "/blog/creating-consistent-style-images-with-comfyui", "visitors": 52, "pageViews": 60 },
+    { "label": "/reading/build", "visitors": 24, "pageViews": 29 },
+    { "label": "/blog/two-dials-of-ai-assisted-coding", "visitors": 25, "pageViews": 28 }
+  ],
+  "topReferrers": [
+    { "label": "google.com", "visitors": 510, "pageViews": 640 },
+    { "label": "news.ycombinator.com", "visitors": 205, "pageViews": 260 },
+    { "label": "github.com", "visitors": 160, "pageViews": 195 },
+    { "label": "x.com", "visitors": 88, "pageViews": 101 },
+    { "label": "vercel.com", "visitors": 42, "pageViews": 55 }
+  ],
+  "last24HoursVisitors": 354,
+  "refreshedAt": "2026-08-11T08:38:00Z"
+}

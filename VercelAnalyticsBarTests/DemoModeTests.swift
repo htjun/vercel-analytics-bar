@@ -75,6 +75,35 @@ struct DemoModeTests {
         #expect(model.state == .failed("The demo fixture contains invalid analytics data."))
     }
 
+    @Test(arguments: ["ideal", "long-values", "empty-breakdowns"])
+    func committedFixtureDecodes(_ fixtureName: String) throws {
+        let snapshot = try DemoFixtureLoader.load(
+            from: Self.fixtureRoot.appendingPathComponent("\(fixtureName).json")
+        )
+
+        #expect(!snapshot.projectName.isEmpty)
+        #expect(!snapshot.series.isEmpty)
+    }
+
+    @Test func committedScenariosExerciseThePlannedEdges() throws {
+        let longValues = try DemoFixtureLoader.load(
+            from: Self.fixtureRoot.appendingPathComponent("long-values.json")
+        )
+        let emptyBreakdowns = try DemoFixtureLoader.load(
+            from: Self.fixtureRoot.appendingPathComponent("empty-breakdowns.json")
+        )
+
+        #expect(longValues.visitors.value > 1_000_000_000_000)
+        #expect(longValues.projectName.count > 40)
+        #expect(emptyBreakdowns.topPages.isEmpty)
+        #expect(emptyBreakdowns.topReferrers.isEmpty)
+    }
+
+    private static let fixtureRoot = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .appendingPathComponent("DemoFixtures", isDirectory: true)
+
     private static let fixtureData = Data(
         #"""
         {

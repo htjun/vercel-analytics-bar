@@ -1,0 +1,43 @@
+{
+  "projectName": "an-extremely-long-production-project-name-for-layout-inspection",
+  "range": "last7Days",
+  "visitors": {
+    "label": "Visitors With A Long Label",
+    "value": 9876543210987,
+    "previousValue": 9012345678901
+  },
+  "pageViews": {
+    "label": "Page Views With A Long Label",
+    "value": 8765432109876,
+    "previousValue": 9999999999999
+  },
+  "series": [
+    { "timestamp": "2026-08-05T00:00:00Z", "visitors": 710000000000, "pageViews": 1280000000000 },
+    { "timestamp": "2026-08-06T00:00:00Z", "visitors": 920000000000, "pageViews": 1540000000000 },
+    { "timestamp": "2026-08-07T00:00:00Z", "visitors": 830000000000, "pageViews": 1490000000000 },
+    { "timestamp": "2026-08-08T00:00:00Z", "visitors": 1190000000000, "pageViews": 2010000000000 },
+    { "timestamp": "2026-08-09T00:00:00Z", "visitors": 1060000000000, "pageViews": 1870000000000 },
+    { "timestamp": "2026-08-10T00:00:00Z", "visitors": 1420000000000, "pageViews": 2360000000000 },
+    { "timestamp": "2026-08-11T00:00:00Z", "visitors": 1310000000000, "pageViews": 2240000000000 }
+  ],
+  "topPages": [
+    {
+      "label": "/this/is/an/intentionally/very/long/path/that/should/truncate/without/breaking/the/count",
+      "visitors": 9999999999999,
+      "pageViews": 10999999999999
+    },
+    { "label": "/another-long-route-name-used-for-layout-stress-testing", "visitors": 8765432109876, "pageViews": 9987654321098 },
+    { "label": "/products/enterprise/analytics/overview", "visitors": 7654321098765, "pageViews": 8876543210987 },
+    { "label": "/pricing", "visitors": 6543210987654, "pageViews": 7765432109876 },
+    { "label": "/", "visitors": 5432109876543, "pageViews": 6654321098765 }
+  ],
+  "topReferrers": [
+    { "label": "an-intentionally-long-referrer-hostname.example.com", "visitors": 9999999999999, "pageViews": 10999999999999 },
+    { "label": "news.ycombinator.com", "visitors": 8888888888888, "pageViews": 9888888888888 },
+    { "label": "google.com", "visitors": 7777777777777, "pageViews": 8777777777777 },
+    { "label": "github.com", "visitors": 6666666666666, "pageViews": 7666666666666 },
+    { "label": "vercel.com", "visitors": 5555555555555, "pageViews": 6555555555555 }
+  ],
+  "last24HoursVisitors": 9999999999999,
+  "refreshedAt": "2026-08-11T08:38:00Z"
+}

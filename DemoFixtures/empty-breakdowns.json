@@ -1,0 +1,26 @@
+{
+  "projectName": "Newly Launched Project",
+  "range": "last24Hours",
+  "visitors": {
+    "label": "Visitors",
+    "value": 18,
+    "previousValue": 0
+  },
+  "pageViews": {
+    "label": "Page Views",
+    "value": 31,
+    "previousValue": 0
+  },
+  "series": [
+    { "timestamp": "2026-08-11T03:00:00Z", "visitors": 1, "pageViews": 2 },
+    { "timestamp": "2026-08-11T04:00:00Z", "visitors": 2, "pageViews": 4 },
+    { "timestamp": "2026-08-11T05:00:00Z", "visitors": 1, "pageViews": 2 },
+    { "timestamp": "2026-08-11T06:00:00Z", "visitors": 4, "pageViews": 7 },
+    { "timestamp": "2026-08-11T07:00:00Z", "visitors": 3, "pageViews": 5 },
+    { "timestamp": "2026-08-11T08:00:00Z", "visitors": 7, "pageViews": 11 }
+  ],
+  "topPages": [],
+  "topReferrers": [],
+  "last24HoursVisitors": 18,
+  "refreshedAt": "2026-08-11T08:38:00Z"
+}
