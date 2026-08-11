@@ -173,6 +173,23 @@ import VercelAnalyticsCore
 }
 
 @MainActor
+@Test func applicationMenuProvidesNativeQuitCommand() throws {
+    let application = NSApplication.shared
+    let mainMenu = ApplicationMenu.make(for: application)
+    let applicationMenu = try #require(mainMenu.items.first?.submenu)
+    let quitItem = try #require(applicationMenu.items.first)
+
+    #expect(mainMenu.items.count == 1)
+    #expect(applicationMenu.title == ProductInfo.name)
+    #expect(applicationMenu.items.count == 1)
+    #expect(quitItem.title == "Quit \(ProductInfo.name)")
+    #expect(quitItem.action == #selector(NSApplication.terminate(_:)))
+    #expect(quitItem.target === application)
+    #expect(quitItem.keyEquivalent == "q")
+    #expect(quitItem.keyEquivalentModifierMask == .command)
+}
+
+@MainActor
 @Test func hostedWindowControllerRetainsAndReusesItsWindow() throws {
     let controller = HostedWindowController(
         title: "Test Settings",

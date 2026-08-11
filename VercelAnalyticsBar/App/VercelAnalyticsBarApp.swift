@@ -96,6 +96,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
+@MainActor
+enum ApplicationMenu {
+    static func make(for application: NSApplication) -> NSMenu {
+        let mainMenu = NSMenu()
+        let applicationMenuItem = NSMenuItem()
+        let applicationMenu = NSMenu(title: ProductInfo.name)
+        let quitItem = NSMenuItem(
+            title: "Quit \(ProductInfo.name)",
+            action: #selector(NSApplication.terminate(_:)),
+            keyEquivalent: "q"
+        )
+        quitItem.keyEquivalentModifierMask = .command
+        quitItem.target = application
+        applicationMenu.addItem(quitItem)
+        applicationMenuItem.submenu = applicationMenu
+        mainMenu.addItem(applicationMenuItem)
+        return mainMenu
+    }
+}
+
 @main
 @MainActor
 enum VercelAnalyticsBarApplication {
@@ -103,6 +123,7 @@ enum VercelAnalyticsBarApplication {
         let application = NSApplication.shared
         let appDelegate = AppDelegate()
         application.delegate = appDelegate
+        application.mainMenu = ApplicationMenu.make(for: application)
 
         withExtendedLifetime(appDelegate) {
             application.run()

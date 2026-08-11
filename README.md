@@ -15,7 +15,7 @@ The application connects directly to Vercel, discovers projects across the accou
   highest-traffic referral hostnames without another request.
 - Provides a Debug-only Chart Inspector for live tuning the native chart with DialKit controls.
 - Shows a chart icon and abbreviated Last 24 Hours Visitors count in the menu bar after the first successful load.
-- Opens a Settings window and terminates from the Quit button.
+- Opens a Settings window and terminates from the Quit button or Command-Q.
 - Includes an independent chart app icon and a monochrome chart menu-bar icon.
 - Connects a Vercel Personal Access Token from Settings after validating it with Vercel.
 - Restores a validated connection when the menu bar panel or Settings first opens and stores the token only in the macOS Keychain.
