@@ -47,6 +47,8 @@
 		A10000000000000000000025 /* HostedWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000025 /* HostedWindowController.swift */; };
 		A10000000000000000000026 /* AnalyticsCardIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000026 /* AnalyticsCardIntegrationTests.swift */; };
 		A1000000000000000000002C /* AppTypographyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000002C /* AppTypographyTests.swift */; };
+		A1000000000000000000002D /* DemoMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000002D /* DemoMode.swift */; };
+		A1000000000000000000002E /* DemoModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000002E /* DemoModeTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -106,6 +108,8 @@
 		A30000000000000000000025 /* HostedWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostedWindowController.swift; sourceTree = "<group>"; };
 		A30000000000000000000026 /* AnalyticsCardIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsCardIntegrationTests.swift; sourceTree = "<group>"; };
 		A3000000000000000000002C /* AppTypographyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTypographyTests.swift; sourceTree = "<group>"; };
+		A3000000000000000000002D /* DemoMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoMode.swift; sourceTree = "<group>"; };
+		A3000000000000000000002E /* DemoModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoModeTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -153,6 +157,7 @@
 			isa = PBXGroup;
 			children = (
 				A30000000000000000000001 /* VercelAnalyticsBarApp.swift */,
+				A3000000000000000000002D /* DemoMode.swift */,
 				A30000000000000000000025 /* HostedWindowController.swift */,
 				A3000000000000000000001F /* AppTypography.swift */,
 				A30000000000000000000009 /* AppModel.swift */,
@@ -180,6 +185,7 @@
 			isa = PBXGroup;
 			children = (
 				A30000000000000000000002 /* VercelAnalyticsBarTests.swift */,
+				A3000000000000000000002E /* DemoModeTests.swift */,
 				A3000000000000000000002C /* AppTypographyTests.swift */,
 				A30000000000000000000022 /* AnalyticsCardTests.swift */,
 				A30000000000000000000026 /* AnalyticsCardIntegrationTests.swift */,
@@ -387,6 +393,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000001 /* VercelAnalyticsBarApp.swift in Sources */,
+				A1000000000000000000002D /* DemoMode.swift in Sources */,
 				A1000000000000000000001F /* AppTypography.swift in Sources */,
 				A10000000000000000000005 /* AppModel.swift in Sources */,
 				A10000000000000000000027 /* ProjectCatalog.swift in Sources */,
@@ -417,6 +424,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000003 /* VercelAnalyticsBarTests.swift in Sources */,
+				A1000000000000000000002E /* DemoModeTests.swift in Sources */,
 				A1000000000000000000002C /* AppTypographyTests.swift in Sources */,
 				A10000000000000000000022 /* AnalyticsCardTests.swift in Sources */,
 				A10000000000000000000026 /* AnalyticsCardIntegrationTests.swift in Sources */,

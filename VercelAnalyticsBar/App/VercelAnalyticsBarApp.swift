@@ -13,14 +13,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     override init() {
         AppFontRegistry.registerBundledFonts()
-        model = AppModel(
-            projectProviderFactory: { token in
-                VercelAPIClient(token: token)
-            },
-            analyticsProviderFactory: { token, project in
-                VercelAnalyticsSnapshotProvider(token: token, project: project)
-            }
-        )
+        #if MOCK_MODE
+            model = DemoAppModelFactory.makeModel()
+        #else
+            model = AppModel(
+                projectProviderFactory: { token in
+                    VercelAPIClient(token: token)
+                },
+                analyticsProviderFactory: { token, project in
+                    VercelAnalyticsSnapshotProvider(token: token, project: project)
+                }
+            )
+        #endif
         chartStyle = ChartStyleStore()
         super.init()
     }
