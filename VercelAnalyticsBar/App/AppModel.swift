@@ -86,9 +86,7 @@ final class AppModel {
         self.analyticsProviderFactory = analyticsProviderFactory
         self.launchAtLoginManager = launchAtLoginManager
         self.tokenValidator = tokenValidator
-        projectCatalog = ProjectCatalog(
-            selection: (try? accountDataStore.readProjectSelection()) ?? .empty
-        )
+        projectCatalog = ProjectCatalog(persistence: accountDataStore)
         selectedRange = (try? accountDataStore.readAnalyticsRange()) ?? .last7Days
         launchAtLoginStatus = launchAtLoginManager.status
     }
@@ -106,7 +104,7 @@ final class AppModel {
 
             try await tokenValidator(token)
             accountState = .connected
-            restoreSelectedProjects()
+            restoreProjectCatalog()
             await refreshProjects(token: token)
         } catch {
             accountState = .failed(connectionError(for: error))
@@ -127,7 +125,7 @@ final class AppModel {
             try credentialStore.save(normalizedToken)
             didAttemptRestore = true
             accountState = .connected
-            restoreSelectedProjects()
+            restoreProjectCatalog()
             await refreshProjects(token: normalizedToken)
         } catch {
             accountState = .failed(connectionError(for: error))
@@ -178,12 +176,8 @@ extension AppModel {
     func setProjectSelected(_ projectID: String, selected: Bool) {
         guard case .loaded = projectState else { return }
 
-        var updatedCatalog = projectCatalog
-        guard updatedCatalog.setProject(projectID, selected: selected) else { return }
-
         do {
-            try accountDataStore.saveProjectSelection(updatedCatalog.selection)
-            projectCatalog = updatedCatalog
+            guard try projectCatalog.setProject(projectID, selected: selected) else { return }
             projectSelectionError = nil
             state = .idle
         } catch {
@@ -194,12 +188,8 @@ extension AppModel {
     func selectProject(_ projectID: String) async {
         guard case .loaded = projectState else { return }
 
-        var updatedCatalog = projectCatalog
-        guard updatedCatalog.selectCurrentProject(projectID) else { return }
-
         do {
-            try accountDataStore.saveProjectSelection(updatedCatalog.selection)
-            projectCatalog = updatedCatalog
+            guard try projectCatalog.selectCurrentProject(projectID) else { return }
             projectSelectionError = nil
         } catch {
             projectSelectionError = error.localizedDescription
@@ -259,7 +249,7 @@ extension AppModel {
             state = .idle
             accountState = .disconnected
             projectState = .idle
-            projectCatalog = ProjectCatalog()
+            projectCatalog.reset()
             snapshotFreshness = .fresh
             refreshMessage = nil
             retryAvailableAt = nil
@@ -277,25 +267,20 @@ extension AppModel {
 
         do {
             let projects = try await projectProviderFactory(token).listAccessibleProjects()
-            var updatedCatalog = projectCatalog
-            updatedCatalog.reconcile(with: projects)
-            try accountDataStore.saveProjectSelection(updatedCatalog.selection)
-            projectCatalog = updatedCatalog
+            try projectCatalog.reconcile(with: projects)
             projectSelectionError = nil
             state = .idle
-            projectState = .loaded(updatedCatalog.projects)
+            projectState = .loaded(projectCatalog.projects)
         } catch {
             projectState = .failed(error.localizedDescription)
         }
     }
 
-    private func restoreSelectedProjects() {
+    private func restoreProjectCatalog() {
         do {
-            let selection = try accountDataStore.readProjectSelection()
-            projectCatalog.restore(selection)
+            try projectCatalog.restore()
             projectSelectionError = nil
         } catch {
-            projectCatalog.restore(.empty)
             projectSelectionError = error.localizedDescription
         }
     }

@@ -106,9 +106,7 @@ struct KeychainVercelCredentialStore: VercelCredentialStore {
     }
 }
 
-protocol VercelAccountDataStore {
-    func readProjectSelection() throws -> ProjectSelection
-    func saveProjectSelection(_ selection: ProjectSelection) throws
+protocol VercelAccountDataStore: ProjectSelectionPersisting {
     func readAnalyticsRange() throws -> VercelAnalyticsRange
     func saveAnalyticsRange(_ range: VercelAnalyticsRange) throws
     func clear() throws

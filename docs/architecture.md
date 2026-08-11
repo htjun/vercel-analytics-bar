@@ -27,7 +27,7 @@ Inspector scene, bridge identity, runtime strings, and web resources.
 | --- | --- | --- | --- |
 | Analytics range plan | `VercelAnalyticsRange` in `VercelAnalyticsCore` | A selected range, clock date, and client timezone produce current/previous intervals and bucket cadence. | Dashboard-aligned local-hour boundaries, equal elapsed comparison windows, and half-open internal intervals. The Vercel adapter alone converts them to the dashboard overview and public aggregate boundary conventions. |
 | Project discovery | `VercelAPIClient` in `VercelAnalyticsCore` | `VercelProjectListingProviding` returns one complete, stable list of accessible projects. | Optional personal scope, team enumeration, cursor pagination and cycle rejection, scope metadata enrichment, team-preferred deduplication, stable ordering, and atomic failure for every attempted scope. |
-| Project catalog | `ProjectCatalog` plus the versioned account selection record | Account/project orchestration supplies discovered projects and selection intents, then reads the reconciled selection and filtered views. | Stable sorting, inaccessible-selection removal, non-empty selection when projects exist, deterministic current fallback, search, duplicate-name metadata, and atomic selected/current persistence with legacy migration. |
+| Project catalog | `ProjectCatalog` plus the versioned account selection record | Account/project orchestration supplies discovered projects and selection intents; the catalog persists committed selection through `ProjectSelectionPersisting` and exposes reconciled selection and filtered views. | Stable sorting, inaccessible-selection removal, non-empty selection when projects exist, deterministic current fallback, search, duplicate-name metadata, save-before-commit selection transactions, rollback on persistence failure, and legacy migration. |
 | Snapshot refresh | `SnapshotRefreshCoordinator` | `SnapshotRefreshRequest` and an `AnalyticsSnapshotProviding` adapter produce `SnapshotRefreshEvent` values. | Cache freshness, cache-before-live presentation, request identity, coalescing, supersession, cancellation, persistence, stale fallback, retry limits, rate-limit backoff, and one five-minute schedule. |
 | Analytics panel | `AnalyticsPanelController` | Status-item code supplies an anchor and owned companion windows, then calls present, reposition, dismiss, or teardown. | Session identity, hosted content, placement, visibility, highlighting, load task, local/global monitor pair, owned-window rules, transient-child Escape handling, child-first dismissal, and cleanup. |
 | Inspector contract | `Contracts/ChartInspectorContract.json` | The local generator emits checked-in Swift and TypeScript declarations consumed by the native session, browser bridge, and DialKit configuration. | Protocol identity, message names, revision bounds, ordered style fields, enum values, defaults, ranges, steps, color syntax, deterministic generation, and stale-output detection. |
@@ -35,10 +35,10 @@ Inspector scene, bridge identity, runtime strings, and web resources.
 ## Application composition
 
 `AppModel` owns account connection intent, the selected analytics range, presentation state, and
-orchestration between real adapters. It delegates catalog invariants to `ProjectCatalog` and refresh
-mechanics to `SnapshotRefreshCoordinator`. It publishes module results for SwiftUI but does not keep
-request IDs, refresh tasks, retry counters, scheduling loops, or partially persisted project
-selection.
+orchestration between real adapters. It delegates catalog invariants and project-selection
+persistence transactions to `ProjectCatalog`, and refresh mechanics to `SnapshotRefreshCoordinator`.
+It publishes module results for SwiftUI but does not keep request IDs, refresh tasks, retry counters,
+scheduling loops, or partially persisted project selection.
 
 `StatusBarController` owns the status item and its metric presentation. It delegates the panel's
 complete present-to-teardown lifecycle to `AnalyticsPanelController`; it has no event monitor or

@@ -80,8 +80,8 @@ final class InMemoryAccountDataStore: VercelAccountDataStore {
     var hasData: Bool
     var projectSelection: ProjectSelection
     var analyticsRange: VercelAnalyticsRange
-    var failProjectSelectionSave = false
-
+    var failProjectSelectionRead = false, failProjectSelectionSave = false
+    private(set) var projectSelectionSaveAttempts: [ProjectSelection] = []
     var selectedProjectIDs: Set<String> {
         projectSelection.selectedProjectIDs
     }
@@ -105,10 +105,14 @@ final class InMemoryAccountDataStore: VercelAccountDataStore {
     }
 
     func readProjectSelection() throws -> ProjectSelection {
-        projectSelection
+        if failProjectSelectionRead {
+            throw AccountDataStoreError.invalidProjectSelection
+        }
+        return projectSelection
     }
 
     func saveProjectSelection(_ selection: ProjectSelection) throws {
+        projectSelectionSaveAttempts.append(selection)
         if failProjectSelectionSave {
             throw AccountDataStoreError.invalidProjectSelection
         }

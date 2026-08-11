@@ -2,15 +2,15 @@ import Testing
 @testable import VercelAnalyticsBar
 import VercelAnalyticsCore
 
-@Test func projectCatalogReconcilesUnavailableSelectionDeterministically() {
-    var catalog = ProjectCatalog(
-        selection: ProjectSelection(
-            selectedProjectIDs: ["unavailable-project"],
-            currentProjectID: "unavailable-project"
-        )
+@Test func projectCatalogRestoresAndReconcilesUnavailableSelectionDeterministically() throws {
+    let accountDataStore = InMemoryAccountDataStore(
+        selectedProjectIDs: ["unavailable-project"],
+        currentProjectID: "unavailable-project"
     )
+    var catalog = ProjectCatalog(persistence: accountDataStore)
 
-    catalog.reconcile(with: [
+    try catalog.restore()
+    try catalog.reconcile(with: [
         VercelProject(id: "project-b", name: "Beta"),
         VercelProject(id: "project-a", name: "Alpha"),
     ])
@@ -18,6 +18,80 @@ import VercelAnalyticsCore
     #expect(catalog.projects.map(\.id) == ["project-a", "project-b"])
     #expect(catalog.selectedProjectIDs == ["project-a"])
     #expect(catalog.currentProjectID == "project-a")
+    #expect(accountDataStore.projectSelection == catalog.selection)
+    #expect(accountDataStore.projectSelectionSaveAttempts == [catalog.selection])
+}
+
+@Test func projectCatalogRestoresEmptySelectionWhenPersistenceReadFails() {
+    let accountDataStore = InMemoryAccountDataStore(
+        selectedProjectIDs: ["project-a"],
+        currentProjectID: "project-a"
+    )
+    accountDataStore.failProjectSelectionRead = true
+    var catalog = ProjectCatalog(persistence: accountDataStore)
+
+    #expect(throws: AccountDataStoreError.invalidProjectSelection) {
+        try catalog.restore()
+    }
+
+    #expect(catalog.selection == .empty)
+}
+
+@Test func projectCatalogRollsBackReconciliationWhenPersistenceFails() throws {
+    let accountDataStore = InMemoryAccountDataStore(
+        selectedProjectIDs: ["project-a"],
+        currentProjectID: "project-a"
+    )
+    var catalog = ProjectCatalog(persistence: accountDataStore)
+    try catalog.restore()
+    try catalog.reconcile(with: [
+        VercelProject(id: "project-a", name: "Alpha"),
+        VercelProject(id: "project-b", name: "Beta"),
+    ])
+    let committedProjects = catalog.projects
+    let committedSelection = catalog.selection
+    accountDataStore.failProjectSelectionSave = true
+
+    #expect(throws: AccountDataStoreError.invalidProjectSelection) {
+        try catalog.reconcile(with: [VercelProject(id: "project-b", name: "Beta")])
+    }
+
+    #expect(catalog.projects == committedProjects)
+    #expect(catalog.selection == committedSelection)
+    #expect(accountDataStore.projectSelection == committedSelection)
+    #expect(accountDataStore.projectSelectionSaveAttempts.last == ProjectSelection(
+        selectedProjectIDs: ["project-b"],
+        currentProjectID: "project-b"
+    ))
+}
+
+@Test func projectCatalogPersistsSelectionIntentsAndSkipsNoOps() throws {
+    let accountDataStore = InMemoryAccountDataStore(
+        selectedProjectIDs: ["project-a"],
+        currentProjectID: "project-a"
+    )
+    var catalog = ProjectCatalog(persistence: accountDataStore)
+    try catalog.restore()
+    try catalog.reconcile(with: [
+        VercelProject(id: "project-a", name: "Alpha"),
+        VercelProject(id: "project-b", name: "Beta"),
+    ])
+
+    #expect(try catalog.setProject("project-b", selected: true))
+    #expect(try catalog.selectCurrentProject("project-b"))
+    #expect(catalog.selectedProjectIDs == ["project-a", "project-b"])
+    #expect(catalog.currentProjectID == "project-b")
+    #expect(accountDataStore.projectSelection == catalog.selection)
+
+    let saveCount = accountDataStore.projectSelectionSaveAttempts.count
+    #expect(try !catalog.setProject("missing-project", selected: true))
+    #expect(try !catalog.selectCurrentProject("project-b"))
+    #expect(accountDataStore.projectSelectionSaveAttempts.count == saveCount)
+
+    #expect(try catalog.setProject("project-a", selected: false))
+    let finalSelectionSaveCount = accountDataStore.projectSelectionSaveAttempts.count
+    #expect(try !catalog.setProject("project-b", selected: false))
+    #expect(accountDataStore.projectSelectionSaveAttempts.count == finalSelectionSaveCount)
 }
 
 @MainActor
@@ -45,6 +119,66 @@ import VercelAnalyticsCore
     #expect(accountDataStore.selectedProjectIDs == ["project-a"])
     #expect(accountDataStore.currentProjectID == "project-a")
     #expect(model.projectSelectionError != nil)
+}
+
+@MainActor
+@Test func appModelDoesNotLoadSnapshotWhenCurrentProjectPersistenceFails() async {
+    let accountDataStore = InMemoryAccountDataStore()
+    let betaProvider = ControlledSnapshotProvider()
+    let projects = [
+        VercelProject(id: "project-a", name: "Alpha"),
+        VercelProject(id: "project-b", name: "Beta"),
+    ]
+    let model = AppModel(
+        credentialStore: InMemoryCredentialStore(),
+        accountDataStore: accountDataStore,
+        snapshotCacheStore: InMemorySnapshotCacheStore(),
+        projectProviderFactory: { _ in FixtureProjectListingProvider(projects: projects) },
+        analyticsProviderFactory: { _, project in
+            if project.id == "project-b" {
+                betaProvider
+            } else {
+                FixtureAnalyticsSnapshotProvider()
+            }
+        },
+        tokenValidator: { _ in }
+    )
+
+    await model.connect(token: "valid-token")
+    model.setProjectSelected("project-b", selected: true)
+    accountDataStore.failProjectSelectionSave = true
+    await model.selectProject("project-b")
+
+    #expect(model.currentProjectID == "project-a")
+    #expect(accountDataStore.currentProjectID == "project-a")
+    #expect(await betaProvider.requestedRanges.isEmpty)
+    #expect(model.projectSelectionError != nil)
+}
+
+@MainActor
+@Test func appModelRepairsFailedSelectionRestoreAfterDiscovery() async {
+    let accountDataStore = InMemoryAccountDataStore(
+        selectedProjectIDs: ["project-invalid"],
+        currentProjectID: "project-invalid"
+    )
+    accountDataStore.failProjectSelectionRead = true
+    let project = VercelProject(id: "project-a", name: "Alpha")
+    let model = AppModel(
+        credentialStore: InMemoryCredentialStore(),
+        accountDataStore: accountDataStore,
+        snapshotCacheStore: InMemorySnapshotCacheStore(),
+        projectProviderFactory: { _ in FixtureProjectListingProvider(projects: [project]) },
+        tokenValidator: { _ in }
+    )
+
+    await model.connect(token: "valid-token")
+
+    #expect(model.accountState == .connected)
+    #expect(model.projectState == .loaded([project]))
+    #expect(model.selectedProjectIDs == ["project-a"])
+    #expect(accountDataStore.selectedProjectIDs == ["project-a"])
+    #expect(accountDataStore.currentProjectID == "project-a")
+    #expect(model.projectSelectionError == nil)
 }
 
 @MainActor
