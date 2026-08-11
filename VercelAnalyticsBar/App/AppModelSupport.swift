@@ -1,6 +1,34 @@
 import Foundation
 import VercelAnalyticsCore
 
+enum AnalyticsCountFormatter {
+    static func compact(_ value: Int) -> String {
+        if value < 1_000 {
+            return value.formatted(.number.grouping(.never))
+        }
+        if value < 999_500 {
+            return compact(value, divisor: 1_000, suffix: "K")
+        }
+        if value < 999_500_000 {
+            return compact(value, divisor: 1_000_000, suffix: "M")
+        }
+        return "999M+"
+    }
+
+    private static func compact(_ value: Int, divisor: Int, suffix: String) -> String {
+        let roundingIncrement = value < divisor * 10 ? divisor / 10 : divisor
+        let roundedValue = (value + roundingIncrement / 2) / roundingIncrement * roundingIncrement
+        let whole = roundedValue / divisor
+
+        guard roundedValue < divisor * 10 else {
+            return "\(whole)\(suffix)"
+        }
+
+        let tenth = roundedValue % divisor / (divisor / 10)
+        return tenth == 0 ? "\(whole)\(suffix)" : "\(whole).\(tenth)\(suffix)"
+    }
+}
+
 extension AppModel {
     var currentProject: VercelProject? {
         guard case .loaded = projectState else { return nil }
@@ -14,19 +42,7 @@ extension AppModel {
 
     var abbreviatedVisitors: String? {
         guard case let .loaded(snapshot) = state else { return nil }
-        return Self.abbreviated(snapshot.last24HoursVisitors)
-    }
-
-    private static func abbreviated(_ value: Int) -> String {
-        if value >= 1_000_000 {
-            return "\(value / 1_000_000)M"
-        }
-        if value >= 1000 {
-            let whole = value / 1000
-            let tenth = (value % 1000) / 100
-            return tenth == 0 ? "\(whole)K" : "\(whole).\(tenth)K"
-        }
-        return value.formatted(.number)
+        return AnalyticsCountFormatter.compact(snapshot.last24HoursVisitors)
     }
 }
 

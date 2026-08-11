@@ -330,7 +330,7 @@ import VercelAnalyticsCore
         last24HoursVisitors: 1890,
         refreshedAt: Date(timeIntervalSince1970: 1_785_549_600)
     )))
-    #expect(model.abbreviatedVisitors == "1.8K")
+    #expect(model.abbreviatedVisitors == "1.9K")
 }
 
 @MainActor

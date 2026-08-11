@@ -67,6 +67,7 @@ struct VisitorsChart: View {
             }
         }
         .chartYScale(domain: 0 ... chartMaximum)
+        .padding(.horizontal, 14)
         .frame(height: style.chartHeight)
         .accessibilityLabel("Visitors over time")
     }

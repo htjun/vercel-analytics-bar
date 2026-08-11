@@ -22,6 +22,35 @@ import VercelAnalyticsCore
     #expect(pageViews.trend == .negative)
 }
 
+@Test func analyticsCountFormatterUsesCompactRoundedValues() {
+    let cases = [
+        (0, "0"),
+        (999, "999"),
+        (1_000, "1K"),
+        (1_049, "1K"),
+        (1_050, "1.1K"),
+        (9_949, "9.9K"),
+        (9_950, "10K"),
+        (10_499, "10K"),
+        (10_500, "11K"),
+        (999_499, "999K"),
+        (999_500, "1M"),
+        (1_049_999, "1M"),
+        (1_050_000, "1.1M"),
+        (9_949_999, "9.9M"),
+        (9_950_000, "10M"),
+        (10_499_999, "10M"),
+        (10_500_000, "11M"),
+        (999_499_999, "999M"),
+        (999_500_000, "999M+"),
+        (Int.max, "999M+"),
+    ]
+
+    for (value, expected) in cases {
+        #expect(AnalyticsCountFormatter.compact(value) == expected)
+    }
+}
+
 @Test func analyticsCardLayoutAndFixturesMatchTheFigmaFrame() {
     #expect(AnalyticsCardLayout.rootSize == CGSize(width: 400, height: 562))
     #expect(AnalyticsCardLayout.cardSize == CGSize(width: 384, height: 546))
@@ -29,6 +58,10 @@ import VercelAnalyticsCore
     #expect(AnalyticsCardLayout.outerCornerRadius == 32)
     #expect(AnalyticsCardLayout.cardCornerRadius == 24)
     #expect(AnalyticsCardLayout.chartFrame == CGRect(x: 8, y: 166, width: 368, height: 150))
+    #expect(AnalyticsCardLayout.breakdownRowWidth == 344)
+    #expect(AnalyticsCardLayout.breakdownCountWidth == 40)
+    #expect(AnalyticsCardLayout.breakdownColumnSpacing == 8)
+    #expect(AnalyticsCardLayout.breakdownLabelWidth == 296)
     #expect(AnalyticsCardPresentation.pageFixtures.count == 5)
     #expect(AnalyticsCardPresentation.figmaFixture.topPages.first?.visitors == 710)
     #expect(AnalyticsCardPresentation.figmaFixture.breakdownRows(for: .pages) ==
@@ -103,13 +136,44 @@ import VercelAnalyticsCore
 }
 
 @MainActor
+@Test func analyticsCardLongBreakdownLabelRendersWithMaximumCompactCount() throws {
+    let base = AnalyticsCardPresentation.figmaFixture
+    let presentation = AnalyticsCardPresentation(
+        projectName: base.projectName,
+        selectedRange: base.selectedRange,
+        visitors: base.visitors,
+        pageViews: base.pageViews,
+        series: base.series,
+        topPages: [
+            VercelAnalyticsBreakdown(
+                label: "/blog/creating-consistent-style-images-with-comfyui-and-an-even-longer-url-segment",
+                visitors: 999_500_000,
+                pageViews: 999_500_000
+            ),
+        ],
+        topReferrers: base.topReferrers,
+        updatedText: base.updatedText,
+        dashboardURL: base.dashboardURL
+    )
+
+    try renderAnalyticsCardFixture(
+        presentation: presentation,
+        selection: .pages,
+        outputName: "long-breakdown-current.png",
+        comparesWithReference: false
+    )
+}
+
+@MainActor
 private func renderAnalyticsCardFixture(
+    presentation: AnalyticsCardPresentation = .figmaFixture,
     selection: AnalyticsBreakdownSelection,
-    outputName: String
+    outputName: String,
+    comparesWithReference: Bool = true
 ) throws {
     AppFontRegistry.registerBundledFonts()
     let renderer = ImageRenderer(content: AnalyticsCardView(
-        presentation: .figmaFixture,
+        presentation: presentation,
         chartStyle: .default,
         isProjectSelectorPresented: .constant(false),
         selectedBreakdown: .constant(selection),
@@ -140,7 +204,7 @@ private func renderAnalyticsCardFixture(
     let currentURL = outputDirectory.appendingPathComponent(outputName)
     try writePNG(currentImage, to: currentURL)
 
-    guard selection == .pages else { return }
+    guard comparesWithReference, selection == .pages else { return }
 
     let referenceURL = outputDirectory.appendingPathComponent("figma-reference-2x.png")
     guard let referenceImage = loadImage(at: referenceURL) else {

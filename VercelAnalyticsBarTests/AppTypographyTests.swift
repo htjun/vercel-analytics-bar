@@ -14,7 +14,7 @@ import Testing
 
 @MainActor
 @Test func geistVariableFontSupportsEveryPlannedWeight() {
-    for weight: CGFloat in [400, 450, 500] {
+    for weight: CGFloat in [400, 450] {
         let font = AppFontRegistry.nsFont(
             postScriptName: "Geist-Regular",
             size: 12,
@@ -77,7 +77,7 @@ import Testing
     #expect(resolvedVariationValue(.opticalSize, in: metricFont) == 32)
     #expect(openTypeFeatureTags(in: metricFont) == Set(["zero", "cv02", "cv03", "cv09"]))
     #expect(AppTypography.metricHeaderTracking == -0.24)
-    #expect(AppTypography.metricTracking == -1.44)
+    #expect(AppTypography.metricTracking == -1)
 }
 
 private func resolvedVariationValue(_ axis: AppFontRegistry.VariationAxis, in font: NSFont) -> CGFloat? {

@@ -21,6 +21,10 @@ enum AnalyticsCardLayout {
     static let outerCornerRadius: CGFloat = 32
     static let cardCornerRadius: CGFloat = 24
     static let chartFrame = CGRect(x: 8, y: 166, width: 368, height: 150)
+    static let breakdownRowWidth: CGFloat = 344
+    static let breakdownCountWidth: CGFloat = 40
+    static let breakdownColumnSpacing: CGFloat = 8
+    static let breakdownLabelWidth = breakdownRowWidth - breakdownCountWidth - breakdownColumnSpacing
 
     static let glassRimWidth: CGFloat = 0.5
     static let glassSpecularWidth: CGFloat = 1

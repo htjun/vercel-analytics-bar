@@ -299,28 +299,34 @@ struct AnalyticsCardView<SelectorContent: View>: View {
                 Text(presentation.emptyBreakdownText(for: selectedBreakdown))
                     .font(AppTypography.geistRegular12)
                     .foregroundStyle(AnalyticsCardColors.secondaryText)
-                    .frame(width: 344, height: 16, alignment: .leading)
+                    .frame(width: AnalyticsCardLayout.breakdownRowWidth, height: 16, alignment: .leading)
             } else {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(rows.prefix(5)) { row in
-                        HStack(spacing: 8) {
+                        HStack(spacing: AnalyticsCardLayout.breakdownColumnSpacing) {
                             Text(row.label)
                                 .font(AppTypography.geistRegular12)
                                 .lineLimit(1)
                                 .truncationMode(.tail)
+                                .frame(width: AnalyticsCardLayout.breakdownLabelWidth, alignment: .leading)
 
-                            Spacer(minLength: 0)
-
-                            Text(row.visitors.formatted(.number.grouping(.never)))
+                            Text(AnalyticsCountFormatter.compact(row.visitors))
                                 .font(AppTypography.geistMedium12)
+                                .lineLimit(1)
+                                .frame(width: AnalyticsCardLayout.breakdownCountWidth, alignment: .trailing)
+                                .accessibilityLabel(
+                                    row.visitors.formatted(
+                                        .number.grouping(.automatic).locale(Locale(identifier: "en_US"))
+                                    )
+                                )
                         }
                         .foregroundStyle(AnalyticsCardColors.primaryText)
-                        .frame(width: 344, height: 16)
+                        .frame(width: AnalyticsCardLayout.breakdownRowWidth, height: 16)
                     }
                 }
             }
         }
-        .frame(width: 344, height: 144, alignment: .topLeading)
+        .frame(width: AnalyticsCardLayout.breakdownRowWidth, height: 144, alignment: .topLeading)
     }
 
     private func breakdownTab(
