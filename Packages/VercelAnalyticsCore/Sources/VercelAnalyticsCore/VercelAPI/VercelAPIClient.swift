@@ -162,9 +162,18 @@ public struct VercelAPIClient: Sendable, VercelProjectListingProviding {
     }
 
     public func listAccessibleProjects() async throws -> [VercelProject] {
-        let user = try await request(AuthenticatedUserResponseDTO.self, path: "/v2/user", query: [:]).user
+        let user: AuthenticatedUserDTO?
+        do {
+            user = try await request(AuthenticatedUserResponseDTO.self, path: "/v2/user", query: [:]).user
+        } catch VercelAPIError.resourceNotFound(status: 404) {
+            user = nil
+        }
+
         let teams = try await listTeams()
-        var projects = try await listProjects(scopeSlug: user.username)
+        var projects: [VercelProject] = []
+        if let user {
+            projects = try await listProjects(scopeSlug: user.username)
+        }
 
         for team in teams {
             let teamProjects = try await listProjects(

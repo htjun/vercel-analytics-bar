@@ -116,6 +116,67 @@ import VercelAnalyticsCore
     #expect(queryValue("teamId", in: requests[6]) == "team_second")
 }
 
+@Test func clientContinuesWithTeamProjectsWhenPersonalScopeIsUnavailable() async throws {
+    let transport = FixtureTransport(
+        responses: [
+            "/v2/user": [.response(statusCode: 404)],
+            "/v2/teams": [
+                .response(
+                    statusCode: 200,
+                    body: #"{"teams":[{"id":"team_fixture","name":"Fixture Team","slug":"fixture-team"}],"pagination":{"next":null}}"#
+                ),
+            ],
+            "/v9/projects": [
+                .response(
+                    statusCode: 200,
+                    body: #"{"projects":[{"id":"prj_team_fixture","name":"Team Project"}],"pagination":{"next":null}}"#,
+                    query: ["teamId": "team_fixture"]
+                ),
+            ],
+        ]
+    )
+    let client = VercelAPIClient(token: "fixture-token", transport: transport)
+
+    let projects = try await client.listAccessibleProjects()
+
+    #expect(projects == [
+        VercelProject(
+            id: "prj_team_fixture",
+            name: "Team Project",
+            teamID: "team_fixture",
+            teamName: "Fixture Team",
+            scopeSlug: "fixture-team"
+        ),
+    ])
+    let projectRequests = await transport.requests.filter { $0.url?.path == "/v9/projects" }
+    #expect(projectRequests.count == 1)
+    #expect(projectRequests.allSatisfy { queryValue("teamId", in: $0) == "team_fixture" })
+}
+
+@Test func clientPropagatesPersonalScopeFailuresOtherThanNotFound() async throws {
+    let transport = FixtureTransport(
+        responses: [
+            "/v2/user": [
+                .response(
+                    statusCode: 503,
+                    headers: ["X-Vercel-Id": "fixture-request-id"]
+                ),
+            ],
+        ]
+    )
+    let client = VercelAPIClient(token: "fixture-token", transport: transport)
+
+    do {
+        _ = try await client.listAccessibleProjects()
+        Issue.record("Expected personal-scope discovery failure")
+    } catch let error as VercelAPIError {
+        #expect(error == .transient(status: 503, requestID: "fixture-request-id"))
+    }
+
+    let requests = await transport.requests
+    #expect(requests.count == 1)
+}
+
 @Test(arguments: [
     (VercelAnalyticsRange.last24Hours, "24h"),
     (VercelAnalyticsRange.last7Days, "7d"),
