@@ -76,7 +76,6 @@ import Testing
     #expect(resolvedVariationValue(.weight, in: metricFont) == 300)
     #expect(resolvedVariationValue(.opticalSize, in: metricFont) == 32)
     #expect(openTypeFeatureTags(in: metricFont) == Set(["zero", "cv02", "cv03", "cv09"]))
-    #expect(AppTypography.metricHeaderTracking == -0.24)
     #expect(AppTypography.metricTracking == -1)
 }
 

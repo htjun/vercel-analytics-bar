@@ -116,7 +116,6 @@ enum AppFontRegistry {
 @MainActor
 enum AppTypography {
     static let metricTracking: CGFloat = -1
-    static let metricHeaderTracking: CGFloat = -0.24
     static let geistSlashedZeroFeatures = ["ss09"]
     static let interSlashedZeroFeatures = ["zero"]
     static let metricFeatures = interSlashedZeroFeatures + ["cv03", "cv02", "cv09"]
