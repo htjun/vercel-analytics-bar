@@ -34,7 +34,7 @@ import VercelAnalyticsCore
     #expect(snapshot.range == .last7Days)
     #expect(snapshot.visitors.value == 165)
     #expect(snapshot.pageViews.value == 284)
-    #expect(snapshot.series.count == 1)
+    #expect(snapshot.series.count == 2)
     #expect(snapshot.topPages == [
         VercelAnalyticsBreakdown(label: "/products", visitors: 80, pageViews: 128),
     ])
@@ -61,6 +61,8 @@ private actor StaticAnalyticsTransport: VercelHTTPTransport {
 
     private func responseBody(for request: URLRequest) throws -> String {
         switch request.url?.path {
+        case "/web-analytics/v2/overview":
+            overviewResponseBody(for: queryValue("from", in: request))
         case "/v1/query/web-analytics/visits/count":
             countResponseBody
         case "/v1/query/web-analytics/visits/aggregate":
@@ -83,6 +85,13 @@ private actor StaticAnalyticsTransport: VercelHTTPTransport {
 
     private var countResponseBody: String {
         "{\(responseQuery),\"data\":{\"visitors\":165,\"pageviews\":284}}"
+    }
+
+    private func overviewResponseBody(for from: String?) -> String {
+        if from == "2026-08-01T01:00:00.000Z" {
+            return #"{"devices":24,"total":41}"#
+        }
+        return #"{"devices":165,"total":284}"#
     }
 
     private var pageResponseBody: String {

@@ -53,9 +53,10 @@ struct FixtureResponse: Sendable {
     static func response(
         statusCode: Int,
         headers: [String: String] = [:],
-        body: String = "{}"
+        body: String = "{}",
+        query: [String: String]? = nil
     ) -> FixtureResponse {
-        FixtureResponse(statusCode: statusCode, headers: headers, body: Data(body.utf8), query: nil)
+        FixtureResponse(statusCode: statusCode, headers: headers, body: Data(body.utf8), query: query)
     }
 }
 

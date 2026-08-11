@@ -4,12 +4,43 @@ private let breakdownDisplayLimit = 5
 private let breakdownCandidateLimit = breakdownDisplayLimit * 2
 
 public extension VercelAPIClient {
+    internal func fetchOverview(
+        for project: VercelProject,
+        window: VercelAnalyticsWindow,
+        timeZone: TimeZone
+    ) async throws -> VercelAnalyticsCount {
+        var query = [
+            "environment": "production",
+            "filter": "{}",
+            "from": formatDate(window.since),
+            "projectId": project.name,
+            "to": formatDate(window.until),
+            "tz": timeZone.identifier,
+        ]
+        if let teamID = project.teamID {
+            query["teamId"] = teamID
+        }
+
+        let response = try await request(
+            AnalyticsOverviewResponseDTO.self,
+            path: "/web-analytics/v2/overview",
+            query: query
+        )
+
+        return VercelAnalyticsCount(
+            visitors: response.devices,
+            pageViews: response.total,
+            window: window
+        )
+    }
+
     func fetchCount(
         for project: VercelProject,
         range: VercelAnalyticsRange,
-        now: Date
+        now: Date,
+        timeZone: TimeZone = .current
     ) async throws -> VercelAnalyticsCount {
-        try await fetchCount(for: project, window: range.plan(at: now).currentWindow)
+        try await fetchCount(for: project, window: range.plan(at: now, timeZone: timeZone).currentWindow)
     }
 
     internal func fetchCount(
@@ -32,9 +63,10 @@ public extension VercelAPIClient {
     func fetchSeries(
         for project: VercelProject,
         range: VercelAnalyticsRange,
-        now: Date
+        now: Date,
+        timeZone: TimeZone = .current
     ) async throws -> VercelAnalyticsSeries {
-        let plan = range.plan(at: now)
+        let plan = range.plan(at: now, timeZone: timeZone)
         return try await fetchSeries(for: project, window: plan.currentWindow, bucket: plan.bucket)
     }
 
@@ -68,12 +100,13 @@ public extension VercelAPIClient {
         for project: VercelProject,
         dimension: VercelAnalyticsDimension,
         range: VercelAnalyticsRange,
-        now: Date
+        now: Date,
+        timeZone: TimeZone = .current
     ) async throws -> [VercelAnalyticsBreakdown] {
         try await fetchTopBreakdown(
             for: project,
             dimension: dimension,
-            window: range.plan(at: now).currentWindow
+            window: range.plan(at: now, timeZone: timeZone).currentWindow
         )
     }
 
@@ -161,6 +194,16 @@ private extension VercelAnalyticsInterval {
 
     var aggregateWindow: VercelAnalyticsWindow {
         VercelAnalyticsWindow(since: start, until: endExclusive.addingTimeInterval(-0.001))
+    }
+}
+
+extension VercelAnalyticsInterval {
+    var currentOverviewWindow: VercelAnalyticsWindow {
+        VercelAnalyticsWindow(since: start, until: endExclusive.addingTimeInterval(-0.001))
+    }
+
+    var previousOverviewWindow: VercelAnalyticsWindow {
+        VercelAnalyticsWindow(since: start.addingTimeInterval(0.001), until: endExclusive)
     }
 }
 

@@ -208,7 +208,7 @@ func projectBuildsAnalyticsDashboardURL(range: VercelAnalyticsRange, period: Str
     #expect(queryValue("teamId", in: teamRequest) == "team_fixture")
     #expect(queryValue("filter", in: teamRequest) == "environment eq 'production'")
     #expect(queryValue("since", in: teamRequest) == "2026-07-26T00:00:00.000Z")
-    #expect(queryValue("until", in: teamRequest) == "2026-08-01T23:59:59.999Z")
+    #expect(queryValue("until", in: teamRequest) == "2026-08-02T00:59:59.999Z")
     #expect(queryValue("by", in: teamRequest) == "requestPath")
     #expect(queryValue("limit", in: teamRequest) == "10")
 

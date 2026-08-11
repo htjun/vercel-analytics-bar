@@ -32,8 +32,8 @@ The application connects directly to Vercel, discovers projects across the accou
 - States that the app is independent and not affiliated with Vercel; credentials are sent directly to Vercel and are not operated by a hosted Vercel Analytics Bar service.
 
 The Core client is covered separately by sanitized fixture tests. It supports bearer-authenticated
-personal and team project discovery, pagination, alphabetical sorting, Production Visitors/Page
-Views count, time-series, page-path, and referral-hostname queries, equal-period comparisons, and a
+personal and team project discovery, pagination, alphabetical sorting, dashboard-aligned Production
+Visitors/Page Views totals, time-series, page-path, and referral-hostname queries, comparisons, and a
 live ranged snapshot provider for one project. It also provides safe typed handling for
 authentication, permission, rate-limit, transient, and malformed-response failures. Analytics
 activation is currently represented as `Unknown` in the project list because the documented public
@@ -43,11 +43,11 @@ provide it.
 
 ### Analytics range semantics
 
-All analytics windows are calculated in UTC as explicit half-open intervals: `[start, endExclusive)`. Last 24 Hours starts at the current UTC hour and includes the preceding 23 hourly buckets, so its chart and totals always contain exactly 24 hours. Last 7 Days and Last 30 Days cover the preceding seven or 30 completed UTC days; the current partial day is excluded. Previous-period comparisons use the immediately preceding interval of the same length and never overlap the current period.
+Analytics windows follow the Vercel dashboard in the Mac's current timezone and are represented internally as half-open intervals: `[start, endExclusive)`. Last 24 Hours includes the current local hour and the preceding 23 hourly buckets. Last 7 Days and Last 30 Days start at the same local-hour boundary seven or 30 calendar days earlier and run through the end of the current hour. The immediately preceding comparison uses the same elapsed duration.
 
-The public count endpoint receives `endExclusive`, while aggregate requests receive `endExclusive - 1 ms` because aggregate ranges include both boundaries. The client also discards returned aggregate points outside the logical half-open interval, which prevents Vercel's rounded boundary bucket from changing a card or chart. Last 24 Hours cards, comparisons, and the menu-bar Visitors value are sums of the aligned hourly aggregate. Last 7/30 Days cards use the public count response, while their charts use the same completed-day interval.
+Cards and the menu-bar Visitors value use the same bearer-authenticated `/web-analytics/v2/overview` endpoint as the Vercel dashboard. Current overview requests send `from=start` and `to=endExclusive - 1 ms`; previous requests reproduce the dashboard's `from=previousStart + 1 ms` and `to=currentStart` boundaries. Visitors come from `devices`, Page Views come from `total`, and Core calculates the displayed percentage from the two overview responses.
 
-The app intentionally uses only Vercel's documented public PAT endpoints. Vercel's web dashboard also calls private `/web-analytics/v2` endpoints, but those endpoints are not a stable public contract and are therefore unsupported here. Public API stability takes precedence over exact dashboard parity for the 7-day and 30-day ranges; Last 24 Hours is aligned to the dashboard's 24 hourly buckets.
+Charts and breakdowns continue to use the public aggregate endpoint with the dashboard-aligned range. Vercel's web dashboard is the product source of truth, so exact dashboard card parity takes precedence over relying exclusively on the documented public visits endpoints. The overview endpoint is an internal Vercel contract and must be reverified if Vercel changes it.
 
 ## Requirements
 

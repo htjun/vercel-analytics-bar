@@ -17,7 +17,7 @@ struct SnapshotCacheEntry: Codable, Equatable, Sendable {
 }
 
 struct FileAnalyticsSnapshotCacheStore: AnalyticsSnapshotCacheStore {
-    static let currentSchemaVersion = 1
+    static let currentSchemaVersion = 2
 
     let fileURL: URL
     private let fileManager: FileManager

@@ -53,6 +53,11 @@ struct AnalyticsCountResponseDTO: Decodable {
     let query: AnalyticsQueryDTO
 }
 
+struct AnalyticsOverviewResponseDTO: Decodable {
+    let devices: Int
+    let total: Int
+}
+
 struct AnalyticsSeriesResponseDTO: Decodable {
     let data: [AnalyticsPointDTO]
     let query: AnalyticsQueryDTO

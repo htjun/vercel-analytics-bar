@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "verifiedAt": "2026-08-02",
+  "verifiedAt": "2026-08-11",
   "containsAccountData": false,
-  "privateDashboardEndpointsUsed": false,
+  "privateDashboardEndpointsUsed": true,
   "discovery": {
     "currentUser": "available",
     "personalProjects": "nonempty",
@@ -19,21 +19,23 @@
     "analyticsEnabledProjectField": "unknown",
     "productionIsDefault": true,
     "explicitProductionMatchedDefault": true,
-    "comparisonMode": "query-previous-window"
+    "comparisonMode": "dashboard-overview-previous-window",
+    "overviewEndpoint": "/web-analytics/v2/overview",
+    "overviewPATAuthentication": "verified"
   },
   "ranges": {
     "last24Hours": {
-      "countBoundary": "utc-day",
+      "rangeBoundary": "client-local-hour",
       "aggregateGranularity": "hour",
       "observedAggregateRows": 25
     },
     "last7Days": {
-      "countBoundary": "utc-day",
+      "rangeBoundary": "client-local-hour",
       "aggregateGranularity": "day",
       "observedAggregateRows": 8
     },
     "last30Days": {
-      "countBoundary": "utc-day",
+      "rangeBoundary": "client-local-hour",
       "aggregateGranularity": "day",
       "observedAggregateRows": 31
     }

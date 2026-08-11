@@ -27,14 +27,13 @@ public enum VercelAnalyticsRange: String, CaseIterable, Codable, Equatable, Hash
         }
     }
 
-    func plan(at date: Date) -> VercelAnalyticsRangePlan {
-        let currentWindow = alignedWindow(at: date)
-        let previousWindow = precedingWindow(before: currentWindow.start)
+    func plan(at date: Date, timeZone: TimeZone = .current) -> VercelAnalyticsRangePlan {
+        let currentWindow = alignedWindow(at: date, timeZone: timeZone)
+        let previousWindow = precedingWindow(before: currentWindow)
         return VercelAnalyticsRangePlan(
             currentWindow: currentWindow,
             previousWindow: previousWindow,
-            bucket: bucket,
-            totalsSource: totalsSource
+            bucket: bucket
         )
     }
 
@@ -47,54 +46,32 @@ public enum VercelAnalyticsRange: String, CaseIterable, Codable, Equatable, Hash
         }
     }
 
-    private var totalsSource: VercelAnalyticsTotalsSource {
-        switch self {
+    private func alignedWindow(at date: Date, timeZone: TimeZone) -> VercelAnalyticsInterval {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        let currentHour = calendar.dateInterval(of: .hour, for: date)?.start ?? date
+        let endExclusive = calendar.date(byAdding: .hour, value: 1, to: currentHour)
+            ?? currentHour.addingTimeInterval(60 * 60)
+        let start = switch self {
         case .last24Hours:
-            .aggregate
-        case .last7Days, .last30Days:
-            .count
-        }
-    }
-
-    private var bucketCount: Int {
-        switch self {
-        case .last24Hours:
-            24
+            calendar.date(byAdding: .hour, value: -23, to: currentHour)
+                ?? currentHour.addingTimeInterval(-23 * 60 * 60)
         case .last7Days:
-            7
+            calendar.date(byAdding: .day, value: -7, to: currentHour)
+                ?? currentHour.addingTimeInterval(-7 * 24 * 60 * 60)
         case .last30Days:
-            30
+            calendar.date(byAdding: .day, value: -30, to: currentHour)
+                ?? currentHour.addingTimeInterval(-30 * 24 * 60 * 60)
         }
-    }
-
-    private func alignedWindow(at date: Date) -> VercelAnalyticsInterval {
-        let calendar = Self.utcCalendar
-        switch bucket {
-        case .hour:
-            let currentHour = calendar.dateInterval(of: .hour, for: date)?.start ?? date
-            let start = calendar.date(byAdding: .hour, value: -(bucketCount - 1), to: currentHour)
-                ?? date.addingTimeInterval(-TimeInterval(bucketCount * 60 * 60))
-            let endExclusive = calendar.date(byAdding: .hour, value: 1, to: currentHour) ?? date
-            return VercelAnalyticsInterval(start: start, endExclusive: endExclusive)
-        case .day:
-            let endExclusive = calendar.startOfDay(for: date)
-            let start = calendar.date(byAdding: .day, value: -bucketCount, to: endExclusive)
-                ?? date.addingTimeInterval(-TimeInterval(bucketCount * 24 * 60 * 60))
-            return VercelAnalyticsInterval(start: start, endExclusive: endExclusive)
-        }
-    }
-
-    private func precedingWindow(before endExclusive: Date) -> VercelAnalyticsInterval {
-        let calendar = Self.utcCalendar
-        let start = calendar.date(byAdding: bucket.calendarComponent, value: -bucketCount, to: endExclusive)
-            ?? endExclusive.addingTimeInterval(-TimeInterval(bucketCount) * bucket.duration)
         return VercelAnalyticsInterval(start: start, endExclusive: endExclusive)
     }
 
-    private static var utcCalendar: Calendar {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
-        return calendar
+    private func precedingWindow(before currentWindow: VercelAnalyticsInterval) -> VercelAnalyticsInterval {
+        let duration = currentWindow.endExclusive.timeIntervalSince(currentWindow.start)
+        return VercelAnalyticsInterval(
+            start: currentWindow.start.addingTimeInterval(-duration),
+            endExclusive: currentWindow.start
+        )
     }
 }
 
@@ -102,7 +79,6 @@ struct VercelAnalyticsRangePlan: Equatable, Sendable {
     let currentWindow: VercelAnalyticsInterval
     let previousWindow: VercelAnalyticsInterval
     let bucket: VercelAnalyticsBucket
-    let totalsSource: VercelAnalyticsTotalsSource
 }
 
 struct VercelAnalyticsInterval: Equatable, Sendable {
@@ -113,27 +89,4 @@ struct VercelAnalyticsInterval: Equatable, Sendable {
 enum VercelAnalyticsBucket: Equatable, Sendable {
     case hour
     case day
-
-    var calendarComponent: Calendar.Component {
-        switch self {
-        case .hour:
-            .hour
-        case .day:
-            .day
-        }
-    }
-
-    var duration: TimeInterval {
-        switch self {
-        case .hour:
-            60 * 60
-        case .day:
-            24 * 60 * 60
-        }
-    }
-}
-
-enum VercelAnalyticsTotalsSource: Equatable, Sendable {
-    case aggregate
-    case count
 }
