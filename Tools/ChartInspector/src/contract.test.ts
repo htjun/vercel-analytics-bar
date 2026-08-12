@@ -13,6 +13,13 @@ import {
   NATIVE_STATE_MESSAGE,
   isChartStyle,
 } from "./generated/contract";
+import type { ChartStyle } from "./generated/contract";
+import {
+  CHART_STYLE_INSPECTOR_FIELDS,
+  chartFieldConfig,
+  dialValuesFromStyle,
+  styleFromDialValues,
+} from "./generated/inspector-adapter";
 
 describe("generated Chart Inspector contract", () => {
   it("preserves the canonical protocol identity", () => {
@@ -61,5 +68,67 @@ describe("generated Chart Inspector contract", () => {
       yScaleHeadroom: { minimum: 0, maximum: 1, step: 0.01, integer: false },
     });
     expect(isChartStyle(CHART_STYLE_DEFAULT)).toBe(true);
+  });
+
+  it("generates one DialKit control for every chart field", () => {
+    expect(CHART_STYLE_INSPECTOR_FIELDS).toEqual([
+      { name: "lineColor", path: "line.color", control: "color" },
+      { name: "lineWidth", path: "line.width", control: "range" },
+      { name: "lineCap", path: "line.cap", control: "select" },
+      { name: "lineJoin", path: "line.join", control: "select" },
+      { name: "areaTopOpacity", path: "area.topOpacity", control: "range" },
+      { name: "areaBottomOpacity", path: "area.bottomOpacity", control: "range" },
+      { name: "chartHeight", path: "layout.height", control: "range" },
+      { name: "axisMarkCount", path: "axes.markCount", control: "range" },
+      { name: "yScaleHeadroom", path: "axes.yScaleHeadroom", control: "range" },
+      { name: "showsGridLines", path: "axes.gridLines", control: "boolean" },
+      { name: "showsXAxisLabels", path: "axes.xLabels", control: "boolean" },
+      { name: "showsYAxisLabels", path: "axes.yLabels", control: "boolean" },
+    ]);
+    expect(chartFieldConfig).toEqual({
+      line: {
+        color: { type: "color", default: "#02C06C" },
+        width: [1, 0.5, 12, 0.5],
+        cap: { type: "select", options: ["butt", "round", "square"], default: "round" },
+        join: { type: "select", options: ["miter", "round", "bevel"], default: "round" },
+      },
+      area: {
+        topOpacity: [0.2, 0, 1, 0.01],
+        bottomOpacity: [0, 0, 1, 0.01],
+      },
+      layout: {
+        height: [140, 80, 360, 1],
+      },
+      axes: {
+        markCount: [3, 2, 12, 1],
+        yScaleHeadroom: [0.1, 0, 1, 0.01],
+        gridLines: true,
+        xLabels: true,
+        yLabels: true,
+      },
+    });
+  });
+
+  it("round-trips every chart field through generated DialKit translation", () => {
+    const style: ChartStyle = {
+      lineColor: "#123456",
+      lineWidth: 2.5,
+      lineCap: "square",
+      lineJoin: "bevel",
+      areaTopOpacity: 0.45,
+      areaBottomOpacity: 0.15,
+      chartHeight: 220,
+      axisMarkCount: 7,
+      yScaleHeadroom: 0.25,
+      showsGridLines: false,
+      showsXAxisLabels: false,
+      showsYAxisLabels: false,
+    };
+
+    expect(styleFromDialValues(dialValuesFromStyle(style))).toEqual(style);
+
+    const accentDialValues = dialValuesFromStyle({ ...style, lineColor: "accent" });
+    expect(accentDialValues.line.color).toBe("#007AFF");
+    expect(styleFromDialValues(accentDialValues).lineColor).toBe("#007AFF");
   });
 });
