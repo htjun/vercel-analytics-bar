@@ -26,7 +26,7 @@ extension AppModel {
         }
 
         guard let provider else {
-            state = .empty("Connect a Vercel account in Settings to load analytics.")
+            snapshotRefreshCoordinator.present(.empty("Connect a Vercel account in Settings to load analytics."))
             return
         }
         await refreshSnapshot(using: provider, projectID: nil, trigger: trigger, showLoading: true)
@@ -34,17 +34,18 @@ extension AppModel {
 
     func loadLiveSnapshot(trigger: RefreshTrigger) async {
         guard let analyticsProviderFactory else {
-            state = .empty("Live analytics is not configured.")
+            snapshotRefreshCoordinator.present(.empty("Live analytics is not configured."))
             return
         }
         guard let project = currentProject else {
-            state = .empty("Select a Vercel project in Settings to load analytics.")
+            snapshotRefreshCoordinator.present(.empty("Select a Vercel project in Settings to load analytics."))
             return
         }
 
         do {
             guard let token = try credentialStore.read() else {
-                state = .empty("Connect a Vercel account in Settings to load analytics.")
+                snapshotRefreshCoordinator
+                    .present(.empty("Connect a Vercel account in Settings to load analytics."))
                 return
             }
             await refreshSnapshot(
@@ -54,7 +55,7 @@ extension AppModel {
                 showLoading: false
             )
         } catch {
-            state = .failed("The Vercel account could not be read securely.")
+            snapshotRefreshCoordinator.present(.failed("The Vercel account could not be read securely."))
         }
     }
 
@@ -72,43 +73,7 @@ extension AppModel {
         await snapshotRefreshCoordinator.refresh(
             refreshRequest,
             using: provider,
-            showLoading: showLoading,
-            eventHandler: { [weak self] event in self?.apply(event) }
+            showLoading: showLoading
         )
-    }
-
-    private func apply(_ event: SnapshotRefreshEvent) {
-        switch event {
-        case let .cached(snapshot, freshness):
-            state = .loaded(snapshot)
-            snapshotFreshness = freshness
-            if freshness == .fresh, retryAvailableAt == nil {
-                refreshMessage = nil
-            }
-        case .loading:
-            state = .loading
-            snapshotFreshness = .fresh
-            refreshMessage = nil
-        case let .succeeded(snapshot):
-            state = .loaded(snapshot)
-            snapshotFreshness = .fresh
-            refreshMessage = nil
-            retryAvailableAt = nil
-        case let .blocked(message, retryAvailableAt):
-            refreshMessage = message
-            self.retryAvailableAt = retryAvailableAt
-        case let .retryAvailabilityChanged(retryAvailableAt):
-            self.retryAvailableAt = retryAvailableAt
-        case let .recoverableFailure(snapshot, message, retryAvailableAt):
-            state = .loaded(snapshot)
-            snapshotFreshness = .stale
-            refreshMessage = message
-            self.retryAvailableAt = retryAvailableAt
-        case let .failed(stateMessage, message, retryAvailableAt):
-            state = .failed(stateMessage)
-            snapshotFreshness = .fresh
-            refreshMessage = message
-            self.retryAvailableAt = retryAvailableAt
-        }
     }
 }

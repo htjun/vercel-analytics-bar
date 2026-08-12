@@ -5,13 +5,7 @@ import VercelAnalyticsCore
 @MainActor
 @Observable
 final class AppModel {
-    enum State: Equatable {
-        case idle
-        case loading
-        case loaded(AnalyticsSnapshot)
-        case empty(String)
-        case failed(String)
-    }
+    typealias State = AnalyticsPresentationState
 
     enum AccountState: Equatable {
         case disconnected
@@ -28,16 +22,27 @@ final class AppModel {
         case failed(String)
     }
 
-    var state: State = .idle
+    var state: State {
+        snapshotRefreshCoordinator.state.content
+    }
+
+    var snapshotFreshness: SnapshotFreshness {
+        snapshotRefreshCoordinator.state.freshness
+    }
+
+    var refreshMessage: String? {
+        snapshotRefreshCoordinator.state.message
+    }
+
+    var retryAvailableAt: Date? {
+        snapshotRefreshCoordinator.state.retryAvailableAt
+    }
+
     private(set) var accountState: AccountState = .disconnected
     private(set) var projectState: ProjectState = .idle
     private(set) var projectCatalog: ProjectCatalog
     private(set) var selectedRange: VercelAnalyticsRange
     private(set) var projectSelectionError: String?
-    var snapshotFreshness: SnapshotFreshness = .fresh
-    var refreshMessage: String?
-    var retryAvailableAt: Date?
-
     let provider: (any AnalyticsSnapshotProviding)?
     let credentialStore: any VercelCredentialStore
     let accountDataStore: any VercelAccountDataStore
@@ -179,7 +184,7 @@ extension AppModel {
         do {
             guard try projectCatalog.setProject(projectID, selected: selected) else { return }
             projectSelectionError = nil
-            state = .idle
+            snapshotRefreshCoordinator.present(.idle)
         } catch {
             projectSelectionError = error.localizedDescription
         }
@@ -205,10 +210,10 @@ extension AppModel {
         do {
             try accountDataStore.saveAnalyticsRange(range)
             selectedRange = range
-            state = .idle
+            snapshotRefreshCoordinator.present(.idle)
             await load(trigger: .rangeChanged)
         } catch {
-            state = .failed("The analytics range could not be saved.")
+            snapshotRefreshCoordinator.present(.failed("The analytics range could not be saved."))
         }
     }
 
@@ -246,13 +251,10 @@ extension AppModel {
         snapshotRefreshCoordinator.reset()
         didAttemptRestore = true
         if failure == nil {
-            state = .idle
+            snapshotRefreshCoordinator.present(.idle)
             accountState = .disconnected
             projectState = .idle
             projectCatalog.reset()
-            snapshotFreshness = .fresh
-            refreshMessage = nil
-            retryAvailableAt = nil
             selectedRange = .last7Days
             projectSelectionError = nil
         } else {
@@ -269,7 +271,7 @@ extension AppModel {
             let projects = try await projectProviderFactory(token).listAccessibleProjects()
             try projectCatalog.reconcile(with: projects)
             projectSelectionError = nil
-            state = .idle
+            snapshotRefreshCoordinator.present(.idle)
             projectState = .loaded(projectCatalog.projects)
         } catch {
             projectState = .failed(error.localizedDescription)

@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 import VercelAnalyticsCore
 
 enum RefreshTrigger: Equatable {
@@ -19,30 +20,43 @@ enum SnapshotFreshness: Equatable {
     case stale
 }
 
+enum AnalyticsPresentationState: Equatable {
+    case idle
+    case loading
+    case loaded(AnalyticsSnapshot)
+    case empty(String)
+    case failed(String)
+}
+
 struct SnapshotRefreshRequest {
     let projectID: String?
     let range: VercelAnalyticsRange
     let trigger: RefreshTrigger
 }
 
-struct SnapshotRefreshPreparation: Equatable {
-    let cachedSnapshot: AnalyticsSnapshot?
-    let freshness: SnapshotFreshness
-    let shouldRequestLiveSnapshot: Bool
-}
+struct SnapshotRefreshState: Equatable {
+    static let idle = SnapshotRefreshState(
+        content: .idle,
+        freshness: .fresh,
+        message: nil,
+        retryAvailableAt: nil
+    )
 
-enum SnapshotRefreshEvent: Equatable {
-    case cached(AnalyticsSnapshot, freshness: SnapshotFreshness)
-    case loading
-    case succeeded(AnalyticsSnapshot)
-    case blocked(message: String, retryAvailableAt: Date?)
-    case retryAvailabilityChanged(Date?)
-    case recoverableFailure(AnalyticsSnapshot, message: String, retryAvailableAt: Date?)
-    case failed(stateMessage: String, message: String, retryAvailableAt: Date?)
+    let content: AnalyticsPresentationState
+    let freshness: SnapshotFreshness
+    let message: String?
+    let retryAvailableAt: Date?
 }
 
 @MainActor
+@Observable
 final class SnapshotRefreshCoordinator {
+    private struct RefreshPreparation {
+        let cachedSnapshot: AnalyticsSnapshot?
+        let freshness: SnapshotFreshness
+        let shouldRequestLiveSnapshot: Bool
+    }
+
     private struct RequestKey: Hashable {
         let projectID: String?
         let range: VercelAnalyticsRange
@@ -57,13 +71,13 @@ final class SnapshotRefreshCoordinator {
     private let cacheStore: any AnalyticsSnapshotCacheStore
     private let now: @Sendable () -> Date
     private let sleep: @Sendable (Duration) async throws -> Void
+    private(set) var state = SnapshotRefreshState.idle
     private var cache: [SnapshotCacheKey: AnalyticsSnapshot]
     private var activeRefresh: ActiveRefresh?
     private var periodicRefreshTask: Task<Void, Never>?
     private var manualRetryCount = 0
     private var manualRetryWindowEndsAt: Date?
     private var nextRefreshAllowedAt: Date?
-    private var retryAvailableAt: Date?
 
     init(
         cacheStore: any AnalyticsSnapshotCacheStore,
@@ -78,9 +92,9 @@ final class SnapshotRefreshCoordinator {
         cache = Self.cacheDictionary(from: (try? cacheStore.read()) ?? [])
     }
 
-    func prepare(_ request: SnapshotRefreshRequest) -> SnapshotRefreshPreparation {
+    private func prepare(_ request: SnapshotRefreshRequest) -> RefreshPreparation {
         guard let cachedSnapshot = cachedSnapshot(for: request) else {
-            return SnapshotRefreshPreparation(
+            return RefreshPreparation(
                 cachedSnapshot: nil,
                 freshness: .fresh,
                 shouldRequestLiveSnapshot: true
@@ -88,7 +102,7 @@ final class SnapshotRefreshCoordinator {
         }
 
         let freshness: SnapshotFreshness = isStale(cachedSnapshot) ? .stale : .fresh
-        return SnapshotRefreshPreparation(
+        return RefreshPreparation(
             cachedSnapshot: cachedSnapshot,
             freshness: freshness,
             shouldRequestLiveSnapshot: request.trigger != .popoverOpen || freshness == .stale
@@ -98,8 +112,7 @@ final class SnapshotRefreshCoordinator {
     func refresh(
         _ request: SnapshotRefreshRequest,
         using provider: any AnalyticsSnapshotProviding,
-        showLoading: Bool,
-        eventHandler: @escaping @MainActor (SnapshotRefreshEvent) -> Void
+        showLoading: Bool
     ) async {
         let requestKey = RequestKey(projectID: request.projectID, range: request.range)
         if let activeRefresh, activeRefresh.key != requestKey {
@@ -109,7 +122,7 @@ final class SnapshotRefreshCoordinator {
 
         let preparation = prepare(request)
         if let cachedSnapshot = preparation.cachedSnapshot {
-            eventHandler(.cached(cachedSnapshot, freshness: preparation.freshness))
+            presentCached(cachedSnapshot, freshness: preparation.freshness)
         }
         guard preparation.shouldRequestLiveSnapshot else { return }
 
@@ -118,10 +131,15 @@ final class SnapshotRefreshCoordinator {
             return
         }
 
-        guard authorizeRefresh(trigger: request.trigger, eventHandler: eventHandler) else { return }
+        guard authorizeRefresh(trigger: request.trigger) else { return }
 
         if showLoading || preparation.cachedSnapshot == nil {
-            eventHandler(.loading)
+            state = SnapshotRefreshState(
+                content: .loading,
+                freshness: .fresh,
+                message: nil,
+                retryAvailableAt: nil
+            )
         }
 
         let requestID = UUID()
@@ -130,8 +148,7 @@ final class SnapshotRefreshCoordinator {
             await performRefresh(
                 request,
                 using: provider,
-                requestID: requestID,
-                eventHandler: eventHandler
+                requestID: requestID
             )
         }
         activeRefresh = ActiveRefresh(id: requestID, key: requestKey, task: task)
@@ -145,6 +162,15 @@ final class SnapshotRefreshCoordinator {
     func reset() {
         cancelActiveRefresh()
         resetRetryPolicy()
+    }
+
+    func present(_ content: AnalyticsPresentationState) {
+        state = SnapshotRefreshState(
+            content: content,
+            freshness: .fresh,
+            message: nil,
+            retryAvailableAt: nil
+        )
     }
 
     func startPeriodicRefresh(_ refresh: @escaping @MainActor () async -> Void) {
@@ -182,8 +208,7 @@ final class SnapshotRefreshCoordinator {
     private func performRefresh(
         _ request: SnapshotRefreshRequest,
         using provider: any AnalyticsSnapshotProviding,
-        requestID: UUID,
-        eventHandler: @escaping @MainActor (SnapshotRefreshEvent) -> Void
+        requestID: UUID
     ) async {
         do {
             try Task.checkCancellation()
@@ -196,12 +221,17 @@ final class SnapshotRefreshCoordinator {
                 persistCache()
             }
             resetRetryPolicy()
-            eventHandler(.succeeded(snapshot))
+            state = SnapshotRefreshState(
+                content: .loaded(snapshot),
+                freshness: .fresh,
+                message: nil,
+                retryAvailableAt: nil
+            )
         } catch is CancellationError {
             return
         } catch {
             guard activeRefresh?.id == requestID else { return }
-            handleFailure(error, request: request, eventHandler: eventHandler)
+            handleFailure(error, request: request)
         }
     }
 
@@ -233,13 +263,24 @@ final class SnapshotRefreshCoordinator {
             result[entry.key] = entry.snapshot
         }
     }
+
+    private func presentCached(_ snapshot: AnalyticsSnapshot, freshness: SnapshotFreshness) {
+        let message: String? = if freshness == .fresh, state.retryAvailableAt == nil {
+            nil
+        } else {
+            state.message
+        }
+        state = SnapshotRefreshState(
+            content: .loaded(snapshot),
+            freshness: freshness,
+            message: message,
+            retryAvailableAt: state.retryAvailableAt
+        )
+    }
 }
 
 private extension SnapshotRefreshCoordinator {
-    func authorizeRefresh(
-        trigger: RefreshTrigger,
-        eventHandler: @MainActor (SnapshotRefreshEvent) -> Void
-    ) -> Bool {
+    func authorizeRefresh(trigger: RefreshTrigger) -> Bool {
         let currentDate = now()
         if let manualRetryWindowEndsAt, currentDate >= manualRetryWindowEndsAt {
             manualRetryCount = 0
@@ -247,37 +288,42 @@ private extension SnapshotRefreshCoordinator {
         }
 
         if let nextRefreshAllowedAt, currentDate < nextRefreshAllowedAt {
-            eventHandler(.blocked(
+            state = SnapshotRefreshState(
+                content: state.content,
+                freshness: state.freshness,
                 message: rateLimitMessage(for: nextRefreshAllowedAt),
                 retryAvailableAt: nextRefreshAllowedAt
-            ))
+            )
             return false
         }
 
         if nextRefreshAllowedAt != nil {
             nextRefreshAllowedAt = nil
-            retryAvailableAt = nil
-            eventHandler(.retryAvailabilityChanged(nil))
+            state = SnapshotRefreshState(
+                content: state.content,
+                freshness: state.freshness,
+                message: state.message,
+                retryAvailableAt: nil
+            )
         }
 
         guard trigger == .manual, manualRetryWindowEndsAt != nil else { return true }
         guard manualRetryCount < 3 else {
-            eventHandler(.blocked(
+            state = SnapshotRefreshState(
+                content: state.content,
+                freshness: state.freshness,
                 message: "Retry limit reached. Wait before trying again.",
-                retryAvailableAt: retryAvailableAt
-            ))
+                retryAvailableAt: state.retryAvailableAt
+            )
             return false
         }
         manualRetryCount += 1
         return true
     }
 
-    func handleFailure(
-        _ error: any Error,
-        request: SnapshotRefreshRequest,
-        eventHandler: @MainActor (SnapshotRefreshEvent) -> Void
-    ) {
+    func handleFailure(_ error: any Error, request: SnapshotRefreshRequest) {
         let message: String
+        let retryAvailableAt: Date?
         if case let .rateLimited(metadata) = error as? VercelAPIError {
             let availableAt = rateLimitDate(from: metadata)
             nextRefreshAllowedAt = availableAt
@@ -291,23 +337,26 @@ private extension SnapshotRefreshCoordinator {
             message = rateLimitMessage(for: availableAt)
         } else {
             message = error.localizedDescription
+            retryAvailableAt = state.retryAvailableAt
         }
 
         let fallbackSnapshot = request.projectID.flatMap {
             cachedSnapshot(projectID: $0, range: request.range)
         }
         if isRecoverable(error), let fallbackSnapshot {
-            eventHandler(.recoverableFailure(
-                fallbackSnapshot,
+            state = SnapshotRefreshState(
+                content: .loaded(fallbackSnapshot),
+                freshness: .stale,
                 message: message,
                 retryAvailableAt: retryAvailableAt
-            ))
+            )
         } else {
-            eventHandler(.failed(
-                stateMessage: error.localizedDescription,
+            state = SnapshotRefreshState(
+                content: .failed(error.localizedDescription),
+                freshness: .fresh,
                 message: message,
                 retryAvailableAt: retryAvailableAt
-            ))
+            )
         }
     }
 
@@ -333,7 +382,6 @@ private extension SnapshotRefreshCoordinator {
     }
 
     func resetRetryPolicy() {
-        retryAvailableAt = nil
         nextRefreshAllowedAt = nil
         manualRetryCount = 0
         manualRetryWindowEndsAt = nil
