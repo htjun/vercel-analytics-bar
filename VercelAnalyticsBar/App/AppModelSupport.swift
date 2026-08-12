@@ -3,11 +3,11 @@ import VercelAnalyticsCore
 
 enum AnalyticsCountFormatter {
     static func compact(_ value: Int) -> String {
-        if value < 1_000 {
+        if value < 1000 {
             return value.formatted(.number.grouping(.never))
         }
         if value < 999_500 {
-            return compact(value, divisor: 1_000, suffix: "K")
+            return compact(value, divisor: 1000, suffix: "K")
         }
         if value < 999_500_000 {
             return compact(value, divisor: 1_000_000, suffix: "M")

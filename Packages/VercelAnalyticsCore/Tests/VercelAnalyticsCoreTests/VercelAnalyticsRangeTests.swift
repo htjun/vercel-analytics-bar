@@ -116,12 +116,11 @@ func snapshotProviderMapsAnalyticsRanges(expectation: AnalyticsRangeExpectation)
             ],
         ]
     )
-    let project = VercelProject(id: "prj_fixture", name: "Fixture")
     let now = try date(expectation.now)
     let utc = try #require(TimeZone(secondsFromGMT: 0))
     let provider = VercelAnalyticsSnapshotProvider(
         token: "fixture-token",
-        project: project,
+        project: VercelProject(id: "prj_fixture", name: "Fixture"),
         now: { now },
         timeZone: { utc },
         transport: transport
@@ -174,12 +173,11 @@ func snapshotProviderFiltersRoundedAggregateRowsToLogicalBucketCount(
             ],
         ]
     )
-    let project = VercelProject(id: "prj_fixture", name: "Fixture")
     let now = try date("2026-08-02T00:17:30.000Z")
     let utc = try #require(TimeZone(secondsFromGMT: 0))
     let provider = VercelAnalyticsSnapshotProvider(
         token: "fixture-token",
-        project: project,
+        project: VercelProject(id: "prj_fixture", name: "Fixture"),
         now: { now },
         timeZone: { utc },
         transport: transport
