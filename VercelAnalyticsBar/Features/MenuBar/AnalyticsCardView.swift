@@ -64,19 +64,19 @@ struct AnalyticsCardPresentation: Equatable {
 
     static let pageFixtures = [
         VercelAnalyticsBreakdown(
-            label: "/reading/the-almanack-of-naval-ravikant",
+            label: "/docs/getting-started",
             visitors: 710,
             pageViews: 872
         ),
-        VercelAnalyticsBreakdown(label: "/reading/tiny-experiments", visitors: 175, pageViews: 202),
+        VercelAnalyticsBreakdown(label: "/products/analytics", visitors: 175, pageViews: 202),
         VercelAnalyticsBreakdown(
-            label: "/blog/creating-consistent-style-images-with-comfyui",
+            label: "/blog/example-release",
             visitors: 52,
             pageViews: 60
         ),
-        VercelAnalyticsBreakdown(label: "/reading/build", visitors: 24, pageViews: 29),
+        VercelAnalyticsBreakdown(label: "/pricing", visitors: 24, pageViews: 29),
         VercelAnalyticsBreakdown(
-            label: "/blog/two-dials-of-ai-assisted-coding",
+            label: "/about",
             visitors: 25,
             pageViews: 28
         ),
@@ -88,8 +88,8 @@ struct AnalyticsCardPresentation: Equatable {
         VercelAnalyticsBreakdown(label: "github.com", visitors: 160, pageViews: 195),
     ]
 
-    static let figmaFixture = AnalyticsCardPresentation(
-        projectName: "jasonjun-dev-2024",
+    static let sampleFixture = AnalyticsCardPresentation(
+        projectName: "example-site",
         selectedRange: .last30Days,
         visitors: AnalyticsCardMetric(label: "Visitors", value: 3234, comparisonText: "+177%", trend: .positive),
         pageViews: AnalyticsCardMetric(label: "Page Views", value: 6423, comparisonText: "-2%", trend: .negative),

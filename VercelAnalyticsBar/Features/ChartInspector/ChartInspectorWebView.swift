@@ -22,6 +22,7 @@
 
             let configuration = WKWebViewConfiguration()
             configuration.userContentController = userContentController
+            configuration.websiteDataStore = .nonPersistent()
 
             let webView = WKWebView(frame: .zero, configuration: configuration)
             webView.navigationDelegate = context.coordinator

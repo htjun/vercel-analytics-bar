@@ -1,6 +1,38 @@
 import Foundation
 import Testing
-import VercelAnalyticsCore
+@testable import VercelAnalyticsCore
+
+@Test func secureTransportUsesEphemeralCacheFreeCookieFreeConfiguration() {
+    let configuration = URLSessionVercelHTTPTransport.secureConfiguration()
+
+    #expect(configuration.identifier == nil)
+    #expect(configuration.requestCachePolicy == .reloadIgnoringLocalCacheData)
+    #expect(configuration.urlCache == nil)
+    #expect(configuration.httpCookieStorage == nil)
+    #expect(!configuration.httpShouldSetCookies)
+    #expect(configuration.timeoutIntervalForRequest == 30)
+    #expect(configuration.timeoutIntervalForResource == 60)
+}
+
+@Test func secureTransportRejectsRedirects() throws {
+    let delegate = RedirectRejectingURLSessionDelegate()
+    let session = URLSession(configuration: .ephemeral)
+    let sourceURL = try #require(URL(string: "https://api.vercel.com/v2/teams"))
+    let targetURL = try #require(URL(string: "https://example.com/redirect"))
+    let response = try #require(HTTPURLResponse(url: sourceURL, statusCode: 302, httpVersion: nil, headerFields: nil))
+    let task = session.dataTask(with: sourceURL)
+    var redirectedRequest: URLRequest? = URLRequest(url: targetURL)
+
+    delegate.urlSession(
+        session,
+        task: task,
+        willPerformHTTPRedirection: response,
+        newRequest: URLRequest(url: targetURL)
+    ) { redirectedRequest = $0 }
+
+    #expect(redirectedRequest == nil)
+    session.invalidateAndCancel()
+}
 
 @Test(arguments: [
     (VercelAnalyticsRange.last24Hours, "24h"),
@@ -124,5 +156,33 @@ func projectBuildsAnalyticsDashboardURL(range: VercelAnalyticsRange, period: Str
     } catch let error as VercelAPIError {
         #expect(error == .malformedResponse(endpoint: "/v2/teams"))
         #expect(String(describing: error).contains("malformed-secret-response") == false)
+    }
+}
+
+@Test func clientRejectsPaginationBeyondOneHundredPages() async throws {
+    var teamResponses: [FixtureResponse] = []
+    for pageIndex in 0 ..< 100 {
+        let cursor = "cursor-\(pageIndex)"
+        let query = pageIndex == 0 ? nil : ["until": "cursor-\(pageIndex - 1)"]
+        teamResponses.append(
+            .response(
+                statusCode: 200,
+                body: #"{"teams":[],"pagination":{"next":"\#(cursor)"}}"#,
+                query: query
+            )
+        )
+    }
+    let transport = try FixtureTransport(
+        responses: [
+            "/v2/user": [.fixture(named: "authenticated-user")],
+            "/v2/teams": teamResponses,
+        ]
+    )
+
+    do {
+        _ = try await VercelAPIClient(token: "fixture-token", transport: transport).listAccessibleProjects()
+        Issue.record("Expected the pagination limit to reject the response")
+    } catch let error as VercelAPIError {
+        #expect(error == .malformedResponse(endpoint: "/v2/teams"))
     }
 }

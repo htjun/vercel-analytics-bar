@@ -7,6 +7,9 @@ VIOLATIONS=0
 
 check_file() {
     local file_path=$1
+    if [[ ! -f "$file_path" ]]; then
+        return 0
+    fi
 
     case "$file_path" in
         *.swift | *.md | *.sh | *.yml | *.yaml | *.xcconfig | *.plist | *.pbxproj | *.xcscheme | *.json)

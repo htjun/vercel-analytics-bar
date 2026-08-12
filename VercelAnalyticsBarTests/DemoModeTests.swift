@@ -86,6 +86,9 @@ struct DemoModeTests {
     }
 
     @Test func committedScenariosExerciseThePlannedEdges() throws {
+        let ideal = try DemoFixtureLoader.load(
+            from: Self.fixtureRoot.appendingPathComponent("ideal.json")
+        )
         let longValues = try DemoFixtureLoader.load(
             from: Self.fixtureRoot.appendingPathComponent("long-values.json")
         )
@@ -93,6 +96,8 @@ struct DemoModeTests {
             from: Self.fixtureRoot.appendingPathComponent("empty-breakdowns.json")
         )
 
+        #expect(ideal.projectName == "example-site")
+        #expect(ideal.topPages.first?.label == "/docs/getting-started")
         #expect(longValues.visitors.value > 1_000_000_000_000)
         #expect(longValues.projectName.count > 40)
         #expect(emptyBreakdowns.topPages.isEmpty)

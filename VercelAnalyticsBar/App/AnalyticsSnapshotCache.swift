@@ -42,6 +42,7 @@ struct FileAnalyticsSnapshotCacheStore: AnalyticsSnapshotCacheStore {
         }
 
         do {
+            try secureExistingCachePermissions()
             let data = try Data(contentsOf: fileURL)
             let cache = try JSONDecoder().decode(CacheFile.self, from: data)
             guard cache.version == Self.currentSchemaVersion else {
@@ -61,7 +62,9 @@ struct FileAnalyticsSnapshotCacheStore: AnalyticsSnapshotCacheStore {
         let data = try JSONEncoder().encode(cache)
         let directoryURL = fileURL.deletingLastPathComponent()
         try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+        try fileManager.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directoryURL.path)
         try data.write(to: fileURL, options: .atomic)
+        try fileManager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: fileURL.path)
     }
 
     func clear() throws {
@@ -82,6 +85,12 @@ struct FileAnalyticsSnapshotCacheStore: AnalyticsSnapshotCacheStore {
                 throw CacheFileError.invalidEntry
             }
         }
+    }
+
+    private func secureExistingCachePermissions() throws {
+        let directoryURL = fileURL.deletingLastPathComponent()
+        try fileManager.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directoryURL.path)
+        try fileManager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: fileURL.path)
     }
 }
 

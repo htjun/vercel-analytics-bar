@@ -27,8 +27,35 @@ mint run "$SWIFTFORMAT_PACKAGE" swiftformat --lint .
 mint run "$SWIFTLINT_PACKAGE" swiftlint lint --strict --config .swiftlint.yml
 
 npm --prefix "$INSPECTOR_ROOT" test
+INSPECTOR_BUNDLE="$REPOSITORY_ROOT/VercelAnalyticsBar/Resources/ChartInspector"
+INSPECTOR_HASH_BEFORE=$(find "$INSPECTOR_BUNDLE" -type f -exec shasum -a 256 {} + | LC_ALL=C sort)
 npm --prefix "$INSPECTOR_ROOT" run build
-git diff --exit-code HEAD -- VercelAnalyticsBar/Resources/ChartInspector
+INSPECTOR_HASH_AFTER=$(find "$INSPECTOR_BUNDLE" -type f -exec shasum -a 256 {} + | LC_ALL=C sort)
+if [[ "$INSPECTOR_HASH_BEFORE" != "$INSPECTOR_HASH_AFTER" ]]; then
+    echo "The bundled Chart Inspector is stale. Run 'make inspector-build'." >&2
+    exit 1
+fi
+
+if ! grep -Fq "default-src 'none'" "$INSPECTOR_BUNDLE/index.html"; then
+    echo "The bundled Chart Inspector is missing its Content Security Policy." >&2
+    exit 1
+fi
+if ! find "$INSPECTOR_BUNDLE/assets" -type f -exec /usr/bin/ruby -e '
+    allowed = [
+        "http://www.w3.org/1998/Math/MathML",
+        "http://www.w3.org/1999/xlink",
+        "http://www.w3.org/2000/svg",
+        "http://www.w3.org/XML/1998/namespace",
+    ]
+    ARGV.each do |path|
+        content = File.binread(path)
+        allowed.each { |identifier| content = content.gsub(identifier, "") }
+        abort("Remote URL in #{path}") if content.match?(%r{https?://})
+    end
+' {} +; then
+    echo "The bundled Chart Inspector contains a remote URL." >&2
+    exit 1
+fi
 
 swift test --package-path Packages/VercelAnalyticsCore
 
@@ -48,6 +75,16 @@ if [[ ! -f "$DEBUG_APP_PATH/Contents/Resources/ChartInspector/index.html" ]]; th
 fi
 
 for configuration in Release-Direct Release-AppStore; do
+    if ! xcodebuild \
+        -project VercelAnalyticsBar.xcodeproj \
+        -scheme VercelAnalyticsBar \
+        -configuration "$configuration" \
+        -showBuildSettings \
+        | grep -Eq '^[[:space:]]*ENABLE_HARDENED_RUNTIME = YES$'; then
+        echo "$configuration does not enable Hardened Runtime." >&2
+        exit 1
+    fi
+
     xcodebuild \
         -project VercelAnalyticsBar.xcodeproj \
         -scheme VercelAnalyticsBar \

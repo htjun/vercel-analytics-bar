@@ -6,7 +6,7 @@ import Testing
 @testable import VercelAnalyticsBar
 import VercelAnalyticsCore
 
-@Test func analyticsCardMetricMatchesFigmaFormatting() {
+@Test func analyticsCardMetricMatchesDisplayFormatting() {
     let visitors = AnalyticsCardMetric(
         metric: AnalyticsMetric(label: "Visitors", value: 3234, previousValue: 1167)
     )
@@ -51,7 +51,7 @@ import VercelAnalyticsCore
     }
 }
 
-@Test func analyticsCardLayoutAndFixturesMatchTheFigmaFrame() {
+@Test func analyticsCardLayoutAndFixturesMatchTheReferenceFrame() {
     #expect(AnalyticsCardLayout.rootSize == CGSize(width: 400, height: 562))
     #expect(AnalyticsCardLayout.cardSize == CGSize(width: 384, height: 546))
     #expect(AnalyticsCardLayout.shellInset == 8)
@@ -62,14 +62,15 @@ import VercelAnalyticsCore
     #expect(AnalyticsCardLayout.breakdownCountWidth == 40)
     #expect(AnalyticsCardLayout.breakdownColumnSpacing == 8)
     #expect(AnalyticsCardLayout.breakdownLabelWidth == 296)
+    #expect(AnalyticsCardPresentation.sampleFixture.projectName == "example-site")
     #expect(AnalyticsCardPresentation.pageFixtures.count == 5)
-    #expect(AnalyticsCardPresentation.figmaFixture.topPages.first?.visitors == 710)
-    #expect(AnalyticsCardPresentation.figmaFixture.breakdownRows(for: .pages) ==
+    #expect(AnalyticsCardPresentation.sampleFixture.topPages.first?.visitors == 710)
+    #expect(AnalyticsCardPresentation.sampleFixture.breakdownRows(for: .pages) ==
         AnalyticsCardPresentation.pageFixtures)
-    #expect(AnalyticsCardPresentation.figmaFixture.breakdownRows(for: .referrals) ==
+    #expect(AnalyticsCardPresentation.sampleFixture.breakdownRows(for: .referrals) ==
         AnalyticsCardPresentation.referralFixtures)
-    #expect(AnalyticsCardPresentation.figmaFixture.emptyBreakdownText(for: .pages) == "No page data")
-    #expect(AnalyticsCardPresentation.figmaFixture.emptyBreakdownText(for: .referrals) == "No referral data")
+    #expect(AnalyticsCardPresentation.sampleFixture.emptyBreakdownText(for: .pages) == "No page data")
+    #expect(AnalyticsCardPresentation.sampleFixture.emptyBreakdownText(for: .referrals) == "No referral data")
 }
 
 @Test func analyticsGlassAppearanceHonorsReducedTransparency() {
@@ -137,7 +138,7 @@ import VercelAnalyticsCore
 
 @MainActor
 @Test func analyticsCardLongBreakdownLabelRendersWithMaximumCompactCount() throws {
-    let base = AnalyticsCardPresentation.figmaFixture
+    let base = AnalyticsCardPresentation.sampleFixture
     let presentation = AnalyticsCardPresentation(
         projectName: base.projectName,
         selectedRange: base.selectedRange,
@@ -146,7 +147,7 @@ import VercelAnalyticsCore
         series: base.series,
         topPages: [
             VercelAnalyticsBreakdown(
-                label: "/blog/creating-consistent-style-images-with-comfyui-and-an-even-longer-url-segment",
+                label: "/blog/example-release-with-an-intentionally-long-url-segment-for-layout-testing",
                 visitors: 999_500_000,
                 pageViews: 999_500_000
             ),
@@ -166,7 +167,7 @@ import VercelAnalyticsCore
 
 @MainActor
 private func renderAnalyticsCardFixture(
-    presentation: AnalyticsCardPresentation = .figmaFixture,
+    presentation: AnalyticsCardPresentation = .sampleFixture,
     selection: AnalyticsBreakdownSelection,
     outputName: String,
     comparesWithReference: Bool = true
@@ -206,7 +207,7 @@ private func renderAnalyticsCardFixture(
 
     guard comparesWithReference, selection == .pages else { return }
 
-    let referenceURL = outputDirectory.appendingPathComponent("figma-reference-2x.png")
+    let referenceURL = outputDirectory.appendingPathComponent("reference-2x.png")
     guard let referenceImage = loadImage(at: referenceURL) else {
         print("Visual reference not found at \(referenceURL.path); rendered current fixture only.")
         return

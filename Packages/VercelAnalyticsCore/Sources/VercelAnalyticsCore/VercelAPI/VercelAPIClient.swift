@@ -11,12 +11,43 @@ public protocol VercelProjectListingProviding: Sendable {
 public struct URLSessionVercelHTTPTransport: VercelHTTPTransport {
     private let session: URLSession
 
-    public init(session: URLSession = .shared) {
+    public init() {
+        session = URLSession(
+            configuration: Self.secureConfiguration(),
+            delegate: RedirectRejectingURLSessionDelegate(),
+            delegateQueue: nil
+        )
+    }
+
+    public init(session: URLSession) {
         self.session = session
     }
 
     public func data(for request: URLRequest) async throws -> (Data, URLResponse) {
         try await session.data(for: request)
+    }
+
+    static func secureConfiguration() -> URLSessionConfiguration {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        configuration.urlCache = nil
+        configuration.httpCookieStorage = nil
+        configuration.httpShouldSetCookies = false
+        configuration.timeoutIntervalForRequest = 30
+        configuration.timeoutIntervalForResource = 60
+        return configuration
+    }
+}
+
+final class RedirectRejectingURLSessionDelegate: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+    func urlSession(
+        _: URLSession,
+        task _: URLSessionTask,
+        willPerformHTTPRedirection _: HTTPURLResponse,
+        newRequest _: URLRequest,
+        completionHandler: @escaping (URLRequest?) -> Void
+    ) {
+        completionHandler(nil)
     }
 }
 
@@ -175,12 +206,18 @@ public struct VercelAPIClient: Sendable, VercelProjectListingProviding {
         query baseQuery: [String: String],
         page: (Response) -> (items: [Item], next: String?)
     ) async throws -> [Item] {
+        let maximumPageCount = 100
         var items: [Item] = []
         var query = baseQuery
         query["limit"] = "100"
         var seenCursors = Set<String>()
+        var pageCount = 0
 
         while true {
+            guard pageCount < maximumPageCount else {
+                throw VercelAPIError.malformedResponse(endpoint: path)
+            }
+            pageCount += 1
             let response = try await request(responseType, path: path, query: query)
             let result = page(response)
             items.append(contentsOf: result.items)

@@ -31,34 +31,27 @@ struct KeychainVercelCredentialStore: VercelCredentialStore {
 
     let service: String
     let account: String
+    private let keychain: any KeychainAccessing
 
-    init(service: String = Self.defaultService, account: String = Self.defaultAccount) {
+    init(
+        service: String = Self.defaultService,
+        account: String = Self.defaultAccount,
+        keychain: any KeychainAccessing = SystemKeychain()
+    ) {
         self.service = service
         self.account = account
+        self.keychain = keychain
     }
 
     func read() throws -> String? {
-        var query = itemQuery
-        query[kSecReturnData as String] = true
-        query[kSecMatchLimit as String] = kSecMatchLimitOne
-
-        var result: CFTypeRef?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-
-        switch status {
-        case errSecItemNotFound:
-            return nil
-        case errSecSuccess:
-            guard let data = result as? Data,
-                  let token = String(data: data, encoding: .utf8),
-                  !token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            else {
-                throw CredentialStoreError.invalidStoredValue
-            }
+        if let token = try read(query: protectedItemQuery) {
+            try deleteLegacyItem()
             return token
-        default:
-            throw CredentialStoreError.keychainStatus(status)
         }
+
+        guard let legacyToken = try read(query: legacyItemQuery) else { return nil }
+        try save(legacyToken)
+        return legacyToken
     }
 
     func save(_ token: String) throws {
@@ -71,38 +64,104 @@ struct KeychainVercelCredentialStore: VercelCredentialStore {
             throw CredentialStoreError.invalidToken
         }
 
-        let update = [kSecValueData as String: data]
-        let updateStatus = SecItemUpdate(itemQuery as CFDictionary, update as CFDictionary)
+        let update: [String: Any] = [
+            kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+        ]
+        let updateStatus = keychain.update(protectedItemQuery, attributes: update)
 
         switch updateStatus {
         case errSecSuccess:
-            return
+            try deleteLegacyItem()
         case errSecItemNotFound:
-            var addQuery = itemQuery
+            var addQuery = protectedItemQuery
             addQuery[kSecValueData as String] = data
-            addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-            let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
+            addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+            let addStatus = keychain.add(addQuery)
             guard addStatus == errSecSuccess else {
                 throw CredentialStoreError.keychainStatus(addStatus)
             }
+            try deleteLegacyItem()
         default:
             throw CredentialStoreError.keychainStatus(updateStatus)
         }
     }
 
     func delete() throws {
-        let status = SecItemDelete(itemQuery as CFDictionary)
-        guard status == errSecSuccess || status == errSecItemNotFound else {
-            throw CredentialStoreError.keychainStatus(status)
+        let statuses = [protectedItemQuery, legacyItemQuery].map(keychain.delete)
+        if let failure = statuses.first(where: { $0 != errSecSuccess && $0 != errSecItemNotFound }) {
+            throw CredentialStoreError.keychainStatus(failure)
         }
     }
 
-    private var itemQuery: [String: Any] {
+    var protectedItemQuery: [String: Any] {
+        var query = legacyItemQuery
+        query[kSecUseDataProtectionKeychain as String] = true
+        return query
+    }
+
+    var legacyItemQuery: [String: Any] {
         [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
         ]
+    }
+
+    private func read(query: [String: Any]) throws -> String? {
+        var query = query
+        query[kSecReturnData as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
+        let (status, data) = keychain.copyMatching(query)
+
+        switch status {
+        case errSecItemNotFound:
+            return nil
+        case errSecSuccess:
+            guard let data,
+                  let token = String(data: data, encoding: .utf8),
+                  !token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            else {
+                throw CredentialStoreError.invalidStoredValue
+            }
+            return token
+        default:
+            throw CredentialStoreError.keychainStatus(status)
+        }
+    }
+
+    private func deleteLegacyItem() throws {
+        let status = keychain.delete(legacyItemQuery)
+        guard status == errSecSuccess || status == errSecItemNotFound else {
+            throw CredentialStoreError.keychainStatus(status)
+        }
+    }
+}
+
+protocol KeychainAccessing {
+    func copyMatching(_ query: [String: Any]) -> (OSStatus, Data?)
+    func update(_ query: [String: Any], attributes: [String: Any]) -> OSStatus
+    func add(_ attributes: [String: Any]) -> OSStatus
+    func delete(_ query: [String: Any]) -> OSStatus
+}
+
+struct SystemKeychain: KeychainAccessing {
+    func copyMatching(_ query: [String: Any]) -> (OSStatus, Data?) {
+        var result: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        return (status, result as? Data)
+    }
+
+    func update(_ query: [String: Any], attributes: [String: Any]) -> OSStatus {
+        SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
+    }
+
+    func add(_ attributes: [String: Any]) -> OSStatus {
+        SecItemAdd(attributes as CFDictionary, nil)
+    }
+
+    func delete(_ query: [String: Any]) -> OSStatus {
+        SecItemDelete(query as CFDictionary)
     }
 }
 

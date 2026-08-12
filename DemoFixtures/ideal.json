@@ -1,5 +1,5 @@
 {
-  "projectName": "jasonjun-dev-2024",
+  "projectName": "example-site",
   "range": "last30Days",
   "visitors": {
     "label": "Visitors",
@@ -26,11 +26,11 @@
     { "timestamp": "2026-08-11T00:00:00Z", "visitors": 354, "pageViews": 688 }
   ],
   "topPages": [
-    { "label": "/reading/the-almanack-of-naval-ravikant", "visitors": 710, "pageViews": 872 },
-    { "label": "/reading/tiny-experiments", "visitors": 175, "pageViews": 202 },
-    { "label": "/blog/creating-consistent-style-images-with-comfyui", "visitors": 52, "pageViews": 60 },
-    { "label": "/reading/build", "visitors": 24, "pageViews": 29 },
-    { "label": "/blog/two-dials-of-ai-assisted-coding", "visitors": 25, "pageViews": 28 }
+    { "label": "/docs/getting-started", "visitors": 710, "pageViews": 872 },
+    { "label": "/products/analytics", "visitors": 175, "pageViews": 202 },
+    { "label": "/blog/example-release", "visitors": 52, "pageViews": 60 },
+    { "label": "/pricing", "visitors": 24, "pageViews": 29 },
+    { "label": "/about", "visitors": 25, "pageViews": 28 }
   ],
   "topReferrers": [
     { "label": "google.com", "visitors": 510, "pageViews": 640 },
