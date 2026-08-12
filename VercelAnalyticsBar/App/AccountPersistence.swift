@@ -23,6 +23,21 @@ enum CredentialStoreError: Error, Equatable, LocalizedError {
             "The Vercel credential could not be saved securely."
         }
     }
+
+    var diagnosticDescription: String {
+        switch self {
+        case .invalidToken:
+            "Credential storage rejected an empty token."
+        case .invalidStoredValue:
+            "Credential storage returned an empty or non-UTF-8 value."
+        case let .keychainStatus(status):
+            "Keychain operation failed with OSStatus \(status): \(Self.message(for: status))"
+        }
+    }
+
+    private static func message(for status: OSStatus) -> String {
+        SecCopyErrorMessageString(status, nil) as String? ?? "Unknown Keychain error"
+    }
 }
 
 struct KeychainVercelCredentialStore: VercelCredentialStore {
@@ -44,14 +59,7 @@ struct KeychainVercelCredentialStore: VercelCredentialStore {
     }
 
     func read() throws -> String? {
-        if let token = try read(query: protectedItemQuery) {
-            try deleteLegacyItem()
-            return token
-        }
-
-        guard let legacyToken = try read(query: legacyItemQuery) else { return nil }
-        try save(legacyToken)
-        return legacyToken
+        try read(query: protectedItemQuery)
     }
 
     func save(_ token: String) throws {
@@ -72,7 +80,7 @@ struct KeychainVercelCredentialStore: VercelCredentialStore {
 
         switch updateStatus {
         case errSecSuccess:
-            try deleteLegacyItem()
+            return
         case errSecItemNotFound:
             var addQuery = protectedItemQuery
             addQuery[kSecValueData as String] = data
@@ -81,30 +89,24 @@ struct KeychainVercelCredentialStore: VercelCredentialStore {
             guard addStatus == errSecSuccess else {
                 throw CredentialStoreError.keychainStatus(addStatus)
             }
-            try deleteLegacyItem()
         default:
             throw CredentialStoreError.keychainStatus(updateStatus)
         }
     }
 
     func delete() throws {
-        let statuses = [protectedItemQuery, legacyItemQuery].map(keychain.delete)
-        if let failure = statuses.first(where: { $0 != errSecSuccess && $0 != errSecItemNotFound }) {
-            throw CredentialStoreError.keychainStatus(failure)
+        let status = keychain.delete(protectedItemQuery)
+        if status != errSecSuccess, status != errSecItemNotFound {
+            throw CredentialStoreError.keychainStatus(status)
         }
     }
 
     var protectedItemQuery: [String: Any] {
-        var query = legacyItemQuery
-        query[kSecUseDataProtectionKeychain as String] = true
-        return query
-    }
-
-    var legacyItemQuery: [String: Any] {
         [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
+            kSecUseDataProtectionKeychain as String: true,
         ]
     }
 
@@ -126,13 +128,6 @@ struct KeychainVercelCredentialStore: VercelCredentialStore {
             }
             return token
         default:
-            throw CredentialStoreError.keychainStatus(status)
-        }
-    }
-
-    private func deleteLegacyItem() throws {
-        let status = keychain.delete(legacyItemQuery)
-        guard status == errSecSuccess || status == errSecItemNotFound else {
             throw CredentialStoreError.keychainStatus(status)
         }
     }

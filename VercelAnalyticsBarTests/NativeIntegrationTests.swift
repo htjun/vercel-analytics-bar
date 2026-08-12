@@ -173,13 +173,14 @@ import VercelAnalyticsCore
 }
 
 @MainActor
-@Test func applicationMenuProvidesNativeQuitCommand() throws {
+@Test func applicationMenuProvidesNativeCommands() throws {
     let application = NSApplication.shared
     let mainMenu = ApplicationMenu.make(for: application)
     let applicationMenu = try #require(mainMenu.items.first?.submenu)
     let quitItem = try #require(applicationMenu.items.first)
+    let editMenu = try #require(mainMenu.items.last?.submenu)
 
-    #expect(mainMenu.items.count == 1)
+    #expect(mainMenu.items.count == 2)
     #expect(applicationMenu.title == ProductInfo.name)
     #expect(applicationMenu.items.count == 1)
     #expect(quitItem.title == "Quit \(ProductInfo.name)")
@@ -187,6 +188,14 @@ import VercelAnalyticsCore
     #expect(quitItem.target === application)
     #expect(quitItem.keyEquivalent == "q")
     #expect(quitItem.keyEquivalentModifierMask == .command)
+
+    #expect(editMenu.title == "Edit")
+    #expect(editMenu.items.map(\.title) == ["Undo", "Redo", "", "Cut", "Copy", "Paste", "Select All"])
+
+    let pasteItem = try #require(editMenu.items.first { $0.action == #selector(NSText.paste(_:)) })
+    #expect(pasteItem.target == nil)
+    #expect(pasteItem.keyEquivalent == "v")
+    #expect(pasteItem.keyEquivalentModifierMask == .command)
 }
 
 @MainActor

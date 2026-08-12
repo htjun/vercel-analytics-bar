@@ -10,6 +10,7 @@ HOST_ARCHITECTURE=$(uname -m)
 DERIVED_DATA_PATH="$REPOSITORY_ROOT/.build/MockDerivedData"
 APP_PATH="$DERIVED_DATA_PATH/Build/Products/Debug/VercelAnalyticsBar.app"
 RESOURCE_PATH="$APP_PATH/Contents/Resources/DemoFixture.json"
+APP_EXECUTABLE="$APP_PATH/Contents/MacOS/VercelAnalyticsBar"
 
 if [[ ! "$FIXTURE_NAME" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
     echo "Invalid mock fixture name '$FIXTURE_NAME'. Use lowercase letters, numbers, and hyphens." >&2
@@ -21,10 +22,7 @@ if [[ ! -f "$FIXTURE_PATH" ]]; then
     exit 1
 fi
 
-if pgrep -f '/VercelAnalyticsBar.app/Contents/MacOS/VercelAnalyticsBar' >/dev/null; then
-    echo "Vercel Analytics Bar is already running. Quit it before launching a mock fixture." >&2
-    exit 1
-fi
+"$REPOSITORY_ROOT/Scripts/terminate_app.sh" "$APP_EXECUTABLE"
 
 xcodebuild \
     -project "$REPOSITORY_ROOT/VercelAnalyticsBar.xcodeproj" \

@@ -116,7 +116,36 @@ enum ApplicationMenu {
         applicationMenu.addItem(quitItem)
         applicationMenuItem.submenu = applicationMenu
         mainMenu.addItem(applicationMenuItem)
+
+        let editMenuItem = NSMenuItem()
+        let editMenu = NSMenu(title: "Edit")
+        editMenu.addItem(commandItem(title: "Undo", action: Selector(("undo:")), keyEquivalent: "z"))
+        editMenu.addItem(commandItem(
+            title: "Redo",
+            action: Selector(("redo:")),
+            keyEquivalent: "z",
+            modifierMask: [.command, .shift]
+        ))
+        editMenu.addItem(.separator())
+        editMenu.addItem(commandItem(title: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x"))
+        editMenu.addItem(commandItem(title: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c"))
+        editMenu.addItem(commandItem(title: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v"))
+        editMenu.addItem(commandItem(title: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a"))
+        editMenuItem.submenu = editMenu
+        mainMenu.addItem(editMenuItem)
+
         return mainMenu
+    }
+
+    private static func commandItem(
+        title: String,
+        action: Selector,
+        keyEquivalent: String,
+        modifierMask: NSEvent.ModifierFlags = .command
+    ) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: action, keyEquivalent: keyEquivalent)
+        item.keyEquivalentModifierMask = modifierMask
+        return item
     }
 }
 

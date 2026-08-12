@@ -3,11 +3,10 @@ import Security
 import Testing
 @testable import VercelAnalyticsBar
 
-@Test func keychainStoreMigratesLegacyCredentialsToProtectedStorage() throws {
+@Test func keychainStoreReadsOnlyFromProtectedStorage() throws {
     let keychain = RecordingKeychain()
     keychain.copyResults = [
-        (errSecItemNotFound, nil),
-        (errSecSuccess, Data("legacy-token".utf8)),
+        (errSecSuccess, Data("protected-token".utf8)),
     ]
     let store = KeychainVercelCredentialStore(
         service: "fixture-service",
@@ -15,21 +14,14 @@ import Testing
         keychain: keychain
     )
 
-    #expect(try store.read() == "legacy-token")
-    #expect(keychain.copiedQueries.count == 2)
+    #expect(try store.read() == "protected-token")
+    #expect(keychain.copiedQueries.count == 1)
     #expect(keychain.copiedQueries[0][kSecUseDataProtectionKeychain as String] as? Bool == true)
-    #expect(keychain.copiedQueries[1][kSecUseDataProtectionKeychain as String] == nil)
-    #expect(keychain.addedAttributes.count == 1)
-    #expect(keychain.addedAttributes[0][kSecUseDataProtectionKeychain as String] as? Bool == true)
-    #expect(
-        keychain.addedAttributes[0][kSecAttrAccessible as String] as? String
-            == kSecAttrAccessibleWhenUnlockedThisDeviceOnly as String
-    )
-    #expect(keychain.deletedQueries.count == 1)
-    #expect(keychain.deletedQueries[0][kSecUseDataProtectionKeychain as String] == nil)
+    #expect(keychain.addedAttributes.isEmpty)
+    #expect(keychain.deletedQueries.isEmpty)
 }
 
-@Test func keychainStoreUpdatesProtectedAccessibilityAndDeletesEveryCredentialClass() throws {
+@Test func keychainStoreUpdatesAndDeletesOnlyProtectedStorage() throws {
     let keychain = RecordingKeychain()
     keychain.updateStatus = errSecSuccess
     let store = KeychainVercelCredentialStore(keychain: keychain)
@@ -42,12 +34,64 @@ import Testing
         keychain.updatedQueries[0].1[kSecAttrAccessible as String] as? String
             == kSecAttrAccessibleWhenUnlockedThisDeviceOnly as String
     )
-    #expect(keychain.deletedQueries.count == 1)
+    #expect(keychain.deletedQueries.isEmpty)
 
     try store.delete()
-    #expect(keychain.deletedQueries.count == 3)
-    #expect(keychain.deletedQueries[1][kSecUseDataProtectionKeychain as String] as? Bool == true)
-    #expect(keychain.deletedQueries[2][kSecUseDataProtectionKeychain as String] == nil)
+    #expect(keychain.deletedQueries.count == 1)
+    #expect(keychain.deletedQueries[0][kSecUseDataProtectionKeychain as String] as? Bool == true)
+}
+
+@Test func keychainStoreAddsOnlyProtectedAccessibleStorage() throws {
+    let keychain = RecordingKeychain()
+    let store = KeychainVercelCredentialStore(keychain: keychain)
+
+    try store.save("fixture-token")
+
+    #expect(keychain.addedAttributes.count == 1)
+    #expect(keychain.addedAttributes[0][kSecUseDataProtectionKeychain as String] as? Bool == true)
+    #expect(
+        keychain.addedAttributes[0][kSecAttrAccessible as String] as? String
+            == kSecAttrAccessibleWhenUnlockedThisDeviceOnly as String
+    )
+}
+
+@Test func keychainStorePreservesUpdateFailureStatus() {
+    let keychain = RecordingKeychain()
+    keychain.updateStatus = errSecMissingEntitlement
+    let store = KeychainVercelCredentialStore(keychain: keychain)
+
+    #expect(throws: CredentialStoreError.keychainStatus(errSecMissingEntitlement)) {
+        try store.save("fixture-token")
+    }
+}
+
+@Test func keychainStorePreservesAddFailureStatus() {
+    let keychain = RecordingKeychain()
+    keychain.addStatus = errSecMissingEntitlement
+    let store = KeychainVercelCredentialStore(keychain: keychain)
+
+    #expect(throws: CredentialStoreError.keychainStatus(errSecMissingEntitlement)) {
+        try store.save("fixture-token")
+    }
+}
+
+@Test func keychainStorePreservesDeleteFailureStatus() {
+    let keychain = RecordingKeychain()
+    keychain.deleteStatus = errSecMissingEntitlement
+    let store = KeychainVercelCredentialStore(keychain: keychain)
+
+    #expect(throws: CredentialStoreError.keychainStatus(errSecMissingEntitlement)) {
+        try store.delete()
+    }
+}
+
+@Test func keychainFailureDiagnosticsContainStatusWithoutTokenData() {
+    let secret = "vercel-secret-token"
+    let error = CredentialStoreError.keychainStatus(errSecMissingEntitlement)
+
+    #expect(error.diagnosticDescription.contains(String(errSecMissingEntitlement)))
+    #expect(!error.diagnosticDescription.contains(secret))
+    #expect(!error.localizedDescription.contains(secret))
 }
 
 @Test func snapshotCacheUsesAndRestoresUserOnlyPermissions() throws {
@@ -76,6 +120,8 @@ private func expectPermissions(_ expected: Int, at url: URL) throws {
 private final class RecordingKeychain: KeychainAccessing {
     var copyResults: [(OSStatus, Data?)] = []
     var updateStatus: OSStatus = errSecItemNotFound
+    var addStatus: OSStatus = errSecSuccess
+    var deleteStatus: OSStatus = errSecSuccess
     private(set) var copiedQueries: [[String: Any]] = []
     private(set) var updatedQueries: [([String: Any], [String: Any])] = []
     private(set) var addedAttributes: [[String: Any]] = []
@@ -93,11 +139,11 @@ private final class RecordingKeychain: KeychainAccessing {
 
     func add(_ attributes: [String: Any]) -> OSStatus {
         addedAttributes.append(attributes)
-        return errSecSuccess
+        return addStatus
     }
 
     func delete(_ query: [String: Any]) -> OSStatus {
         deletedQueries.append(query)
-        return errSecSuccess
+        return deleteStatus
     }
 }

@@ -1,11 +1,17 @@
 import Foundation
 import Observation
+import OSLog
 import VercelAnalyticsCore
 
 @MainActor
 @Observable
 final class AppModel {
     typealias State = AnalyticsPresentationState
+
+    private static let credentialLogger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "com.jasonjun.VercelAnalyticsBar",
+        category: "CredentialStore"
+    )
 
     enum AccountState: Equatable {
         case disconnected
@@ -54,6 +60,7 @@ final class AppModel {
     private(set) var launchAtLoginStatus: LaunchAtLoginStatus
     private(set) var launchAtLoginError: String?
     private var didAttemptRestore = false
+    private(set) var activeToken: String?
 
     var selectedProjectIDs: Set<String> {
         projectCatalog.selectedProjectIDs
@@ -99,6 +106,7 @@ final class AppModel {
     func restoreConnection() async {
         guard !didAttemptRestore else { return }
         didAttemptRestore = true
+        activeToken = nil
         accountState = .restoring
 
         do {
@@ -108,10 +116,12 @@ final class AppModel {
             }
 
             try await tokenValidator(token)
+            activeToken = token
             accountState = .connected
             restoreProjectCatalog()
             await refreshProjects(token: token)
         } catch {
+            activeToken = nil
             accountState = .failed(connectionError(for: error))
         }
     }
@@ -119,20 +129,24 @@ final class AppModel {
     func connect(token: String) async {
         let normalizedToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !normalizedToken.isEmpty else {
+            activeToken = nil
             accountState = .failed(.missingToken)
             return
         }
 
+        activeToken = nil
         accountState = .validating
 
         do {
             try await tokenValidator(normalizedToken)
             try credentialStore.save(normalizedToken)
+            activeToken = normalizedToken
             didAttemptRestore = true
             accountState = .connected
             restoreProjectCatalog()
             await refreshProjects(token: normalizedToken)
         } catch {
+            activeToken = nil
             accountState = .failed(connectionError(for: error))
         }
     }
@@ -141,24 +155,25 @@ final class AppModel {
         if let error = error as? VercelAPIError {
             return AccountConnectionError(apiError: error)
         }
-        if error is CredentialStoreError {
+        if let credentialError = error as? CredentialStoreError {
+            Self.logCredentialStoreError(credentialError)
             return .storageFailure
         }
         return .unknown
+    }
+
+    private static func logCredentialStoreError(_ error: CredentialStoreError) {
+        credentialLogger.error("\(error.diagnosticDescription, privacy: .public)")
     }
 }
 
 extension AppModel {
     func refreshProjects() async {
-        do {
-            guard let token = try credentialStore.read() else {
-                projectState = .failed("Connect a Vercel account before syncing projects.")
-                return
-            }
-            await refreshProjects(token: token)
-        } catch {
-            projectState = .failed("The Vercel project list could not be loaded.")
+        guard let activeToken else {
+            projectState = .failed("Connect a Vercel account before syncing projects.")
+            return
         }
+        await refreshProjects(token: activeToken)
     }
 
     func syncNow() async {
@@ -229,10 +244,14 @@ extension AppModel {
 
     func disconnect() {
         var failure: (any Error)?
+        activeToken = nil
 
         do {
             try credentialStore.delete()
         } catch {
+            if let credentialError = error as? CredentialStoreError {
+                Self.logCredentialStoreError(credentialError)
+            }
             failure = error
         }
 

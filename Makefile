@@ -3,7 +3,7 @@ SCHEME := VercelAnalyticsBar
 HOST_ARCHITECTURE := $(shell uname -m)
 DERIVED_DATA_PATH := .build/DerivedData
 DEBUG_APP_PATH := $(DERIVED_DATA_PATH)/Build/Products/Debug/VercelAnalyticsBar.app
-XCODEBUILD := xcodebuild -project $(PROJECT) -scheme $(SCHEME) -destination 'platform=macOS,arch=$(HOST_ARCHITECTURE)' CODE_SIGNING_ALLOWED=NO
+UNSIGNED_XCODEBUILD := xcodebuild -project $(PROJECT) -scheme $(SCHEME) -destination 'platform=macOS,arch=$(HOST_ARCHITECTURE)' CODE_SIGNING_ALLOWED=NO
 
 .PHONY: bootstrap format inspector-build inspector-dev open probe run run-inspector run-inspector-bundled run-mock test verify
 
@@ -28,16 +28,13 @@ probe:
 	ruby Scripts/probe_vercel_analytics_api.rb
 
 run:
-	$(XCODEBUILD) -configuration Debug -derivedDataPath $(DERIVED_DATA_PATH) build
-	open $(DEBUG_APP_PATH)
+	Scripts/run_debug.sh
 
 run-inspector:
-	$(XCODEBUILD) -configuration Debug -derivedDataPath $(DERIVED_DATA_PATH) build
-	open $(DEBUG_APP_PATH) --args --chart-inspector-dev-server
+	Scripts/run_debug.sh --chart-inspector-dev-server
 
 run-inspector-bundled:
-	$(XCODEBUILD) -configuration Debug -derivedDataPath $(DERIVED_DATA_PATH) build
-	open $(DEBUG_APP_PATH) --args --chart-inspector
+	Scripts/run_debug.sh --chart-inspector
 
 run-mock:
 	Scripts/run_mock.sh "$(FIXTURE)"
@@ -45,7 +42,7 @@ run-mock:
 test:
 	npm --prefix Tools/ChartInspector test
 	swift test --package-path Packages/VercelAnalyticsCore
-	$(XCODEBUILD) -configuration Debug -derivedDataPath $(DERIVED_DATA_PATH) test
+	$(UNSIGNED_XCODEBUILD) -configuration Debug -derivedDataPath $(DERIVED_DATA_PATH) test
 
 verify:
 	Scripts/verify.sh

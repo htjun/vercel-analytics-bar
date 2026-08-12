@@ -42,21 +42,17 @@ extension AppModel {
             return
         }
 
-        do {
-            guard let token = try credentialStore.read() else {
-                snapshotRefreshCoordinator
-                    .present(.empty("Connect a Vercel account in Settings to load analytics."))
-                return
-            }
-            await refreshSnapshot(
-                using: analyticsProviderFactory(token, project),
-                projectID: project.id,
-                trigger: trigger,
-                showLoading: false
-            )
-        } catch {
-            snapshotRefreshCoordinator.present(.failed("The Vercel account could not be read securely."))
+        guard let activeToken else {
+            snapshotRefreshCoordinator
+                .present(.empty("Connect a Vercel account in Settings to load analytics."))
+            return
         }
+        await refreshSnapshot(
+            using: analyticsProviderFactory(activeToken, project),
+            projectID: project.id,
+            trigger: trigger,
+            showLoading: false
+        )
     }
 
     private func refreshSnapshot(

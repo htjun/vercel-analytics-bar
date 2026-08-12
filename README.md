@@ -24,6 +24,14 @@ Network requests use an ephemeral, cache-free, cookie-free session with bounded 
 
 ## Build and test
 
+Launchable Debug builds must use an Apple Development signature so macOS can recognize rebuilt versions as the same app and retain Keychain access. Create the ignored local configuration once:
+
+```sh
+cp Config/Local.xcconfig.example Config/Local.xcconfig
+```
+
+Replace `YOUR_TEAM_ID` in `Config/Local.xcconfig` with the team identifier shown for your Apple Developer account in Xcode. Keychain Sharing requires a Mac App Development provisioning profile, so register the development Mac with that team in Xcode if prompted. `make run` updates the profile, validates the identity and Keychain access group, and then opens the app.
+
 ```sh
 make bootstrap
 make run
@@ -31,7 +39,20 @@ make test
 make verify
 ```
 
-`make verify` runs formatting, lint, web and Swift tests, Debug and release builds, and release-artifact checks. It does not require an Apple signing identity or Vercel account.
+`make test` and `make verify` remain unsigned so they do not require an Apple signing identity or Vercel account. Mock builds are also unsigned and never access account credentials.
+
+### One-time Keychain transition
+
+Development builds created before data-protection-only storage may have a legacy credential in the login Keychain. Delete only that legacy item, then reconnect the account once from a development-signed build:
+
+```sh
+security delete-generic-password \
+  -s VercelAnalyticsBar \
+  -a vercel-access-token \
+  "$HOME/Library/Keychains/login.keychain-db"
+```
+
+An `errSecItemNotFound` result means there is no legacy credential to remove. Current builds never read or migrate the file-based item automatically.
 
 ## Optional development tools
 

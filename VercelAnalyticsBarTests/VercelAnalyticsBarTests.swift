@@ -372,9 +372,13 @@ import VercelAnalyticsCore
         snapshotCacheStore: InMemorySnapshotCacheStore()
     )
 
+    await model.restoreConnection()
     model.disconnect()
+    await model.refreshProjects()
 
     #expect(model.accountState == .disconnected)
+    #expect(model.projectState == .failed("Connect a Vercel account before syncing projects."))
+    #expect(model.activeToken == nil)
     #expect(credentialStore.token == nil)
     #expect(accountDataStore.hasData == false)
 }

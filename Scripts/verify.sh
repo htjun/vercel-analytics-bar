@@ -26,6 +26,17 @@ git diff --check
 mint run "$SWIFTFORMAT_PACKAGE" swiftformat --lint .
 mint run "$SWIFTLINT_PACKAGE" swiftlint lint --strict --config .swiftlint.yml
 
+ENTITLEMENTS_PATH="$REPOSITORY_ROOT/VercelAnalyticsBar/SupportingFiles/VercelAnalyticsBar.entitlements"
+KEYCHAIN_ACCESS_GROUP=$(
+    /usr/bin/plutil -extract keychain-access-groups.0 raw -o - "$ENTITLEMENTS_PATH" 2>/dev/null || true
+)
+EXPECTED_KEYCHAIN_ACCESS_GROUP='$(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)'
+if [[ "$KEYCHAIN_ACCESS_GROUP" != "$EXPECTED_KEYCHAIN_ACCESS_GROUP" ]] \
+    || /usr/bin/plutil -extract keychain-access-groups.1 raw -o - "$ENTITLEMENTS_PATH" >/dev/null 2>&1; then
+    echo "The app must declare only its canonical Keychain access group." >&2
+    exit 1
+fi
+
 npm --prefix "$INSPECTOR_ROOT" test
 INSPECTOR_BUNDLE="$REPOSITORY_ROOT/VercelAnalyticsBar/Resources/ChartInspector"
 INSPECTOR_HASH_BEFORE=$(find "$INSPECTOR_BUNDLE" -type f -exec shasum -a 256 {} + | LC_ALL=C sort)
