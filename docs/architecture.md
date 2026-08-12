@@ -21,6 +21,10 @@ The Core package has no dependency on the application target. The native chart h
 the Debug-only web Inspector. Release configurations compile the shared chart style but exclude the
 Inspector scene, bridge identity, runtime strings, and web resources.
 
+`AnalyticsSnapshotProviding` is the public Analytics acquisition interface. Overview and aggregate
+requests, interval conversion, request fan-out, and response assembly remain inside the Vercel
+adapter implementation.
+
 ## Domain glossary and ownership
 
 | Term | Owner | Narrow seam | Invariants kept inside |

@@ -5,8 +5,6 @@ import Testing
 struct AnalyticsRangeExpectation: Sendable {
     let range: VercelAnalyticsRange
     let now: String
-    let expectedCountSince: String
-    let expectedCountUntil: String
     let expectedAggregateSince: String
     let expectedAggregateUntil: String
     let expectedAggregate: String
@@ -78,8 +76,6 @@ func analyticsRangeOwnsAlignedCurrentAndPreviousWindows(expectation: AnalyticsRa
     AnalyticsRangeExpectation(
         range: .last24Hours,
         now: "2026-08-02T00:17:30.000Z",
-        expectedCountSince: "2026-08-01T01:00:00.000Z",
-        expectedCountUntil: "2026-08-02T01:00:00.000Z",
         expectedAggregateSince: "2026-08-01T01:00:00.000Z",
         expectedAggregateUntil: "2026-08-02T00:59:59.999Z",
         expectedAggregate: "hour"
@@ -87,8 +83,6 @@ func analyticsRangeOwnsAlignedCurrentAndPreviousWindows(expectation: AnalyticsRa
     AnalyticsRangeExpectation(
         range: .last24Hours,
         now: "2026-08-02T01:00:00.000Z",
-        expectedCountSince: "2026-08-01T02:00:00.000Z",
-        expectedCountUntil: "2026-08-02T02:00:00.000Z",
         expectedAggregateSince: "2026-08-01T02:00:00.000Z",
         expectedAggregateUntil: "2026-08-02T01:59:59.999Z",
         expectedAggregate: "hour"
@@ -96,8 +90,6 @@ func analyticsRangeOwnsAlignedCurrentAndPreviousWindows(expectation: AnalyticsRa
     AnalyticsRangeExpectation(
         range: .last7Days,
         now: "2026-08-02T00:00:00.000Z",
-        expectedCountSince: "2026-07-26T00:00:00.000Z",
-        expectedCountUntil: "2026-08-02T01:00:00.000Z",
         expectedAggregateSince: "2026-07-26T00:00:00.000Z",
         expectedAggregateUntil: "2026-08-02T00:59:59.999Z",
         expectedAggregate: "day"
@@ -105,34 +97,49 @@ func analyticsRangeOwnsAlignedCurrentAndPreviousWindows(expectation: AnalyticsRa
     AnalyticsRangeExpectation(
         range: .last30Days,
         now: "2026-08-02T00:00:00.000Z",
-        expectedCountSince: "2026-07-03T00:00:00.000Z",
-        expectedCountUntil: "2026-08-02T01:00:00.000Z",
         expectedAggregateSince: "2026-07-03T00:00:00.000Z",
         expectedAggregateUntil: "2026-08-02T00:59:59.999Z",
         expectedAggregate: "day"
     ),
 ])
-func clientMapsAnalyticsRanges(expectation: AnalyticsRangeExpectation) async throws {
+func snapshotProviderMapsAnalyticsRanges(expectation: AnalyticsRangeExpectation) async throws {
+    let overviewResponseCount = expectation.range == .last24Hours ? 2 : 3
     let transport = try FixtureTransport(
         responses: [
-            "/v1/query/web-analytics/visits/count": [.fixture(named: "analytics-count")],
-            "/v1/query/web-analytics/visits/aggregate": [.fixture(named: "analytics-aggregate")],
+            "/web-analytics/v2/overview": (0 ..< overviewResponseCount).map { _ in
+                .response(statusCode: 200, body: #"{"devices":1,"total":2}"#)
+            },
+            "/v1/query/web-analytics/visits/aggregate": [
+                .fixture(named: "analytics-aggregate"),
+                .fixture(named: "analytics-pages", query: ["by": "requestPath"]),
+                .fixture(named: "analytics-referrers", query: ["by": "referrerHostname"]),
+            ],
         ]
     )
-    let client = VercelAPIClient(token: "fixture-token", transport: transport)
     let project = VercelProject(id: "prj_fixture", name: "Fixture")
     let now = try date(expectation.now)
-
     let utc = try #require(TimeZone(secondsFromGMT: 0))
-    _ = try await client.fetchCount(for: project, range: expectation.range, now: now, timeZone: utc)
-    _ = try await client.fetchSeries(for: project, range: expectation.range, now: now, timeZone: utc)
+    let provider = VercelAnalyticsSnapshotProvider(
+        token: "fixture-token",
+        project: project,
+        now: { now },
+        timeZone: { utc },
+        transport: transport
+    )
+
+    _ = try await provider.snapshot(for: expectation.range)
 
     let requests = await transport.requests
-    #expect(queryValue("since", in: requests[0]) == expectation.expectedCountSince)
-    #expect(queryValue("until", in: requests[0]) == expectation.expectedCountUntil)
-    #expect(queryValue("since", in: requests[1]) == expectation.expectedAggregateSince)
-    #expect(queryValue("until", in: requests[1]) == expectation.expectedAggregateUntil)
-    #expect(queryValue("by", in: requests[1]) == expectation.expectedAggregate)
+    let currentOverviewRequest = try #require(requests.first { request in
+        request.url?.path == "/web-analytics/v2/overview"
+            && queryValue("from", in: request) == expectation.expectedAggregateSince
+    })
+    #expect(queryValue("to", in: currentOverviewRequest) == expectation.expectedAggregateUntil)
+    let seriesRequest = try #require(requests.first { request in
+        queryValue("by", in: request) == expectation.expectedAggregate
+    })
+    #expect(queryValue("since", in: seriesRequest) == expectation.expectedAggregateSince)
+    #expect(queryValue("until", in: seriesRequest) == expectation.expectedAggregateUntil)
 }
 
 @Test(arguments: [
@@ -140,7 +147,7 @@ func clientMapsAnalyticsRanges(expectation: AnalyticsRangeExpectation) async thr
     (VercelAnalyticsRange.last7Days, "2026-07-25T00:00:00.000Z", 9, 86400.0, 8),
     (VercelAnalyticsRange.last30Days, "2026-07-02T00:00:00.000Z", 32, 86400.0, 31),
 ])
-func clientFiltersRoundedAggregateRowsToLogicalBucketCount(
+func snapshotProviderFiltersRoundedAggregateRowsToLogicalBucketCount(
     range: VercelAnalyticsRange,
     dataStart: String,
     sourcePointCount: Int,
@@ -157,19 +164,32 @@ func clientFiltersRoundedAggregateRowsToLogicalBucketCount(
     }
     let transport = try FixtureTransport(
         responses: [
-            "/v1/query/web-analytics/visits/aggregate": [aggregateFixture(points: points)],
+            "/web-analytics/v2/overview": (0 ..< (range == .last24Hours ? 2 : 3)).map { _ in
+                .response(statusCode: 200, body: #"{"devices":1,"total":2}"#)
+            },
+            "/v1/query/web-analytics/visits/aggregate": [
+                aggregateFixture(points: points),
+                .fixture(named: "analytics-pages", query: ["by": "requestPath"]),
+                .fixture(named: "analytics-referrers", query: ["by": "referrerHostname"]),
+            ],
         ]
     )
-    let client = VercelAPIClient(token: "fixture-token", transport: transport)
     let project = VercelProject(id: "prj_fixture", name: "Fixture")
     let now = try date("2026-08-02T00:17:30.000Z")
-
     let utc = try #require(TimeZone(secondsFromGMT: 0))
-    let series = try await client.fetchSeries(for: project, range: range, now: now, timeZone: utc)
+    let provider = VercelAnalyticsSnapshotProvider(
+        token: "fixture-token",
+        project: project,
+        now: { now },
+        timeZone: { utc },
+        transport: transport
+    )
 
-    #expect(series.points.count == expectedPointCount)
-    #expect(series.points.first?.timestamp == start.addingTimeInterval(bucketDuration))
-    #expect(series.points.last?.timestamp == start
+    let series = try await provider.snapshot(for: range).series
+
+    #expect(series.count == expectedPointCount)
+    #expect(series.first?.timestamp == start.addingTimeInterval(bucketDuration))
+    #expect(series.last?.timestamp == start
         .addingTimeInterval(TimeInterval(expectedPointCount) * bucketDuration))
 }
 
@@ -206,6 +226,10 @@ func clientFiltersRoundedAggregateRowsToLogicalBucketCount(
     #expect(requests.count(where: { queryValue("by", in: $0) == "hour" }) == 1)
     #expect(requests.count(where: { queryValue("by", in: $0) == "requestPath" }) == 1)
     #expect(requests.count(where: { queryValue("by", in: $0) == "referrerHostname" }) == 1)
+    let breakdownRequests = requests.filter { request in
+        ["requestPath", "referrerHostname"].contains(queryValue("by", in: request))
+    }
+    #expect(breakdownRequests.allSatisfy { queryValue("limit", in: $0) == "10" })
     let overviewRequests = requests.filter { $0.url?.path == "/web-analytics/v2/overview" }
     #expect(Set(overviewRequests.map { "\(queryValue("from", in: $0)!)|\(queryValue("to", in: $0)!)" }) == Set([
         "2026-08-01T01:00:00.000Z|2026-08-02T00:59:59.999Z",
@@ -313,6 +337,8 @@ func clientFiltersRoundedAggregateRowsToLogicalBucketCount(
     #expect(snapshot.topPages.isEmpty)
     #expect(snapshot.topReferrers.isEmpty)
     #expect(snapshot.last24HoursVisitors == 14)
+    let requests = await transport.requests
+    #expect(requests.allSatisfy { queryValue("teamId", in: $0) == nil })
 }
 
 private func expectedLast24Snapshot(refreshedAt: Date) throws -> AnalyticsSnapshot {

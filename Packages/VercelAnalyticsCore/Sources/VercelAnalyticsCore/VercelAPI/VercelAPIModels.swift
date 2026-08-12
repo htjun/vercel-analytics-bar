@@ -57,11 +57,6 @@ struct PaginationDTO: Decodable {
     }
 }
 
-struct AnalyticsCountResponseDTO: Decodable {
-    let data: AnalyticsMetricsDTO
-    let query: AnalyticsQueryDTO
-}
-
 struct AnalyticsOverviewResponseDTO: Decodable {
     let devices: Int
     let total: Int
@@ -75,16 +70,6 @@ struct AnalyticsSeriesResponseDTO: Decodable {
 struct AnalyticsBreakdownResponseDTO: Decodable {
     let data: [AnalyticsBreakdownPointDTO]
     let query: AnalyticsQueryDTO
-}
-
-struct AnalyticsMetricsDTO: Decodable {
-    let visitors: Int
-    let pageViews: Int
-
-    private enum CodingKeys: String, CodingKey {
-        case visitors
-        case pageViews = "pageviews"
-    }
 }
 
 struct AnalyticsPointDTO: Decodable {
