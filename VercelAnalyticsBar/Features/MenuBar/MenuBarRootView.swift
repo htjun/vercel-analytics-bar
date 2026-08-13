@@ -1,10 +1,44 @@
 import SwiftUI
 import VercelAnalyticsCore
 
+enum MenuBarContentMode: Equatable {
+    case analytics
+    case restoring
+    case preparingProjects
+    case connection(error: AccountConnectionError?, isValidating: Bool)
+    case projectSelection
+
+    static func resolve(
+        accountState: AppModel.AccountState,
+        projectState: AppModel.ProjectState,
+        hasConfirmedProjectSelection: Bool,
+        hasStandaloneSnapshotProvider: Bool
+    ) -> MenuBarContentMode {
+        guard !hasStandaloneSnapshotProvider else { return .analytics }
+
+        switch accountState {
+        case .disconnected:
+            return .connection(error: nil, isValidating: false)
+        case .restoring:
+            return .restoring
+        case .validating:
+            return .connection(error: nil, isValidating: true)
+        case .connected:
+            switch projectState {
+            case .idle, .loading:
+                return .preparingProjects
+            case .loaded, .failed:
+                return hasConfirmedProjectSelection ? .analytics : .projectSelection
+            }
+        case let .failed(error):
+            return .connection(error: error, isValidating: false)
+        }
+    }
+}
+
 struct MenuBarRootView: View {
     let model: AppModel
     let chartStyle: ChartStyleStore
-    let onOpenSettings: () -> Void
     let onDismissPanel: () -> Void
     @State private var isProjectSelectorPresented = false
     @State private var projectSearchQuery = ""
@@ -18,6 +52,45 @@ struct MenuBarRootView: View {
 
     @ViewBuilder
     private var content: some View {
+        switch contentMode {
+        case .analytics:
+            analyticsContent
+        case .restoring:
+            AnalyticsCardShell {
+                ProgressView()
+                    .controlSize(.small)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .accessibilityLabel("Restoring Vercel connection")
+            }
+        case .preparingProjects:
+            AnalyticsCardShell {
+                ProgressView()
+                    .controlSize(.small)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .accessibilityLabel("Loading Vercel projects")
+            }
+        case let .connection(error, isValidating):
+            VercelConnectionView(
+                model: model,
+                error: error,
+                isValidating: isValidating
+            )
+        case .projectSelection:
+            VercelProjectSelectionView(model: model)
+        }
+    }
+
+    private var contentMode: MenuBarContentMode {
+        MenuBarContentMode.resolve(
+            accountState: model.accountState,
+            projectState: model.projectState,
+            hasConfirmedProjectSelection: !model.selectedProjectIDs.isEmpty,
+            hasStandaloneSnapshotProvider: model.provider != nil
+        )
+    }
+
+    @ViewBuilder
+    private var analyticsContent: some View {
         switch model.state {
         case .idle, .loading:
             AnalyticsCardShell {
@@ -73,7 +146,6 @@ struct MenuBarRootView: View {
                     await model.selectAnalyticsRange(range)
                 }
             },
-            onOpenSettings: openSettings,
             onOpenDashboard: { url in
                 onDismissPanel()
                 openURL(url)
@@ -122,14 +194,8 @@ struct MenuBarRootView: View {
                     }
                 }
             }
-
-            Button("Open Settings", action: openSettings)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private func openSettings() {
-        onOpenSettings()
     }
 }
 

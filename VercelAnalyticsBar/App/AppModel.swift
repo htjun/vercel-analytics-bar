@@ -45,6 +45,7 @@ final class AppModel {
     }
 
     private(set) var accountState: AccountState = .disconnected
+    private(set) var connectedAccount: VercelAccountProfile?
     private(set) var projectState: ProjectState = .idle
     private(set) var projectCatalog: ProjectCatalog
     private(set) var selectedRange: VercelAnalyticsRange
@@ -107,6 +108,7 @@ final class AppModel {
         guard !didAttemptRestore else { return }
         didAttemptRestore = true
         activeToken = nil
+        connectedAccount = nil
         accountState = .restoring
 
         do {
@@ -122,6 +124,7 @@ final class AppModel {
             await refreshProjects(token: token)
         } catch {
             activeToken = nil
+            connectedAccount = nil
             accountState = .failed(connectionError(for: error))
         }
     }
@@ -130,11 +133,13 @@ final class AppModel {
         let normalizedToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !normalizedToken.isEmpty else {
             activeToken = nil
+            connectedAccount = nil
             accountState = .failed(.missingToken)
             return
         }
 
         activeToken = nil
+        connectedAccount = nil
         accountState = .validating
 
         do {
@@ -147,6 +152,7 @@ final class AppModel {
             await refreshProjects(token: normalizedToken)
         } catch {
             activeToken = nil
+            connectedAccount = nil
             accountState = .failed(connectionError(for: error))
         }
     }
@@ -205,6 +211,21 @@ extension AppModel {
         }
     }
 
+    @discardableResult
+    func confirmProjectSelection(_ projectIDs: Set<String>) -> Bool {
+        guard case .loaded = projectState, !projectIDs.isEmpty else { return false }
+
+        do {
+            guard try projectCatalog.confirmSelection(projectIDs) else { return false }
+            projectSelectionError = nil
+            snapshotRefreshCoordinator.present(.idle)
+            return true
+        } catch {
+            projectSelectionError = "The project selection could not be saved. Try again."
+            return false
+        }
+    }
+
     func selectProject(_ projectID: String) async {
         guard case .loaded = projectState else { return }
 
@@ -245,6 +266,7 @@ extension AppModel {
     func disconnect() {
         var failure: (any Error)?
         activeToken = nil
+        connectedAccount = nil
 
         do {
             try credentialStore.delete()
@@ -287,8 +309,9 @@ extension AppModel {
         projectState = .loading
 
         do {
-            let projects = try await projectProviderFactory(token).listAccessibleProjects()
-            try projectCatalog.reconcile(with: projects)
+            let discovery = try await projectProviderFactory(token).discoverAccount()
+            try projectCatalog.reconcile(with: discovery.projects)
+            connectedAccount = discovery.profile
             projectSelectionError = nil
             snapshotRefreshCoordinator.present(.idle)
             projectState = .loaded(projectCatalog.projects)

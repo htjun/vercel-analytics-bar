@@ -16,8 +16,8 @@ import VercelAnalyticsCore
     ])
 
     #expect(catalog.projects.map(\.id) == ["project-a", "project-b"])
-    #expect(catalog.selectedProjectIDs == ["project-a"])
-    #expect(catalog.currentProjectID == "project-a")
+    #expect(catalog.selectedProjectIDs.isEmpty)
+    #expect(catalog.currentProjectID == nil)
     #expect(accountDataStore.projectSelection == catalog.selection)
     #expect(accountDataStore.projectSelectionSaveAttempts == [catalog.selection])
 }
@@ -60,8 +60,8 @@ import VercelAnalyticsCore
     #expect(catalog.selection == committedSelection)
     #expect(accountDataStore.projectSelection == committedSelection)
     #expect(accountDataStore.projectSelectionSaveAttempts.last == ProjectSelection(
-        selectedProjectIDs: ["project-b"],
-        currentProjectID: "project-b"
+        selectedProjectIDs: [],
+        currentProjectID: nil
     ))
 }
 
@@ -94,6 +94,26 @@ import VercelAnalyticsCore
     #expect(accountDataStore.projectSelectionSaveAttempts.count == finalSelectionSaveCount)
 }
 
+@Test func projectCatalogConfirmsProjectsAtomicallyAndUsesTheFirstVisibleSelection() throws {
+    let accountDataStore = InMemoryAccountDataStore()
+    var catalog = ProjectCatalog(persistence: accountDataStore)
+    try catalog.reconcile(with: [
+        VercelProject(id: "project-z", name: "Zebra"),
+        VercelProject(id: "project-a", name: "Alpha"),
+        VercelProject(id: "project-b", name: "Beta"),
+    ])
+    let savesBeforeConfirmation = accountDataStore.projectSelectionSaveAttempts.count
+
+    #expect(try catalog.confirmSelection(["project-z", "project-b"]))
+    #expect(catalog.selectedProjectIDs == ["project-z", "project-b"])
+    #expect(catalog.currentProjectID == "project-b")
+    #expect(accountDataStore.projectSelectionSaveAttempts.count == savesBeforeConfirmation + 1)
+
+    #expect(try !catalog.confirmSelection([]))
+    #expect(try !catalog.confirmSelection(["missing-project"]))
+    #expect(accountDataStore.projectSelectionSaveAttempts.count == savesBeforeConfirmation + 1)
+}
+
 @MainActor
 @Test func appModelKeepsProjectSelectionAtomicWhenPersistenceFails() async {
     let accountDataStore = InMemoryAccountDataStore()
@@ -112,13 +132,13 @@ import VercelAnalyticsCore
 
     await model.connect(token: "valid-token")
     accountDataStore.failProjectSelectionSave = true
-    model.setProjectSelected("project-b", selected: true)
+    #expect(!model.confirmProjectSelection(["project-a", "project-b"]))
 
-    #expect(model.selectedProjectIDs == ["project-a"])
-    #expect(model.currentProjectID == "project-a")
-    #expect(accountDataStore.selectedProjectIDs == ["project-a"])
-    #expect(accountDataStore.currentProjectID == "project-a")
-    #expect(model.projectSelectionError != nil)
+    #expect(model.selectedProjectIDs.isEmpty)
+    #expect(model.currentProjectID == nil)
+    #expect(accountDataStore.selectedProjectIDs.isEmpty)
+    #expect(accountDataStore.currentProjectID == nil)
+    #expect(model.projectSelectionError == "The project selection could not be saved. Try again.")
 }
 
 @MainActor
@@ -145,7 +165,7 @@ import VercelAnalyticsCore
     )
 
     await model.connect(token: "valid-token")
-    model.setProjectSelected("project-b", selected: true)
+    #expect(model.confirmProjectSelection(["project-a", "project-b"]))
     accountDataStore.failProjectSelectionSave = true
     await model.selectProject("project-b")
 
@@ -175,9 +195,9 @@ import VercelAnalyticsCore
 
     #expect(model.accountState == .connected)
     #expect(model.projectState == .loaded([project]))
-    #expect(model.selectedProjectIDs == ["project-a"])
-    #expect(accountDataStore.selectedProjectIDs == ["project-a"])
-    #expect(accountDataStore.currentProjectID == "project-a")
+    #expect(model.selectedProjectIDs.isEmpty)
+    #expect(accountDataStore.selectedProjectIDs.isEmpty)
+    #expect(accountDataStore.currentProjectID == nil)
     #expect(model.projectSelectionError == nil)
 }
 
@@ -195,5 +215,5 @@ import VercelAnalyticsCore
     await model.connect(token: "valid-token")
     await model.load()
 
-    #expect(model.state == .empty("Select a Vercel project in Settings to load analytics."))
+    #expect(model.state == .empty("Select a Vercel project to load analytics."))
 }

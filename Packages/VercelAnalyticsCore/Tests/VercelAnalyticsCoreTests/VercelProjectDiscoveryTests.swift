@@ -20,7 +20,15 @@ import VercelAnalyticsCore
     )
     let client = VercelAPIClient(token: "fixture-token", transport: transport)
 
-    let projects = try await client.listAccessibleProjects()
+    let discovery = try await client.discoverAccount()
+    let projects = discovery.projects
+
+    #expect(discovery.profile == VercelAccountProfile(
+        id: "user_fixture",
+        name: "Fixture User",
+        username: "fixture-user",
+        avatarURL: URL(string: "https://api.vercel.com/www/avatar/fixture-avatar")
+    ))
 
     #expect(projects == [
         VercelProject(
@@ -43,9 +51,13 @@ import VercelAnalyticsCore
             scopeSlug: "fixture-user"
         ),
     ])
-    #expect(projects.allSatisfy { $0.analyticsAvailability == .unknown })
     let requests = await transport.requests
     expectDiscoveryRequests(requests)
+}
+
+@Test func accountProfileFallsBackFromNameToUsername() {
+    #expect(VercelAccountProfile(name: "  ", username: "fixture-user").displayName == "fixture-user")
+    #expect(VercelAccountProfile().displayName == "Vercel account")
 }
 
 @Test func clientContinuesWithTeamProjectsWhenPersonalScopeIsUnavailable() async throws {

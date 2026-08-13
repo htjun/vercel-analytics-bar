@@ -26,7 +26,7 @@ extension AppModel {
         }
 
         guard let provider else {
-            snapshotRefreshCoordinator.present(.empty("Connect a Vercel account in Settings to load analytics."))
+            snapshotRefreshCoordinator.present(.empty("Connect a Vercel account to load analytics."))
             return
         }
         await refreshSnapshot(using: provider, projectID: nil, trigger: trigger, showLoading: true)
@@ -38,13 +38,13 @@ extension AppModel {
             return
         }
         guard let project = currentProject else {
-            snapshotRefreshCoordinator.present(.empty("Select a Vercel project in Settings to load analytics."))
+            snapshotRefreshCoordinator.present(.empty("Select a Vercel project to load analytics."))
             return
         }
 
         guard let activeToken else {
             snapshotRefreshCoordinator
-                .present(.empty("Connect a Vercel account in Settings to load analytics."))
+                .present(.empty("Connect a Vercel account to load analytics."))
             return
         }
         await refreshSnapshot(

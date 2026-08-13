@@ -152,10 +152,10 @@ import VercelAnalyticsCore
         VercelProject(id: "project-a", name: "Alpha"),
         VercelProject(id: "project-z", name: "Zebra", teamID: "team", teamName: "Team"),
     ]))
-    #expect(model.selectedProjectIDs == ["project-a"])
-    #expect(model.currentProjectID == "project-a")
-    #expect(accountDataStore.selectedProjectIDs == ["project-a"])
-    #expect(accountDataStore.currentProjectID == "project-a")
+    #expect(model.selectedProjectIDs.isEmpty)
+    #expect(model.currentProjectID == nil)
+    #expect(accountDataStore.selectedProjectIDs.isEmpty)
+    #expect(accountDataStore.currentProjectID == nil)
 }
 
 @MainActor
@@ -201,6 +201,7 @@ import VercelAnalyticsCore
     )
 
     await model.connect(token: "valid-token")
+    #expect(model.confirmProjectSelection(["project-personal"]))
 
     #expect(model.projects(matching: "acme").map(\.id) == ["project-team"])
     #expect(model.selectedProjects(matching: "").map(\.id) == ["project-personal"])
@@ -224,7 +225,7 @@ import VercelAnalyticsCore
     )
 
     await model.connect(token: "valid-token")
-    model.setProjectSelected("project-site", selected: true)
+    #expect(model.confirmProjectSelection(["project-docs", "project-site"]))
 
     #expect(model.selectedProjects(matching: "docs").map(\.id) == ["project-docs"])
     #expect(model.selectedProjects(matching: "example").map(\.id) == ["project-site"])
@@ -262,7 +263,7 @@ import VercelAnalyticsCore
     )
 
     await model.connect(token: "valid-token")
-    model.setProjectSelected("project-beta", selected: true)
+    #expect(model.confirmProjectSelection(["project-alpha", "project-beta"]))
 
     let alphaLoadTask = Task { await model.load() }
     await alphaProvider.waitUntilRequested()
@@ -318,6 +319,7 @@ import VercelAnalyticsCore
     )
 
     await model.connect(token: "valid-token")
+    #expect(model.confirmProjectSelection(["project-a"]))
     await model.load()
 
     #expect(model.currentProject?.id == "project-a")

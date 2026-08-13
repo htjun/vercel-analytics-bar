@@ -253,6 +253,7 @@ struct RefreshTestHarness {
 
     func connect() async {
         await model.connect(token: "valid-token")
+        #expect(model.confirmProjectSelection(Set(model.projects(matching: "").map(\.id).prefix(1))))
     }
 }
 

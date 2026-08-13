@@ -1,5 +1,8 @@
 {
   "user": {
-    "username": "fixture-user"
+    "uid": "user_fixture",
+    "name": "Fixture User",
+    "username": "fixture-user",
+    "avatar": "fixture-avatar"
   }
 }

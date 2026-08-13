@@ -14,7 +14,7 @@ import Testing
 
 @MainActor
 @Test func geistVariableFontSupportsEveryPlannedWeight() {
-    for weight: CGFloat in [400, 450] {
+    for weight: CGFloat in [400, 450, 600] {
         let font = AppFontRegistry.nsFont(
             postScriptName: "Geist-Regular",
             size: 12,
@@ -25,6 +25,26 @@ import Testing
         #expect(font.pointSize == 12)
         #expect(resolvedVariationValue(.weight, in: font) == weight)
     }
+}
+
+@MainActor
+@Test func connectionTypographyMatchesTheReferenceFrame() {
+    let body = AppFontRegistry.nsFont(
+        postScriptName: "Geist-Regular",
+        size: 14,
+        variations: [.weight: 400]
+    )
+    let title = AppFontRegistry.nsFont(
+        postScriptName: "Geist-Regular",
+        size: 16,
+        variations: [.weight: 600]
+    )
+
+    #expect(body.pointSize == 14)
+    #expect(resolvedVariationValue(.weight, in: body) == 400)
+    #expect(title.pointSize == 16)
+    #expect(resolvedVariationValue(.weight, in: title) == 600)
+    #expect(AppTypography.connectionTitleTracking == -0.16)
 }
 
 @MainActor

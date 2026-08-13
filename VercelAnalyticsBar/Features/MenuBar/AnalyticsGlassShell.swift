@@ -12,6 +12,10 @@ enum AnalyticsCardColors {
     static let positive = Color(red: 36 / 255, green: 202 / 255, blue: 105 / 255)
     static let negative = Color(red: 235 / 255, green: 101 / 255, blue: 100 / 255)
     static let border = Color(red: 117 / 255, green: 117 / 255, blue: 117 / 255).opacity(0.1)
+    static let connectionText = Color(red: 33 / 255, green: 33 / 255, blue: 33 / 255)
+    static let connectionBorder = Color.black.opacity(0.1)
+    static let connectionDivider = Color.black.opacity(0.05)
+    static let connectionError = Color(red: 196 / 255, green: 43 / 255, blue: 28 / 255)
 }
 
 enum AnalyticsCardLayout {

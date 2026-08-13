@@ -4,6 +4,59 @@ import Testing
 import VercelAnalyticsCore
 
 @MainActor
+@Test func connectionActionWaitsForProjectConfirmationBeforeLoadingAnalytics() async {
+    let harness = RefreshTestHarness()
+    #expect(await VercelConnectionAction.connect(model: harness.model, token: "fixture-token"))
+    #expect(harness.model.selectedProjectIDs.isEmpty)
+    #expect(harness.model.state == .idle)
+    #expect(await harness.provider.requestedRanges.isEmpty)
+
+    let selectionTask = Task { @MainActor in
+        await VercelProjectSelectionAction.confirm(
+            model: harness.model,
+            projectIDs: ["project-alpha"]
+        )
+    }
+    await harness.provider.waitUntilRequested()
+    await harness.provider.succeed(with: makeAnalyticsSnapshot(
+        projectName: "Alpha",
+        visitors: 42,
+        pageViews: 84,
+        last24HoursVisitors: 12,
+        refreshedAt: Date(timeIntervalSince1970: 1_785_628_800)
+    ))
+
+    #expect(await selectionTask.value)
+    guard case let .loaded(snapshot) = harness.model.state else {
+        Issue.record("Expected the connection action to load analytics")
+        return
+    }
+    #expect(snapshot.projectName == "Alpha")
+    #expect(snapshot.visitors.value == 42)
+}
+
+@MainActor
+@Test func projectSelectionCancelDisconnectsTheValidatedAccount() async {
+    let credentialStore = InMemoryCredentialStore()
+    let accountDataStore = InMemoryAccountDataStore()
+    let project = VercelProject(id: "project-a", name: "Alpha")
+    let model = AppModel(
+        credentialStore: credentialStore,
+        accountDataStore: accountDataStore,
+        snapshotCacheStore: InMemorySnapshotCacheStore(),
+        projectProviderFactory: { _ in FixtureProjectListingProvider(projects: [project]) },
+        tokenValidator: { _ in }
+    )
+
+    await model.connect(token: "fixture-token")
+    VercelProjectSelectionAction.cancel(model: model)
+
+    #expect(model.accountState == .disconnected)
+    #expect(credentialStore.token == nil)
+    #expect(accountDataStore.selectedProjectIDs.isEmpty)
+}
+
+@MainActor
 @Test func appModelLoadsRenderedAnalyticsContentThroughFixtureTransport() async {
     let transport = StaticAnalyticsTransport()
     let project = VercelProject(id: "project-a", name: "Alpha")
@@ -24,6 +77,7 @@ import VercelAnalyticsCore
     )
 
     await model.connect(token: "fixture-token")
+    #expect(model.confirmProjectSelection([project.id]))
     await model.load()
 
     guard case let .loaded(snapshot) = model.state else {

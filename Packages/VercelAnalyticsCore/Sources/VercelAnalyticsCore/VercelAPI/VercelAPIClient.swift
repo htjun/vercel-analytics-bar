@@ -6,6 +6,14 @@ public protocol VercelHTTPTransport: Sendable {
 
 public protocol VercelProjectListingProviding: Sendable {
     func listAccessibleProjects() async throws -> [VercelProject]
+    func discoverAccount() async throws -> VercelAccountDiscovery
+}
+
+public extension VercelProjectListingProviding {
+    func discoverAccount() async throws -> VercelAccountDiscovery {
+        let projects = try await listAccessibleProjects()
+        return VercelAccountDiscovery(profile: nil, projects: projects)
+    }
 }
 
 public struct URLSessionVercelHTTPTransport: VercelHTTPTransport {
@@ -130,7 +138,14 @@ public struct VercelAPIClient: Sendable, VercelProjectListingProviding {
     }
 
     public func listAccessibleProjects() async throws -> [VercelProject] {
-        let personalScope = try await personalProjectScope()
+        try await discoverAccount().projects
+    }
+
+    public func discoverAccount() async throws -> VercelAccountDiscovery {
+        let authenticatedUser = try await authenticatedUser()
+        let personalScope = authenticatedUser.map {
+            ProjectDiscoveryScope(teamID: nil, teamName: nil, scopeSlug: $0.username)
+        }
         let teamScopes = try await teamProjectScopes()
         var projects: [VercelProject] = []
         if let personalScope {
@@ -149,16 +164,41 @@ public struct VercelAPIClient: Sendable, VercelProjectListingProviding {
             }
         }
 
-        return VercelProject.sorted(Array(uniqueProjectsByID.values))
+        return VercelAccountDiscovery(
+            profile: authenticatedUser.map(accountProfile),
+            projects: VercelProject.sorted(Array(uniqueProjectsByID.values))
+        )
     }
 
-    private func personalProjectScope() async throws -> ProjectDiscoveryScope? {
+    private func authenticatedUser() async throws -> AuthenticatedUserDTO? {
         do {
             let response = try await request(AuthenticatedUserResponseDTO.self, path: "/v2/user", query: [:])
-            return ProjectDiscoveryScope(teamID: nil, teamName: nil, scopeSlug: response.user.username)
+            return response.user
         } catch VercelAPIError.resourceNotFound(status: 404) {
             return nil
         }
+    }
+
+    private func accountProfile(from user: AuthenticatedUserDTO) -> VercelAccountProfile {
+        VercelAccountProfile(
+            id: user.id,
+            name: user.name,
+            username: user.username,
+            avatarURL: avatarURL(from: user.avatar)
+        )
+    }
+
+    private func avatarURL(from value: String?) -> URL? {
+        guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else {
+            return nil
+        }
+        if let url = URL(string: value), url.scheme == "https" {
+            return url
+        }
+        return Self.defaultBaseURL
+            .appendingPathComponent("www")
+            .appendingPathComponent("avatar")
+            .appendingPathComponent(value)
     }
 
     private func teamProjectScopes() async throws -> [ProjectDiscoveryScope] {

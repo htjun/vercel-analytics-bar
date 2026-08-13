@@ -5,7 +5,27 @@ struct AuthenticatedUserResponseDTO: Decodable {
 }
 
 struct AuthenticatedUserDTO: Decodable {
+    let id: String?
+    let name: String?
     let username: String?
+    let avatar: String?
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(String.self, forKey: .id)
+            ?? container.decodeIfPresent(String.self, forKey: .uid)
+        name = try container.decodeIfPresent(String.self, forKey: .name)
+        username = try container.decodeIfPresent(String.self, forKey: .username)
+        avatar = try container.decodeIfPresent(String.self, forKey: .avatar)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case uid
+        case name
+        case username
+        case avatar
+    }
 }
 
 struct TeamsResponseDTO: Decodable {

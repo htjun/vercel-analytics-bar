@@ -1,3 +1,4 @@
+import Foundation
 import Security
 import Testing
 @testable import VercelAnalyticsBar
@@ -9,7 +10,10 @@ import VercelAnalyticsCore
     let project = VercelProject(id: "project-alpha", name: "Alpha")
     let model = AppModel(
         credentialStore: credentialStore,
-        accountDataStore: InMemoryAccountDataStore(),
+        accountDataStore: InMemoryAccountDataStore(
+            selectedProjectIDs: [project.id],
+            currentProjectID: project.id
+        ),
         snapshotCacheStore: InMemorySnapshotCacheStore(),
         projectProviderFactory: { _ in FixtureProjectListingProvider(projects: [project]) },
         analyticsProviderFactory: { _, _ in FixtureAnalyticsSnapshotProvider() },
@@ -24,6 +28,35 @@ import VercelAnalyticsCore
     #expect(model.accountState == .connected)
     #expect(model.state == .loaded(.fixture))
     #expect(credentialStore.readCount == 1)
+}
+
+@MainActor
+@Test func appModelExposesAndClearsTheConnectedAccountProfile() async {
+    let profile = VercelAccountProfile(
+        id: "user-fixture",
+        name: "Fixture User",
+        username: "fixture-user",
+        avatarURL: URL(string: "https://api.vercel.com/www/avatar/fixture-avatar")
+    )
+    let discovery = VercelAccountDiscovery(
+        profile: profile,
+        projects: [VercelProject(id: "project-a", name: "Alpha")]
+    )
+    let model = AppModel(
+        credentialStore: InMemoryCredentialStore(),
+        accountDataStore: InMemoryAccountDataStore(),
+        snapshotCacheStore: InMemorySnapshotCacheStore(),
+        projectProviderFactory: { _ in FixtureAccountDiscoveryProvider(discovery: discovery) },
+        tokenValidator: { _ in }
+    )
+
+    await model.connect(token: "valid-token")
+
+    #expect(model.connectedAccount == profile)
+
+    model.disconnect()
+
+    #expect(model.connectedAccount == nil)
 }
 
 @MainActor
@@ -116,6 +149,18 @@ private final class CountingCredentialStore: VercelCredentialStore {
 
     func delete() throws {
         token = nil
+    }
+}
+
+private struct FixtureAccountDiscoveryProvider: VercelProjectListingProviding {
+    let discovery: VercelAccountDiscovery
+
+    func listAccessibleProjects() async throws -> [VercelProject] {
+        discovery.projects
+    }
+
+    func discoverAccount() async throws -> VercelAccountDiscovery {
+        discovery
     }
 }
 

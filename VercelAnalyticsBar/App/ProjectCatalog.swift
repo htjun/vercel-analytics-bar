@@ -22,20 +22,37 @@ struct ProjectCatalog {
             self.projects = VercelProject.sorted(projects)
 
             let availableProjectIDs = Set(self.projects.map(\.id))
-            var selectedProjectIDs = selection.selectedProjectIDs.intersection(availableProjectIDs)
-            if selectedProjectIDs.isEmpty, let firstProject = self.projects.first {
-                selectedProjectIDs = [firstProject.id]
-            }
+            let selectedProjectIDs = selection.selectedProjectIDs.intersection(availableProjectIDs)
 
             let retainedCurrentProjectID = selection.currentProjectID.flatMap { projectID in
                 selectedProjectIDs.contains(projectID) ? projectID : nil
             }
-            let currentProjectID = retainedCurrentProjectID ?? selectedProjectIDs.sorted().first
+            let currentProjectID = retainedCurrentProjectID ?? self.projects.first { project in
+                selectedProjectIDs.contains(project.id)
+            }?.id
 
             selection = ProjectSelection(
                 selectedProjectIDs: selectedProjectIDs,
                 currentProjectID: currentProjectID
             )
+        }
+
+        mutating func confirmSelection(_ selectedProjectIDs: Set<String>) -> Bool {
+            let availableProjectIDs = Set(projects.map(\.id))
+            guard !selectedProjectIDs.isEmpty,
+                  selectedProjectIDs.isSubset(of: availableProjectIDs),
+                  let currentProjectID = projects.first(where: { selectedProjectIDs.contains($0.id) })?.id
+            else {
+                return false
+            }
+
+            let confirmedSelection = ProjectSelection(
+                selectedProjectIDs: selectedProjectIDs,
+                currentProjectID: currentProjectID
+            )
+            guard confirmedSelection != selection else { return false }
+            selection = confirmedSelection
+            return true
         }
 
         mutating func setProject(_ projectID: String, selected: Bool) -> Bool {
@@ -131,6 +148,14 @@ struct ProjectCatalog {
     mutating func setProject(_ projectID: String, selected: Bool) throws -> Bool {
         var candidate = state
         guard candidate.setProject(projectID, selected: selected) else { return false }
+        try commit(candidate)
+        return true
+    }
+
+    @discardableResult
+    mutating func confirmSelection(_ selectedProjectIDs: Set<String>) throws -> Bool {
+        var candidate = state
+        guard candidate.confirmSelection(selectedProjectIDs) else { return false }
         try commit(candidate)
         return true
     }

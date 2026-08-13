@@ -1,27 +1,64 @@
 import Foundation
 
+public struct VercelAccountProfile: Equatable, Sendable {
+    public let id: String?
+    public let name: String?
+    public let username: String?
+    public let avatarURL: URL?
+
+    public init(
+        id: String? = nil,
+        name: String? = nil,
+        username: String? = nil,
+        avatarURL: URL? = nil
+    ) {
+        self.id = id
+        self.name = name
+        self.username = username
+        self.avatarURL = avatarURL
+    }
+
+    public var displayName: String {
+        Self.nonEmpty(name) ?? Self.nonEmpty(username) ?? "Vercel account"
+    }
+
+    private static func nonEmpty(_ value: String?) -> String? {
+        guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else {
+            return nil
+        }
+        return value
+    }
+}
+
+public struct VercelAccountDiscovery: Equatable, Sendable {
+    public let profile: VercelAccountProfile?
+    public let projects: [VercelProject]
+
+    public init(profile: VercelAccountProfile?, projects: [VercelProject]) {
+        self.profile = profile
+        self.projects = projects
+    }
+}
+
 public struct VercelProject: Equatable, Identifiable, Sendable {
     public let id: String
     public let name: String
     public let teamID: String?
     public let teamName: String?
     public let scopeSlug: String?
-    public let analyticsAvailability: VercelAnalyticsAvailability
 
     public init(
         id: String,
         name: String,
         teamID: String? = nil,
         teamName: String? = nil,
-        scopeSlug: String? = nil,
-        analyticsAvailability: VercelAnalyticsAvailability = .unknown
+        scopeSlug: String? = nil
     ) {
         self.id = id
         self.name = name
         self.teamID = teamID
         self.teamName = teamName
         self.scopeSlug = scopeSlug
-        self.analyticsAvailability = analyticsAvailability
     }
 }
 
@@ -50,23 +87,6 @@ public extension VercelProject {
         components.path = "/\(scopeSlug)/\(name)/analytics"
         components.queryItems = [URLQueryItem(name: "period", value: range.dashboardPeriod)]
         return components.url
-    }
-}
-
-public enum VercelAnalyticsAvailability: String, Equatable, Sendable {
-    case available
-    case unavailable
-    case unknown
-
-    public var label: String {
-        switch self {
-        case .available:
-            "Available"
-        case .unavailable:
-            "Unavailable"
-        case .unknown:
-            "Unknown"
-        }
     }
 }
 

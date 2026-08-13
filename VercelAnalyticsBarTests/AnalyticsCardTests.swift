@@ -181,7 +181,6 @@ private func renderAnalyticsCardFixture(
         projectSelectorContent: { EmptyView() },
         onSelectProject: {},
         onSelectRange: { _ in },
-        onOpenSettings: {},
         onOpenDashboard: { _ in }
     ))
     renderer.scale = 2

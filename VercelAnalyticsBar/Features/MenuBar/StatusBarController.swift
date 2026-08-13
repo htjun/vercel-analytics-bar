@@ -35,8 +35,7 @@ final class StatusBarController: NSObject {
         model: AppModel,
         chartStyle: ChartStyleStore,
         statusBar: NSStatusBar = .system,
-        companionWindows: @escaping () -> [NSWindow] = { [] },
-        onOpenSettings: @escaping () -> Void
+        companionWindows: @escaping () -> [NSWindow] = { [] }
     ) {
         self.model = model
         self.statusBar = statusBar
@@ -46,7 +45,6 @@ final class StatusBarController: NSObject {
         panelController = AnalyticsPanelController(
             model: model,
             chartStyle: chartStyle,
-            onOpenSettings: onOpenSettings,
             setStatusItemHighlighted: { statusItemButton?.highlight($0) },
             statusItemWindow: { statusItemButton?.window },
             companionWindows: companionWindows

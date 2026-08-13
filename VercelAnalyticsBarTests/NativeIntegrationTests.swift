@@ -69,8 +69,7 @@ import VercelAnalyticsCore
     )
     let controller = StatusBarController(
         model: model,
-        chartStyle: ChartStyleStore(),
-        onOpenSettings: {}
+        chartStyle: ChartStyleStore()
     )
     defer { controller.tearDown() }
 
@@ -89,7 +88,6 @@ import VercelAnalyticsCore
     let controller = AnalyticsPanelController(
         model: model,
         chartStyle: ChartStyleStore(),
-        onOpenSettings: {},
         setStatusItemHighlighted: { highlightStates.append($0) }
     )
     let anchor = AnalyticsPanelAnchor(
@@ -288,7 +286,6 @@ private func makePanelController(
     return AnalyticsPanelController(
         model: model,
         chartStyle: ChartStyleStore(),
-        onOpenSettings: {},
         setStatusItemHighlighted: { _ in },
         statusItemWindow: { statusItemWindow },
         companionWindows: { companionWindows }
@@ -345,6 +342,7 @@ private func makePanelController(
     )
 
     await model.connect(token: "valid-token")
+    #expect(model.confirmProjectSelection([project.id]))
     let syncTask = Task { await model.syncNow() }
     await provider.waitUntilRequested()
     #expect(model.projectState == .loaded([project]))
