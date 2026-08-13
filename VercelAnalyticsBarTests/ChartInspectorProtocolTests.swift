@@ -14,7 +14,7 @@
             let response = try session.receive(readyMessage)
 
             #expect(session.isReady)
-            #expect(response.state.protocolVersion == 4)
+            #expect(response.state.protocolVersion == 5)
             #expect(response.state.revision == 0)
             #expect(response.state.values == .default)
         }
@@ -24,7 +24,7 @@
             let session = ChartInspectorSession(styleStore: store)
             let changedStyle = try makeInspectorStyle(lineWidth: 4)
             let styleChange = ChartInspectorIncomingMessage(
-                protocolVersion: 4,
+                protocolVersion: 5,
                 type: .styleChanged,
                 source: "chart-inspector",
                 revision: 1,
@@ -45,7 +45,7 @@
             }
 
             let invalidRevision = ChartInspectorIncomingMessage(
-                protocolVersion: 4,
+                protocolVersion: 5,
                 type: .styleChanged,
                 source: "chart-inspector",
                 revision: ChartInspectorProtocol.maximumRevision + 1,
@@ -62,7 +62,7 @@
             _ = try session.receive(readyMessage)
             _ = try session.receive(
                 ChartInspectorIncomingMessage(
-                    protocolVersion: 4,
+                    protocolVersion: 5,
                     type: .styleChanged,
                     source: "chart-inspector",
                     revision: ChartInspectorProtocol.maximumRevision,
@@ -101,7 +101,7 @@
             #expect(throws: ChartInspectorProtocolError.unexpectedProtocolVersion) {
                 try session.receive(
                     ChartInspectorIncomingMessage(
-                        protocolVersion: 5,
+                        protocolVersion: 6,
                         type: .ready,
                         source: "chart-inspector",
                         revision: nil,
@@ -112,7 +112,7 @@
             #expect(throws: ChartInspectorProtocolError.unexpectedSource) {
                 try session.receive(
                     ChartInspectorIncomingMessage(
-                        protocolVersion: 4,
+                        protocolVersion: 5,
                         type: .ready,
                         source: "unexpected",
                         revision: nil,
@@ -121,7 +121,7 @@
                 )
             }
             #expect(throws: (any Error).self) {
-                try session.receive(body: ["protocolVersion": 4, "type": "unknown"])
+                try session.receive(body: ["protocolVersion": 5, "type": "unknown"])
             }
         }
 
@@ -219,7 +219,7 @@
 
         private var readyMessage: ChartInspectorIncomingMessage {
             ChartInspectorIncomingMessage(
-                protocolVersion: 4,
+                protocolVersion: 5,
                 type: .ready,
                 source: "chart-inspector",
                 revision: nil,
@@ -229,7 +229,7 @@
 
         private func commandMessage(_ type: ChartInspectorIncomingMessageType) -> ChartInspectorIncomingMessage {
             ChartInspectorIncomingMessage(
-                protocolVersion: 4,
+                protocolVersion: 5,
                 type: type,
                 source: "chart-inspector",
                 revision: nil,
@@ -245,7 +245,7 @@
             let session = ChartInspectorSession(styleStore: store)
             _ = try session.receive(readyMessage)
             let response = try session.receive(body: [
-                "protocolVersion": 4,
+                "protocolVersion": 5,
                 "type": "styleChanged",
                 "source": "chart-inspector",
                 "revision": 4,
@@ -258,6 +258,8 @@
                     "areaTopOpacity": 0.6,
                     "areaBottomOpacity": 0.12,
                     "chartHeight": 220,
+                    "chartSidePadding": 24,
+                    "chartVerticalPadding": 12,
                     "axisMarkCount": 8,
                     "yScaleHeadroom": 0.25,
                     "showsXAxisLabels": false,
@@ -340,6 +342,8 @@
         #expect(style.areaTopOpacity == 0.6)
         #expect(style.areaBottomOpacity == 0.12)
         #expect(style.chartHeight == 220)
+        #expect(style.chartSidePadding == 24)
+        #expect(style.chartVerticalPadding == 12)
         #expect(style.axisMarkCount == 8)
         #expect(style.yScaleHeadroom == 0.25)
         #expect(!style.showsXAxisLabels)
@@ -387,6 +391,8 @@
             areaTopOpacity: style.areaTopOpacity,
             areaBottomOpacity: style.areaBottomOpacity,
             chartHeight: style.chartHeight,
+            chartSidePadding: style.chartSidePadding,
+            chartVerticalPadding: style.chartVerticalPadding,
             axisMarkCount: style.axisMarkCount,
             yScaleHeadroom: style.yScaleHeadroom,
             showsXAxisLabels: style.showsXAxisLabels,

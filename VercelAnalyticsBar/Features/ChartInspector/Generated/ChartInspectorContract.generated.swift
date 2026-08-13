@@ -94,6 +94,8 @@ struct ChartStyle: Codable, Equatable, Sendable {
     static let areaTopOpacityRange = 0.0 ... 1.0
     static let areaBottomOpacityRange = 0.0 ... 1.0
     static let chartHeightRange = 80.0 ... 360.0
+    static let chartSidePaddingRange = 0.0 ... 64.0
+    static let chartVerticalPaddingRange = 0.0 ... 64.0
     static let axisMarkCountRange = 2.0 ... 12.0
     static let yScaleHeadroomRange = 0.0 ... 1.0
     static let verticalGridLineOpacityRange = 0.0 ... 1.0
@@ -123,12 +125,14 @@ struct ChartStyle: Codable, Equatable, Sendable {
                 interpolation: .monotone,
                 areaTopOpacity: 0.2,
                 areaBottomOpacity: 0,
-                chartHeight: 140,
+                chartHeight: 150,
+                chartSidePadding: 12,
+                chartVerticalPadding: 5,
                 axisMarkCount: 3,
                 yScaleHeadroom: 0.1,
                 showsXAxisLabels: true,
                 showsYAxisLabels: true,
-                showsVerticalGridLines: true,
+                showsVerticalGridLines: false,
                 verticalGridLineColor: .rgb(red: 142, green: 142, blue: 147),
                 verticalGridLineOpacity: 0.25,
                 verticalGridLineWidth: 0.5,
@@ -138,24 +142,24 @@ struct ChartStyle: Codable, Equatable, Sendable {
                 horizontalGridLineOpacity: 0.25,
                 horizontalGridLineWidth: 0.5,
                 horizontalGridLineStyle: .solid,
-                showsVerticalAxisTicks: true,
+                showsVerticalAxisTicks: false,
                 verticalAxisTickColor: .rgb(red: 142, green: 142, blue: 147),
                 verticalAxisTickOpacity: 0.5,
                 verticalAxisTickWidth: 0.5,
                 verticalAxisTickLength: 4,
-                showsHorizontalAxisTicks: true,
+                showsHorizontalAxisTicks: false,
                 horizontalAxisTickColor: .rgb(red: 142, green: 142, blue: 147),
                 horizontalAxisTickOpacity: 0.5,
                 horizontalAxisTickWidth: 0.5,
                 horizontalAxisTickLength: 4,
                 showsChartBorder: false,
                 chartBorderColor: .rgb(red: 142, green: 142, blue: 147),
-                chartBorderOpacity: 0.5,
+                chartBorderOpacity: 0.27,
                 chartBorderWidth: 1,
-                chartBorderStyle: .solid,
-                chartBorderRadius: 16,
-                chartBorderDashLength: 6,
-                chartBorderDashGap: 4,
+                chartBorderStyle: .dashed,
+                chartBorderRadius: 10,
+                chartBorderDashLength: 3,
+                chartBorderDashGap: 3,
                 chartBorderDashPhase: 0,
                 chartBorderDashCap: .round
             )
@@ -172,6 +176,8 @@ struct ChartStyle: Codable, Equatable, Sendable {
     let areaTopOpacity: Double
     let areaBottomOpacity: Double
     let chartHeight: Double
+    let chartSidePadding: Double
+    let chartVerticalPadding: Double
     let axisMarkCount: Int
     let yScaleHeadroom: Double
     let showsXAxisLabels: Bool
@@ -217,6 +223,8 @@ struct ChartStyle: Codable, Equatable, Sendable {
         areaTopOpacity: Double,
         areaBottomOpacity: Double,
         chartHeight: Double,
+        chartSidePadding: Double,
+        chartVerticalPadding: Double,
         axisMarkCount: Int,
         yScaleHeadroom: Double,
         showsXAxisLabels: Bool,
@@ -271,6 +279,16 @@ struct ChartStyle: Codable, Equatable, Sendable {
             chartHeight,
             field: "chartHeight",
             range: Self.chartHeightRange
+        )
+        try Self.validate(
+            chartSidePadding,
+            field: "chartSidePadding",
+            range: Self.chartSidePaddingRange
+        )
+        try Self.validate(
+            chartVerticalPadding,
+            field: "chartVerticalPadding",
+            range: Self.chartVerticalPaddingRange
         )
         try Self.validate(
             Double(axisMarkCount),
@@ -371,6 +389,8 @@ struct ChartStyle: Codable, Equatable, Sendable {
         self.areaTopOpacity = areaTopOpacity
         self.areaBottomOpacity = areaBottomOpacity
         self.chartHeight = chartHeight
+        self.chartSidePadding = chartSidePadding
+        self.chartVerticalPadding = chartVerticalPadding
         self.axisMarkCount = axisMarkCount
         self.yScaleHeadroom = yScaleHeadroom
         self.showsXAxisLabels = showsXAxisLabels
@@ -418,6 +438,8 @@ struct ChartStyle: Codable, Equatable, Sendable {
             areaTopOpacity: container.decode(Double.self, forKey: .areaTopOpacity),
             areaBottomOpacity: container.decode(Double.self, forKey: .areaBottomOpacity),
             chartHeight: container.decode(Double.self, forKey: .chartHeight),
+            chartSidePadding: container.decode(Double.self, forKey: .chartSidePadding),
+            chartVerticalPadding: container.decode(Double.self, forKey: .chartVerticalPadding),
             axisMarkCount: container.decode(Int.self, forKey: .axisMarkCount),
             yScaleHeadroom: container.decode(Double.self, forKey: .yScaleHeadroom),
             showsXAxisLabels: container.decode(Bool.self, forKey: .showsXAxisLabels),
@@ -468,7 +490,7 @@ struct ChartStyle: Codable, Equatable, Sendable {
 
 #if CHART_INSPECTOR
     enum ChartInspectorProtocol {
-        static let version = 4
+        static let version = 5
         static let minimumRevision = 0
         static let firstStyleChangeRevision = 1
         static let maximumRevision = 1_000_000_000

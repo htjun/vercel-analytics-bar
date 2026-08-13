@@ -15,12 +15,14 @@ struct ChartStyleTests {
         #expect(style.interpolation == .monotone)
         #expect(style.areaTopOpacity == 0.2)
         #expect(style.areaBottomOpacity == 0)
-        #expect(style.chartHeight == 140)
+        #expect(style.chartHeight == 150)
+        #expect(style.chartSidePadding == 12)
+        #expect(style.chartVerticalPadding == 5)
         #expect(style.axisMarkCount == 3)
         #expect(style.yScaleHeadroom == 0.1)
         #expect(style.showsXAxisLabels)
         #expect(style.showsYAxisLabels)
-        #expect(style.showsVerticalGridLines)
+        #expect(!style.showsVerticalGridLines)
         #expect(style.verticalGridLineColor.rawValue == "#8E8E93")
         #expect(style.verticalGridLineOpacity == 0.25)
         #expect(style.verticalGridLineWidth == 0.5)
@@ -30,24 +32,24 @@ struct ChartStyleTests {
         #expect(style.horizontalGridLineOpacity == 0.25)
         #expect(style.horizontalGridLineWidth == 0.5)
         #expect(style.horizontalGridLineStyle == .solid)
-        #expect(style.showsVerticalAxisTicks)
+        #expect(!style.showsVerticalAxisTicks)
         #expect(style.verticalAxisTickColor.rawValue == "#8E8E93")
         #expect(style.verticalAxisTickOpacity == 0.5)
         #expect(style.verticalAxisTickWidth == 0.5)
         #expect(style.verticalAxisTickLength == 4)
-        #expect(style.showsHorizontalAxisTicks)
+        #expect(!style.showsHorizontalAxisTicks)
         #expect(style.horizontalAxisTickColor.rawValue == "#8E8E93")
         #expect(style.horizontalAxisTickOpacity == 0.5)
         #expect(style.horizontalAxisTickWidth == 0.5)
         #expect(style.horizontalAxisTickLength == 4)
         #expect(!style.showsChartBorder)
         #expect(style.chartBorderColor.rawValue == "#8E8E93")
-        #expect(style.chartBorderOpacity == 0.5)
+        #expect(style.chartBorderOpacity == 0.27)
         #expect(style.chartBorderWidth == 1)
-        #expect(style.chartBorderStyle == .solid)
-        #expect(style.chartBorderRadius == 16)
-        #expect(style.chartBorderDashLength == 6)
-        #expect(style.chartBorderDashGap == 4)
+        #expect(style.chartBorderStyle == .dashed)
+        #expect(style.chartBorderRadius == 10)
+        #expect(style.chartBorderDashLength == 3)
+        #expect(style.chartBorderDashGap == 3)
         #expect(style.chartBorderDashPhase == 0)
         #expect(style.chartBorderDashCap == .round)
     }
@@ -190,6 +192,10 @@ struct ChartStyleTests {
             { try makeStyle(areaBottomOpacity: 1.01) },
             { try makeStyle(chartHeight: 79) },
             { try makeStyle(chartHeight: 361) },
+            { try makeStyle(chartSidePadding: -0.01) },
+            { try makeStyle(chartSidePadding: 64.01) },
+            { try makeStyle(chartVerticalPadding: -0.01) },
+            { try makeStyle(chartVerticalPadding: 64.01) },
             { try makeStyle(axisMarkCount: 1) },
             { try makeStyle(axisMarkCount: 13) },
             { try makeStyle(yScaleHeadroom: -0.01) },
@@ -239,6 +245,8 @@ private func makeStyle(
     areaTopOpacity: Double = 0.24,
     areaBottomOpacity: Double = 0.03,
     chartHeight: Double = 140,
+    chartSidePadding: Double = 14,
+    chartVerticalPadding: Double = 0,
     axisMarkCount: Int = 4,
     yScaleHeadroom: Double = 0.1,
     showsXAxisLabels: Bool = true,
@@ -283,6 +291,8 @@ private func makeStyle(
         areaTopOpacity: areaTopOpacity,
         areaBottomOpacity: areaBottomOpacity,
         chartHeight: chartHeight,
+        chartSidePadding: chartSidePadding,
+        chartVerticalPadding: chartVerticalPadding,
         axisMarkCount: axisMarkCount,
         yScaleHeadroom: yScaleHeadroom,
         showsXAxisLabels: showsXAxisLabels,

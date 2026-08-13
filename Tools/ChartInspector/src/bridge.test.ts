@@ -16,6 +16,8 @@ const defaultStyle: ChartStyle = {
   areaTopOpacity: 0.24,
   areaBottomOpacity: 0.03,
   chartHeight: 140,
+  chartSidePadding: 14,
+  chartVerticalPadding: 0,
   axisMarkCount: 4,
   yScaleHeadroom: 0.1,
   showsXAxisLabels: true,
@@ -75,7 +77,7 @@ describe("ChartInspectorBridge", () => {
     expect(bridge.postStyleChanged({ ...defaultStyle, lineWidth: 3 })).toBe(false);
     expect(
       bridge.receiveState({
-        protocolVersion: 5,
+        protocolVersion: 6,
         type: "state",
         source: NATIVE_SOURCE,
         revision: 0,
@@ -205,6 +207,8 @@ describe("ChartInspectorBridge", () => {
       { areaTopOpacity: 1.1 },
       { areaBottomOpacity: -0.1 },
       { chartHeight: 79 },
+      { chartSidePadding: 65 },
+      { chartVerticalPadding: -1 },
       { axisMarkCount: 4.5 },
       { yScaleHeadroom: Number.POSITIVE_INFINITY },
       { showsXAxisLabels: 1 as unknown as boolean },

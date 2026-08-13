@@ -107,7 +107,8 @@ struct VisitorsChart: View {
             }
         }
         .chartYScale(domain: 0 ... chartMaximum)
-        .padding(.horizontal, 14)
+        .padding(.horizontal, style.chartSidePadding)
+        .padding(.vertical, style.chartVerticalPadding)
         .frame(height: style.chartHeight)
         .clipShape(containerShape)
         .overlay {

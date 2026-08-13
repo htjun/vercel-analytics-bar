@@ -22,6 +22,8 @@ export const CHART_STYLE_INSPECTOR_FIELDS = [
   { name: "areaTopOpacity", path: "area.topOpacity", control: "range" },
   { name: "areaBottomOpacity", path: "area.bottomOpacity", control: "range" },
   { name: "chartHeight", path: "layout.height", control: "range" },
+  { name: "chartSidePadding", path: "layout.sidePadding", control: "range" },
+  { name: "chartVerticalPadding", path: "layout.topBottomPadding", control: "range" },
   { name: "axisMarkCount", path: "axes.markCount", control: "range" },
   { name: "yScaleHeadroom", path: "axes.yScaleHeadroom", control: "range" },
   { name: "showsXAxisLabels", path: "axes.xLabels", control: "boolean" },
@@ -72,6 +74,8 @@ export const chartFieldConfig = {
   },
   layout: {
     height: dialRange(CHART_STYLE_DEFAULT.chartHeight, CHART_STYLE_RANGES.chartHeight),
+    sidePadding: dialRange(CHART_STYLE_DEFAULT.chartSidePadding, CHART_STYLE_RANGES.chartSidePadding),
+    topBottomPadding: dialRange(CHART_STYLE_DEFAULT.chartVerticalPadding, CHART_STYLE_RANGES.chartVerticalPadding),
   },
   axes: {
     markCount: dialRange(CHART_STYLE_DEFAULT.axisMarkCount, CHART_STYLE_RANGES.axisMarkCount),
@@ -138,6 +142,8 @@ export function dialValuesFromStyle(style: ChartStyle) {
     },
     layout: {
       height: style.chartHeight,
+      sidePadding: style.chartSidePadding,
+      topBottomPadding: style.chartVerticalPadding,
     },
     axes: {
       markCount: style.axisMarkCount,
@@ -200,6 +206,8 @@ export function styleFromDialValues(values: ResolvedValues<typeof chartFieldConf
     areaTopOpacity: values.area.topOpacity,
     areaBottomOpacity: values.area.bottomOpacity,
     chartHeight: values.layout.height,
+    chartSidePadding: values.layout.sidePadding,
+    chartVerticalPadding: values.layout.topBottomPadding,
     axisMarkCount: values.axes.markCount,
     yScaleHeadroom: values.axes.yScaleHeadroom,
     showsXAxisLabels: values.axes.xLabels,
