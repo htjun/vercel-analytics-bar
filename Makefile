@@ -31,7 +31,7 @@ run:
 	Scripts/run_debug.sh
 
 run-inspector:
-	Scripts/run_debug.sh --chart-inspector-dev-server
+	Scripts/run_inspector_dev.sh
 
 run-inspector-bundled:
 	Scripts/run_debug.sh --chart-inspector
