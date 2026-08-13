@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import Testing
 @testable import VercelAnalyticsBar
 
@@ -17,9 +18,38 @@ struct ChartStyleTests {
         #expect(style.chartHeight == 140)
         #expect(style.axisMarkCount == 3)
         #expect(style.yScaleHeadroom == 0.1)
-        #expect(style.showsGridLines)
         #expect(style.showsXAxisLabels)
         #expect(style.showsYAxisLabels)
+        #expect(style.showsVerticalGridLines)
+        #expect(style.verticalGridLineColor.rawValue == "#8E8E93")
+        #expect(style.verticalGridLineOpacity == 0.25)
+        #expect(style.verticalGridLineWidth == 0.5)
+        #expect(style.verticalGridLineStyle == .solid)
+        #expect(style.showsHorizontalGridLines)
+        #expect(style.horizontalGridLineColor.rawValue == "#8E8E93")
+        #expect(style.horizontalGridLineOpacity == 0.25)
+        #expect(style.horizontalGridLineWidth == 0.5)
+        #expect(style.horizontalGridLineStyle == .solid)
+        #expect(style.showsVerticalAxisTicks)
+        #expect(style.verticalAxisTickColor.rawValue == "#8E8E93")
+        #expect(style.verticalAxisTickOpacity == 0.5)
+        #expect(style.verticalAxisTickWidth == 0.5)
+        #expect(style.verticalAxisTickLength == 4)
+        #expect(style.showsHorizontalAxisTicks)
+        #expect(style.horizontalAxisTickColor.rawValue == "#8E8E93")
+        #expect(style.horizontalAxisTickOpacity == 0.5)
+        #expect(style.horizontalAxisTickWidth == 0.5)
+        #expect(style.horizontalAxisTickLength == 4)
+        #expect(!style.showsChartBorder)
+        #expect(style.chartBorderColor.rawValue == "#8E8E93")
+        #expect(style.chartBorderOpacity == 0.5)
+        #expect(style.chartBorderWidth == 1)
+        #expect(style.chartBorderStyle == .solid)
+        #expect(style.chartBorderRadius == 16)
+        #expect(style.chartBorderDashLength == 6)
+        #expect(style.chartBorderDashGap == 4)
+        #expect(style.chartBorderDashPhase == 0)
+        #expect(style.chartBorderDashCap == .round)
     }
 
     @Test func colorAcceptsAccentAndCanonicalizesHexadecimalRGB() throws {
@@ -57,7 +87,7 @@ struct ChartStyleTests {
         #expect(roundTrip == .default)
     }
 
-    @Test func decodingRejectsUnknownLineEnums() throws {
+    @Test func decodingRejectsUnknownEnums() throws {
         let encodedDefault = try JSONEncoder().encode(ChartStyle.default)
         var object = try #require(JSONSerialization.jsonObject(with: encodedDefault) as? [String: Any])
         object["lineCap"] = "curved"
@@ -79,6 +109,46 @@ struct ChartStyleTests {
         #expect(throws: DecodingError.self) {
             try JSONDecoder().decode(ChartStyle.self, from: invalidInterpolation)
         }
+
+        object = try #require(JSONSerialization.jsonObject(with: encodedDefault) as? [String: Any])
+        object["verticalGridLineStyle"] = "longDash"
+        let invalidGridLineStyle = try JSONSerialization.data(withJSONObject: object)
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(ChartStyle.self, from: invalidGridLineStyle)
+        }
+
+        object = try #require(JSONSerialization.jsonObject(with: encodedDefault) as? [String: Any])
+        object["chartBorderStyle"] = "dotted"
+        let invalidBorderStyle = try JSONSerialization.data(withJSONObject: object)
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(ChartStyle.self, from: invalidBorderStyle)
+        }
+    }
+
+    @Test func borderStrokeStyleUsesDashDetailsOnlyForDashedBorders() {
+        let solid = ChartBorderStyle.solid.strokeStyle(
+            lineWidth: 2.5,
+            dashLength: 12,
+            dashGap: 8,
+            dashPhase: 5,
+            dashCap: .round
+        )
+        #expect(solid.lineWidth == 2.5)
+        #expect(solid.lineCap == .butt)
+        #expect(solid.dash.isEmpty)
+        #expect(solid.dashPhase == 0)
+
+        let dashed = ChartBorderStyle.dashed.strokeStyle(
+            lineWidth: 3.25,
+            dashLength: 12,
+            dashGap: 8,
+            dashPhase: 5,
+            dashCap: .square
+        )
+        #expect(dashed.lineWidth == 3.25)
+        #expect(dashed.lineCap == .square)
+        #expect(dashed.dash == [12, 8])
+        #expect(dashed.dashPhase == 5)
     }
 
     @MainActor
@@ -124,6 +194,38 @@ struct ChartStyleTests {
             { try makeStyle(axisMarkCount: 13) },
             { try makeStyle(yScaleHeadroom: -0.01) },
             { try makeStyle(yScaleHeadroom: .infinity) },
+            { try makeStyle(verticalGridLineOpacity: -0.01) },
+            { try makeStyle(verticalGridLineOpacity: 1.01) },
+            { try makeStyle(verticalGridLineWidth: 0.24) },
+            { try makeStyle(verticalGridLineWidth: 4.01) },
+            { try makeStyle(horizontalGridLineOpacity: -0.01) },
+            { try makeStyle(horizontalGridLineOpacity: 1.01) },
+            { try makeStyle(horizontalGridLineWidth: 0.24) },
+            { try makeStyle(horizontalGridLineWidth: 4.01) },
+            { try makeStyle(verticalAxisTickOpacity: -0.01) },
+            { try makeStyle(verticalAxisTickOpacity: 1.01) },
+            { try makeStyle(verticalAxisTickWidth: 0.24) },
+            { try makeStyle(verticalAxisTickWidth: 4.01) },
+            { try makeStyle(verticalAxisTickLength: 0.99) },
+            { try makeStyle(verticalAxisTickLength: 16.01) },
+            { try makeStyle(horizontalAxisTickOpacity: -0.01) },
+            { try makeStyle(horizontalAxisTickOpacity: 1.01) },
+            { try makeStyle(horizontalAxisTickWidth: 0.24) },
+            { try makeStyle(horizontalAxisTickWidth: 4.01) },
+            { try makeStyle(horizontalAxisTickLength: 0.99) },
+            { try makeStyle(horizontalAxisTickLength: 16.01) },
+            { try makeStyle(chartBorderOpacity: -0.01) },
+            { try makeStyle(chartBorderOpacity: 1.01) },
+            { try makeStyle(chartBorderWidth: 0.24) },
+            { try makeStyle(chartBorderWidth: 8.01) },
+            { try makeStyle(chartBorderRadius: -0.01) },
+            { try makeStyle(chartBorderRadius: 64.01) },
+            { try makeStyle(chartBorderDashLength: 0.99) },
+            { try makeStyle(chartBorderDashLength: 32.01) },
+            { try makeStyle(chartBorderDashGap: 0.99) },
+            { try makeStyle(chartBorderDashGap: 32.01) },
+            { try makeStyle(chartBorderDashPhase: -0.01) },
+            { try makeStyle(chartBorderDashPhase: 64.01) },
         ]
     }
 }
@@ -139,9 +241,38 @@ private func makeStyle(
     chartHeight: Double = 140,
     axisMarkCount: Int = 4,
     yScaleHeadroom: Double = 0.1,
-    showsGridLines: Bool = true,
     showsXAxisLabels: Bool = true,
-    showsYAxisLabels: Bool = true
+    showsYAxisLabels: Bool = true,
+    showsVerticalGridLines: Bool = true,
+    verticalGridLineColor: ChartColor = .rgb(red: 142, green: 142, blue: 147),
+    verticalGridLineOpacity: Double = 0.25,
+    verticalGridLineWidth: Double = 0.5,
+    verticalGridLineStyle: ChartGridLineStyle = .solid,
+    showsHorizontalGridLines: Bool = true,
+    horizontalGridLineColor: ChartColor = .rgb(red: 142, green: 142, blue: 147),
+    horizontalGridLineOpacity: Double = 0.25,
+    horizontalGridLineWidth: Double = 0.5,
+    horizontalGridLineStyle: ChartGridLineStyle = .solid,
+    showsVerticalAxisTicks: Bool = true,
+    verticalAxisTickColor: ChartColor = .rgb(red: 142, green: 142, blue: 147),
+    verticalAxisTickOpacity: Double = 0.5,
+    verticalAxisTickWidth: Double = 0.5,
+    verticalAxisTickLength: Double = 4,
+    showsHorizontalAxisTicks: Bool = true,
+    horizontalAxisTickColor: ChartColor = .rgb(red: 142, green: 142, blue: 147),
+    horizontalAxisTickOpacity: Double = 0.5,
+    horizontalAxisTickWidth: Double = 0.5,
+    horizontalAxisTickLength: Double = 4,
+    showsChartBorder: Bool = false,
+    chartBorderColor: ChartColor = .rgb(red: 142, green: 142, blue: 147),
+    chartBorderOpacity: Double = 0.5,
+    chartBorderWidth: Double = 1,
+    chartBorderStyle: ChartBorderStyle = .solid,
+    chartBorderRadius: Double = 16,
+    chartBorderDashLength: Double = 6,
+    chartBorderDashGap: Double = 4,
+    chartBorderDashPhase: Double = 0,
+    chartBorderDashCap: ChartLineCap = .round
 ) throws -> ChartStyle {
     try ChartStyle(
         lineColor: lineColor,
@@ -154,8 +285,37 @@ private func makeStyle(
         chartHeight: chartHeight,
         axisMarkCount: axisMarkCount,
         yScaleHeadroom: yScaleHeadroom,
-        showsGridLines: showsGridLines,
         showsXAxisLabels: showsXAxisLabels,
-        showsYAxisLabels: showsYAxisLabels
+        showsYAxisLabels: showsYAxisLabels,
+        showsVerticalGridLines: showsVerticalGridLines,
+        verticalGridLineColor: verticalGridLineColor,
+        verticalGridLineOpacity: verticalGridLineOpacity,
+        verticalGridLineWidth: verticalGridLineWidth,
+        verticalGridLineStyle: verticalGridLineStyle,
+        showsHorizontalGridLines: showsHorizontalGridLines,
+        horizontalGridLineColor: horizontalGridLineColor,
+        horizontalGridLineOpacity: horizontalGridLineOpacity,
+        horizontalGridLineWidth: horizontalGridLineWidth,
+        horizontalGridLineStyle: horizontalGridLineStyle,
+        showsVerticalAxisTicks: showsVerticalAxisTicks,
+        verticalAxisTickColor: verticalAxisTickColor,
+        verticalAxisTickOpacity: verticalAxisTickOpacity,
+        verticalAxisTickWidth: verticalAxisTickWidth,
+        verticalAxisTickLength: verticalAxisTickLength,
+        showsHorizontalAxisTicks: showsHorizontalAxisTicks,
+        horizontalAxisTickColor: horizontalAxisTickColor,
+        horizontalAxisTickOpacity: horizontalAxisTickOpacity,
+        horizontalAxisTickWidth: horizontalAxisTickWidth,
+        horizontalAxisTickLength: horizontalAxisTickLength,
+        showsChartBorder: showsChartBorder,
+        chartBorderColor: chartBorderColor,
+        chartBorderOpacity: chartBorderOpacity,
+        chartBorderWidth: chartBorderWidth,
+        chartBorderStyle: chartBorderStyle,
+        chartBorderRadius: chartBorderRadius,
+        chartBorderDashLength: chartBorderDashLength,
+        chartBorderDashGap: chartBorderDashGap,
+        chartBorderDashPhase: chartBorderDashPhase,
+        chartBorderDashCap: chartBorderDashCap
     )
 }

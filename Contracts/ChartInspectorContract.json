@@ -1,6 +1,6 @@
 {
   "protocol": {
-    "version": 1,
+    "version": 4,
     "revisions": {
       "nativeMinimum": 0,
       "styleChangeMinimum": 1,
@@ -42,6 +42,15 @@
         "monotone",
         "cardinal",
         "catmullRom"
+      ],
+      "gridLineStyle": [
+        "solid",
+        "dashed",
+        "dotted"
+      ],
+      "borderStyle": [
+        "solid",
+        "dashed"
       ]
     },
     "fields": [
@@ -168,16 +177,6 @@
         }
       },
       {
-        "name": "showsGridLines",
-        "type": "boolean",
-        "default": true,
-        "inspector": {
-          "group": "axes",
-          "key": "gridLines",
-          "control": "boolean"
-        }
-      },
-      {
         "name": "showsXAxisLabels",
         "type": "boolean",
         "default": true,
@@ -195,6 +194,363 @@
           "group": "axes",
           "key": "yLabels",
           "control": "boolean"
+        }
+      },
+      {
+        "name": "showsVerticalGridLines",
+        "type": "boolean",
+        "default": true,
+        "inspector": {
+          "group": "verticalGridLines",
+          "key": "visible",
+          "control": "boolean"
+        }
+      },
+      {
+        "name": "verticalGridLineColor",
+        "type": "color",
+        "default": "#8E8E93",
+        "inspector": {
+          "group": "verticalGridLines",
+          "key": "color",
+          "control": "color",
+          "accentDisplay": "#007AFF"
+        }
+      },
+      {
+        "name": "verticalGridLineOpacity",
+        "type": "number",
+        "default": 0.25,
+        "minimum": 0,
+        "maximum": 1,
+        "step": 0.01,
+        "inspector": {
+          "group": "verticalGridLines",
+          "key": "opacity",
+          "control": "range"
+        }
+      },
+      {
+        "name": "verticalGridLineWidth",
+        "type": "number",
+        "default": 0.5,
+        "minimum": 0.25,
+        "maximum": 4,
+        "step": 0.25,
+        "inspector": {
+          "group": "verticalGridLines",
+          "key": "weight",
+          "control": "range"
+        }
+      },
+      {
+        "name": "verticalGridLineStyle",
+        "type": "enum",
+        "enum": "gridLineStyle",
+        "default": "solid",
+        "inspector": {
+          "group": "verticalGridLines",
+          "key": "pattern",
+          "control": "select"
+        }
+      },
+      {
+        "name": "showsHorizontalGridLines",
+        "type": "boolean",
+        "default": true,
+        "inspector": {
+          "group": "horizontalGridLines",
+          "key": "visible",
+          "control": "boolean"
+        }
+      },
+      {
+        "name": "horizontalGridLineColor",
+        "type": "color",
+        "default": "#8E8E93",
+        "inspector": {
+          "group": "horizontalGridLines",
+          "key": "color",
+          "control": "color",
+          "accentDisplay": "#007AFF"
+        }
+      },
+      {
+        "name": "horizontalGridLineOpacity",
+        "type": "number",
+        "default": 0.25,
+        "minimum": 0,
+        "maximum": 1,
+        "step": 0.01,
+        "inspector": {
+          "group": "horizontalGridLines",
+          "key": "opacity",
+          "control": "range"
+        }
+      },
+      {
+        "name": "horizontalGridLineWidth",
+        "type": "number",
+        "default": 0.5,
+        "minimum": 0.25,
+        "maximum": 4,
+        "step": 0.25,
+        "inspector": {
+          "group": "horizontalGridLines",
+          "key": "weight",
+          "control": "range"
+        }
+      },
+      {
+        "name": "horizontalGridLineStyle",
+        "type": "enum",
+        "enum": "gridLineStyle",
+        "default": "solid",
+        "inspector": {
+          "group": "horizontalGridLines",
+          "key": "pattern",
+          "control": "select"
+        }
+      },
+      {
+        "name": "showsVerticalAxisTicks",
+        "type": "boolean",
+        "default": true,
+        "inspector": {
+          "group": "verticalAxisTicks",
+          "key": "visible",
+          "control": "boolean"
+        }
+      },
+      {
+        "name": "verticalAxisTickColor",
+        "type": "color",
+        "default": "#8E8E93",
+        "inspector": {
+          "group": "verticalAxisTicks",
+          "key": "color",
+          "control": "color",
+          "accentDisplay": "#007AFF"
+        }
+      },
+      {
+        "name": "verticalAxisTickOpacity",
+        "type": "number",
+        "default": 0.5,
+        "minimum": 0,
+        "maximum": 1,
+        "step": 0.01,
+        "inspector": {
+          "group": "verticalAxisTicks",
+          "key": "opacity",
+          "control": "range"
+        }
+      },
+      {
+        "name": "verticalAxisTickWidth",
+        "type": "number",
+        "default": 0.5,
+        "minimum": 0.25,
+        "maximum": 4,
+        "step": 0.25,
+        "inspector": {
+          "group": "verticalAxisTicks",
+          "key": "weight",
+          "control": "range"
+        }
+      },
+      {
+        "name": "verticalAxisTickLength",
+        "type": "number",
+        "default": 4,
+        "minimum": 1,
+        "maximum": 16,
+        "step": 1,
+        "inspector": {
+          "group": "verticalAxisTicks",
+          "key": "length",
+          "control": "range"
+        }
+      },
+      {
+        "name": "showsHorizontalAxisTicks",
+        "type": "boolean",
+        "default": true,
+        "inspector": {
+          "group": "horizontalAxisTicks",
+          "key": "visible",
+          "control": "boolean"
+        }
+      },
+      {
+        "name": "horizontalAxisTickColor",
+        "type": "color",
+        "default": "#8E8E93",
+        "inspector": {
+          "group": "horizontalAxisTicks",
+          "key": "color",
+          "control": "color",
+          "accentDisplay": "#007AFF"
+        }
+      },
+      {
+        "name": "horizontalAxisTickOpacity",
+        "type": "number",
+        "default": 0.5,
+        "minimum": 0,
+        "maximum": 1,
+        "step": 0.01,
+        "inspector": {
+          "group": "horizontalAxisTicks",
+          "key": "opacity",
+          "control": "range"
+        }
+      },
+      {
+        "name": "horizontalAxisTickWidth",
+        "type": "number",
+        "default": 0.5,
+        "minimum": 0.25,
+        "maximum": 4,
+        "step": 0.25,
+        "inspector": {
+          "group": "horizontalAxisTicks",
+          "key": "weight",
+          "control": "range"
+        }
+      },
+      {
+        "name": "horizontalAxisTickLength",
+        "type": "number",
+        "default": 4,
+        "minimum": 1,
+        "maximum": 16,
+        "step": 1,
+        "inspector": {
+          "group": "horizontalAxisTicks",
+          "key": "length",
+          "control": "range"
+        }
+      },
+      {
+        "name": "showsChartBorder",
+        "type": "boolean",
+        "default": false,
+        "inspector": {
+          "group": "chartContainer",
+          "key": "borderVisible",
+          "control": "boolean"
+        }
+      },
+      {
+        "name": "chartBorderColor",
+        "type": "color",
+        "default": "#8E8E93",
+        "inspector": {
+          "group": "chartContainer",
+          "key": "borderColor",
+          "control": "color",
+          "accentDisplay": "#007AFF"
+        }
+      },
+      {
+        "name": "chartBorderOpacity",
+        "type": "number",
+        "default": 0.5,
+        "minimum": 0,
+        "maximum": 1,
+        "step": 0.01,
+        "inspector": {
+          "group": "chartContainer",
+          "key": "borderOpacity",
+          "control": "range"
+        }
+      },
+      {
+        "name": "chartBorderWidth",
+        "type": "number",
+        "default": 1,
+        "minimum": 0.25,
+        "maximum": 8,
+        "step": 0.25,
+        "inspector": {
+          "group": "chartContainer",
+          "key": "borderWeight",
+          "control": "range"
+        }
+      },
+      {
+        "name": "chartBorderStyle",
+        "type": "enum",
+        "enum": "borderStyle",
+        "default": "solid",
+        "inspector": {
+          "group": "chartContainer",
+          "key": "borderStyle",
+          "control": "select"
+        }
+      },
+      {
+        "name": "chartBorderRadius",
+        "type": "number",
+        "default": 16,
+        "minimum": 0,
+        "maximum": 64,
+        "step": 1,
+        "inspector": {
+          "group": "chartContainer",
+          "key": "radius",
+          "control": "range"
+        }
+      },
+      {
+        "name": "chartBorderDashLength",
+        "type": "number",
+        "default": 6,
+        "minimum": 1,
+        "maximum": 32,
+        "step": 1,
+        "inspector": {
+          "group": "borderDash",
+          "key": "length",
+          "control": "range"
+        }
+      },
+      {
+        "name": "chartBorderDashGap",
+        "type": "number",
+        "default": 4,
+        "minimum": 1,
+        "maximum": 32,
+        "step": 1,
+        "inspector": {
+          "group": "borderDash",
+          "key": "gap",
+          "control": "range"
+        }
+      },
+      {
+        "name": "chartBorderDashPhase",
+        "type": "number",
+        "default": 0,
+        "minimum": 0,
+        "maximum": 64,
+        "step": 1,
+        "inspector": {
+          "group": "borderDash",
+          "key": "phase",
+          "control": "range"
+        }
+      },
+      {
+        "name": "chartBorderDashCap",
+        "type": "enum",
+        "enum": "lineCap",
+        "default": "round",
+        "inspector": {
+          "group": "borderDash",
+          "key": "cap",
+          "control": "select"
         }
       }
     ]

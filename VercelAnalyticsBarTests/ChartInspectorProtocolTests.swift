@@ -1,4 +1,5 @@
 #if CHART_INSPECTOR
+    // swiftlint:disable file_length
     import Foundation
     import Testing
     @testable import VercelAnalyticsBar
@@ -13,7 +14,7 @@
             let response = try session.receive(readyMessage)
 
             #expect(session.isReady)
-            #expect(response.state.protocolVersion == 1)
+            #expect(response.state.protocolVersion == 4)
             #expect(response.state.revision == 0)
             #expect(response.state.values == .default)
         }
@@ -23,7 +24,7 @@
             let session = ChartInspectorSession(styleStore: store)
             let changedStyle = try makeInspectorStyle(lineWidth: 4)
             let styleChange = ChartInspectorIncomingMessage(
-                protocolVersion: 1,
+                protocolVersion: 4,
                 type: .styleChanged,
                 source: "chart-inspector",
                 revision: 1,
@@ -44,7 +45,7 @@
             }
 
             let invalidRevision = ChartInspectorIncomingMessage(
-                protocolVersion: 1,
+                protocolVersion: 4,
                 type: .styleChanged,
                 source: "chart-inspector",
                 revision: ChartInspectorProtocol.maximumRevision + 1,
@@ -61,7 +62,7 @@
             _ = try session.receive(readyMessage)
             _ = try session.receive(
                 ChartInspectorIncomingMessage(
-                    protocolVersion: 1,
+                    protocolVersion: 4,
                     type: .styleChanged,
                     source: "chart-inspector",
                     revision: ChartInspectorProtocol.maximumRevision,
@@ -72,48 +73,6 @@
             #expect(throws: ChartInspectorProtocolError.invalidRevision) {
                 try session.receive(commandMessage(.reset))
             }
-        }
-
-        @Test func everyStyleFieldRoundTripsThroughTheCanonicalNativeBoundary() throws {
-            let store = ChartStyleStore()
-            let session = ChartInspectorSession(styleStore: store)
-            _ = try session.receive(readyMessage)
-            let response = try session.receive(body: [
-                "protocolVersion": 1,
-                "type": "styleChanged",
-                "source": "chart-inspector",
-                "revision": 4,
-                "values": [
-                    "lineColor": "#aabbcc",
-                    "lineWidth": 6.5,
-                    "lineCap": "round",
-                    "lineJoin": "bevel",
-                    "interpolation": "catmullRom",
-                    "areaTopOpacity": 0.6,
-                    "areaBottomOpacity": 0.12,
-                    "chartHeight": 220,
-                    "axisMarkCount": 8,
-                    "yScaleHeadroom": 0.25,
-                    "showsGridLines": false,
-                    "showsXAxisLabels": false,
-                    "showsYAxisLabels": false,
-                ],
-            ])
-
-            #expect(response.state.values.lineColor.rawValue == "#AABBCC")
-            #expect(response.state.values.lineWidth == 6.5)
-            #expect(response.state.values.lineCap == .round)
-            #expect(response.state.values.lineJoin == .bevel)
-            #expect(response.state.values.interpolation == .catmullRom)
-            #expect(response.state.values.areaTopOpacity == 0.6)
-            #expect(response.state.values.areaBottomOpacity == 0.12)
-            #expect(response.state.values.chartHeight == 220)
-            #expect(response.state.values.axisMarkCount == 8)
-            #expect(response.state.values.yScaleHeadroom == 0.25)
-            #expect(!response.state.values.showsGridLines)
-            #expect(!response.state.values.showsXAxisLabels)
-            #expect(!response.state.values.showsYAxisLabels)
-            #expect(store.style == response.state.values)
         }
 
         @Test func resetCopyAndRehydrationUseCanonicalNativeState() throws {
@@ -142,7 +101,7 @@
             #expect(throws: ChartInspectorProtocolError.unexpectedProtocolVersion) {
                 try session.receive(
                     ChartInspectorIncomingMessage(
-                        protocolVersion: 2,
+                        protocolVersion: 5,
                         type: .ready,
                         source: "chart-inspector",
                         revision: nil,
@@ -153,7 +112,7 @@
             #expect(throws: ChartInspectorProtocolError.unexpectedSource) {
                 try session.receive(
                     ChartInspectorIncomingMessage(
-                        protocolVersion: 1,
+                        protocolVersion: 4,
                         type: .ready,
                         source: "unexpected",
                         revision: nil,
@@ -162,7 +121,7 @@
                 )
             }
             #expect(throws: (any Error).self) {
-                try session.receive(body: ["protocolVersion": 1, "type": "unknown"])
+                try session.receive(body: ["protocolVersion": 4, "type": "unknown"])
             }
         }
 
@@ -260,7 +219,7 @@
 
         private var readyMessage: ChartInspectorIncomingMessage {
             ChartInspectorIncomingMessage(
-                protocolVersion: 1,
+                protocolVersion: 4,
                 type: .ready,
                 source: "chart-inspector",
                 revision: nil,
@@ -270,7 +229,7 @@
 
         private func commandMessage(_ type: ChartInspectorIncomingMessageType) -> ChartInspectorIncomingMessage {
             ChartInspectorIncomingMessage(
-                protocolVersion: 1,
+                protocolVersion: 4,
                 type: type,
                 source: "chart-inspector",
                 revision: nil,
@@ -280,13 +239,71 @@
     }
 
     extension ChartInspectorProtocolTests {
-        @Test func previewUsesTheLiveSnapshotSeriesAndSourceLabel() {
+        // swiftlint:disable:next function_body_length
+        @Test func everyStyleFieldRoundTripsThroughTheCanonicalNativeBoundary() throws {
+            let store = ChartStyleStore()
+            let session = ChartInspectorSession(styleStore: store)
+            _ = try session.receive(readyMessage)
+            let response = try session.receive(body: [
+                "protocolVersion": 4,
+                "type": "styleChanged",
+                "source": "chart-inspector",
+                "revision": 4,
+                "values": [
+                    "lineColor": "#aabbcc",
+                    "lineWidth": 6.5,
+                    "lineCap": "round",
+                    "lineJoin": "bevel",
+                    "interpolation": "catmullRom",
+                    "areaTopOpacity": 0.6,
+                    "areaBottomOpacity": 0.12,
+                    "chartHeight": 220,
+                    "axisMarkCount": 8,
+                    "yScaleHeadroom": 0.25,
+                    "showsXAxisLabels": false,
+                    "showsYAxisLabels": false,
+                    "showsVerticalGridLines": false,
+                    "verticalGridLineColor": "#112233",
+                    "verticalGridLineOpacity": 0.4,
+                    "verticalGridLineWidth": 1.25,
+                    "verticalGridLineStyle": "dashed",
+                    "showsHorizontalGridLines": true,
+                    "horizontalGridLineColor": "#445566",
+                    "horizontalGridLineOpacity": 0.7,
+                    "horizontalGridLineWidth": 2.5,
+                    "horizontalGridLineStyle": "dotted",
+                    "showsVerticalAxisTicks": false,
+                    "verticalAxisTickColor": "#223344",
+                    "verticalAxisTickOpacity": 0.35,
+                    "verticalAxisTickWidth": 1.5,
+                    "verticalAxisTickLength": 7,
+                    "showsHorizontalAxisTicks": true,
+                    "horizontalAxisTickColor": "#556677",
+                    "horizontalAxisTickOpacity": 0.8,
+                    "horizontalAxisTickWidth": 2.25,
+                    "horizontalAxisTickLength": 11,
+                    "showsChartBorder": true,
+                    "chartBorderColor": "#778899",
+                    "chartBorderOpacity": 0.65,
+                    "chartBorderWidth": 3.25,
+                    "chartBorderStyle": "dashed",
+                    "chartBorderRadius": 28,
+                    "chartBorderDashLength": 12,
+                    "chartBorderDashGap": 8,
+                    "chartBorderDashPhase": 5,
+                    "chartBorderDashCap": "square",
+                ],
+            ])
+
+            expectDetailedStyle(response.state.values)
+            #expect(store.style == response.state.values)
+        }
+
+        @Test func previewUsesTheLiveSnapshotSeries() {
             let snapshot = AnalyticsSnapshot.fixture
             let preview = ChartInspectorPreview(analyticsState: .loaded(snapshot))
 
             #expect(preview.points == snapshot.series)
-            #expect(preview.source == .live(projectName: snapshot.projectName, range: snapshot.range))
-            #expect(preview.sourceLabel == "Live \u{00B7} Acme Storefront \u{00B7} Last 7 Days")
         }
 
         @Test func previewUsesSampleDataUntilANonEmptyLiveSeriesIsAvailable() {
@@ -306,15 +323,57 @@
             let emptySeriesPreview = ChartInspectorPreview(analyticsState: .loaded(emptySnapshot))
             let livePreview = ChartInspectorPreview(analyticsState: .loaded(.fixture))
 
-            #expect(loadingPreview.source == .sample)
-            #expect(loadingPreview.sourceLabel == "Sample data")
             #expect(loadingPreview.points == ChartInspectorPreview.samplePoints)
             #expect(emptyStatePreview == loadingPreview)
             #expect(failedPreview == loadingPreview)
             #expect(emptySeriesPreview == loadingPreview)
-            #expect(livePreview.source != .sample)
             #expect(livePreview.points == AnalyticsSnapshot.fixture.series)
         }
+    }
+
+    private func expectDetailedStyle(_ style: ChartStyle) {
+        #expect(style.lineColor.rawValue == "#AABBCC")
+        #expect(style.lineWidth == 6.5)
+        #expect(style.lineCap == .round)
+        #expect(style.lineJoin == .bevel)
+        #expect(style.interpolation == .catmullRom)
+        #expect(style.areaTopOpacity == 0.6)
+        #expect(style.areaBottomOpacity == 0.12)
+        #expect(style.chartHeight == 220)
+        #expect(style.axisMarkCount == 8)
+        #expect(style.yScaleHeadroom == 0.25)
+        #expect(!style.showsXAxisLabels)
+        #expect(!style.showsYAxisLabels)
+        #expect(!style.showsVerticalGridLines)
+        #expect(style.verticalGridLineColor.rawValue == "#112233")
+        #expect(style.verticalGridLineOpacity == 0.4)
+        #expect(style.verticalGridLineWidth == 1.25)
+        #expect(style.verticalGridLineStyle == .dashed)
+        #expect(style.showsHorizontalGridLines)
+        #expect(style.horizontalGridLineColor.rawValue == "#445566")
+        #expect(style.horizontalGridLineOpacity == 0.7)
+        #expect(style.horizontalGridLineWidth == 2.5)
+        #expect(style.horizontalGridLineStyle == .dotted)
+        #expect(!style.showsVerticalAxisTicks)
+        #expect(style.verticalAxisTickColor.rawValue == "#223344")
+        #expect(style.verticalAxisTickOpacity == 0.35)
+        #expect(style.verticalAxisTickWidth == 1.5)
+        #expect(style.verticalAxisTickLength == 7)
+        #expect(style.showsHorizontalAxisTicks)
+        #expect(style.horizontalAxisTickColor.rawValue == "#556677")
+        #expect(style.horizontalAxisTickOpacity == 0.8)
+        #expect(style.horizontalAxisTickWidth == 2.25)
+        #expect(style.horizontalAxisTickLength == 11)
+        #expect(style.showsChartBorder)
+        #expect(style.chartBorderColor.rawValue == "#778899")
+        #expect(style.chartBorderOpacity == 0.65)
+        #expect(style.chartBorderWidth == 3.25)
+        #expect(style.chartBorderStyle == .dashed)
+        #expect(style.chartBorderRadius == 28)
+        #expect(style.chartBorderDashLength == 12)
+        #expect(style.chartBorderDashGap == 8)
+        #expect(style.chartBorderDashPhase == 5)
+        #expect(style.chartBorderDashCap == .square)
     }
 
     private func makeInspectorStyle(lineWidth: Double) throws -> ChartStyle {
@@ -330,9 +389,38 @@
             chartHeight: style.chartHeight,
             axisMarkCount: style.axisMarkCount,
             yScaleHeadroom: style.yScaleHeadroom,
-            showsGridLines: style.showsGridLines,
             showsXAxisLabels: style.showsXAxisLabels,
-            showsYAxisLabels: style.showsYAxisLabels
+            showsYAxisLabels: style.showsYAxisLabels,
+            showsVerticalGridLines: style.showsVerticalGridLines,
+            verticalGridLineColor: style.verticalGridLineColor,
+            verticalGridLineOpacity: style.verticalGridLineOpacity,
+            verticalGridLineWidth: style.verticalGridLineWidth,
+            verticalGridLineStyle: style.verticalGridLineStyle,
+            showsHorizontalGridLines: style.showsHorizontalGridLines,
+            horizontalGridLineColor: style.horizontalGridLineColor,
+            horizontalGridLineOpacity: style.horizontalGridLineOpacity,
+            horizontalGridLineWidth: style.horizontalGridLineWidth,
+            horizontalGridLineStyle: style.horizontalGridLineStyle,
+            showsVerticalAxisTicks: style.showsVerticalAxisTicks,
+            verticalAxisTickColor: style.verticalAxisTickColor,
+            verticalAxisTickOpacity: style.verticalAxisTickOpacity,
+            verticalAxisTickWidth: style.verticalAxisTickWidth,
+            verticalAxisTickLength: style.verticalAxisTickLength,
+            showsHorizontalAxisTicks: style.showsHorizontalAxisTicks,
+            horizontalAxisTickColor: style.horizontalAxisTickColor,
+            horizontalAxisTickOpacity: style.horizontalAxisTickOpacity,
+            horizontalAxisTickWidth: style.horizontalAxisTickWidth,
+            horizontalAxisTickLength: style.horizontalAxisTickLength,
+            showsChartBorder: style.showsChartBorder,
+            chartBorderColor: style.chartBorderColor,
+            chartBorderOpacity: style.chartBorderOpacity,
+            chartBorderWidth: style.chartBorderWidth,
+            chartBorderStyle: style.chartBorderStyle,
+            chartBorderRadius: style.chartBorderRadius,
+            chartBorderDashLength: style.chartBorderDashLength,
+            chartBorderDashGap: style.chartBorderDashGap,
+            chartBorderDashPhase: style.chartBorderDashPhase,
+            chartBorderDashCap: style.chartBorderDashCap
         )
     }
 #endif

@@ -8,6 +8,10 @@ struct VisitorsChart: View {
 
     var body: some View {
         let lineColor = Color(style.lineColor)
+        let containerShape = RoundedRectangle(
+            cornerRadius: style.chartBorderRadius,
+            style: .continuous
+        )
 
         Chart(points, id: \.timestamp) { point in
             AreaMark(
@@ -43,10 +47,27 @@ struct VisitorsChart: View {
         .chartLegend(.hidden)
         .chartXAxis {
             AxisMarks(values: .automatic(desiredCount: style.axisMarkCount)) { value in
-                if style.showsGridLines {
-                    AxisGridLine()
+                if style.showsVerticalGridLines {
+                    AxisGridLine(
+                        stroke: style.verticalGridLineStyle.strokeStyle(
+                            lineWidth: style.verticalGridLineWidth
+                        )
+                    )
+                    .foregroundStyle(
+                        Color(style.verticalGridLineColor)
+                            .opacity(style.verticalGridLineOpacity)
+                    )
                 }
-                AxisTick()
+                if style.showsVerticalAxisTicks {
+                    AxisTick(
+                        length: style.verticalAxisTickLength,
+                        stroke: StrokeStyle(lineWidth: style.verticalAxisTickWidth)
+                    )
+                    .foregroundStyle(
+                        Color(style.verticalAxisTickColor)
+                            .opacity(style.verticalAxisTickOpacity)
+                    )
+                }
                 if style.showsXAxisLabels, let date = value.as(Date.self) {
                     AxisValueLabel {
                         Text(date, format: .dateTime.day().month(.abbreviated))
@@ -58,10 +79,27 @@ struct VisitorsChart: View {
         }
         .chartYAxis {
             AxisMarks(position: .leading, values: .automatic(desiredCount: style.axisMarkCount)) { _ in
-                if style.showsGridLines {
-                    AxisGridLine()
+                if style.showsHorizontalGridLines {
+                    AxisGridLine(
+                        stroke: style.horizontalGridLineStyle.strokeStyle(
+                            lineWidth: style.horizontalGridLineWidth
+                        )
+                    )
+                    .foregroundStyle(
+                        Color(style.horizontalGridLineColor)
+                            .opacity(style.horizontalGridLineOpacity)
+                    )
                 }
-                AxisTick()
+                if style.showsHorizontalAxisTicks {
+                    AxisTick(
+                        length: style.horizontalAxisTickLength,
+                        stroke: StrokeStyle(lineWidth: style.horizontalAxisTickWidth)
+                    )
+                    .foregroundStyle(
+                        Color(style.horizontalAxisTickColor)
+                            .opacity(style.horizontalAxisTickOpacity)
+                    )
+                }
                 if style.showsYAxisLabels {
                     AxisValueLabel()
                         .font(AppTypography.geistMonoRegular11)
@@ -71,32 +109,29 @@ struct VisitorsChart: View {
         .chartYScale(domain: 0 ... chartMaximum)
         .padding(.horizontal, 14)
         .frame(height: style.chartHeight)
+        .clipShape(containerShape)
+        .overlay {
+            if style.showsChartBorder {
+                containerShape
+                    .strokeBorder(
+                        Color(style.chartBorderColor)
+                            .opacity(style.chartBorderOpacity),
+                        style: style.chartBorderStyle.strokeStyle(
+                            lineWidth: style.chartBorderWidth,
+                            dashLength: style.chartBorderDashLength,
+                            dashGap: style.chartBorderDashGap,
+                            dashPhase: style.chartBorderDashPhase,
+                            dashCap: style.chartBorderDashCap
+                        )
+                    )
+            }
+        }
         .accessibilityLabel("Visitors over time")
     }
 
     private var chartMaximum: Int {
         let maximum = points.map(\.visitors).max() ?? 0
         return max(1, maximum + max(1, Int(Double(maximum) * style.yScaleHeadroom)))
-    }
-}
-
-struct VisitorsChartSection: View {
-    let points: [VercelAnalyticsPoint]
-    let style: ChartStyle
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Visitors over time")
-                .font(.subheadline.weight(.medium))
-
-            if points.isEmpty {
-                Text("No trend data for this period.")
-                    .frame(maxWidth: .infinity, minHeight: 140)
-                    .foregroundStyle(.secondary)
-            } else {
-                VisitorsChart(points: points, style: style)
-            }
-        }
     }
 }
 
@@ -142,6 +177,41 @@ private extension ChartInterpolation {
         case .monotone: .monotone
         case .cardinal: .cardinal
         case .catmullRom: .catmullRom
+        }
+    }
+}
+
+private extension ChartGridLineStyle {
+    func strokeStyle(lineWidth: Double) -> StrokeStyle {
+        switch self {
+        case .solid:
+            StrokeStyle(lineWidth: lineWidth)
+        case .dashed:
+            StrokeStyle(lineWidth: lineWidth, dash: [6, 4])
+        case .dotted:
+            StrokeStyle(lineWidth: lineWidth, lineCap: .round, dash: [1, 3])
+        }
+    }
+}
+
+extension ChartBorderStyle {
+    func strokeStyle(
+        lineWidth: Double,
+        dashLength: Double,
+        dashGap: Double,
+        dashPhase: Double,
+        dashCap: ChartLineCap
+    ) -> StrokeStyle {
+        switch self {
+        case .solid:
+            StrokeStyle(lineWidth: lineWidth)
+        case .dashed:
+            StrokeStyle(
+                lineWidth: lineWidth,
+                lineCap: dashCap.cgLineCap,
+                dash: [dashLength, dashGap],
+                dashPhase: dashPhase
+            )
         }
     }
 }

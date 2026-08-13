@@ -156,8 +156,7 @@ struct AnalyticsCardView<SelectorContent: View>: View {
                     .offset(x: 208, y: 62)
 
                 VisitorsChart(points: presentation.series, style: chartStyle)
-                    .frame(width: 368, height: 150)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .frame(width: 368)
                     .offset(x: AnalyticsCardLayout.chartFrame.minX, y: AnalyticsCardLayout.chartFrame.minY)
 
                 breakdown

@@ -18,13 +18,29 @@ function sanitizeBundledDependencies(): Plugin {
   };
 }
 
+function supportBundledWebView(): Plugin {
+  return {
+    name: "support-bundled-web-view",
+    apply: "build",
+    transformIndexHtml(html) {
+      return html.replace('<script type="module" crossorigin', '<script defer');
+    },
+  };
+}
+
 export default defineConfig({
   base: "./",
   build: {
     outDir: "../../VercelAnalyticsBar/Resources/ChartInspector",
     emptyOutDir: true,
+    modulePreload: false,
+    rollupOptions: {
+      output: {
+        format: "iife",
+      },
+    },
   },
-  plugins: [sanitizeBundledDependencies(), react()],
+  plugins: [sanitizeBundledDependencies(), react(), supportBundledWebView()],
   server: {
     host: "127.0.0.1",
     port: 5173,

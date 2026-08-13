@@ -59,25 +59,14 @@
         let style: ChartStyle
 
         var body: some View {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(preview.sourceLabel)
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(.secondary)
-
-                VisitorsChartSection(points: preview.points, style: style)
-            }
-            .padding(16)
-            .frame(width: 380, alignment: .leading)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            VisitorsChart(points: preview.points, style: style)
+                .padding(16)
+                .frame(width: 380, alignment: .leading)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
     }
 
     struct ChartInspectorPreview: Equatable {
-        enum Source: Equatable {
-            case live(projectName: String, range: VercelAnalyticsRange)
-            case sample
-        }
-
         static let samplePoints = [
             VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 0), visitors: 18, pageViews: 32),
             VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 1), visitors: 26, pageViews: 45),
@@ -96,26 +85,14 @@
         ]
 
         let points: [VercelAnalyticsPoint]
-        let source: Source
 
         init(analyticsState: AppModel.State) {
             guard case let .loaded(snapshot) = analyticsState, !snapshot.series.isEmpty else {
                 points = Self.samplePoints
-                source = .sample
                 return
             }
 
             points = snapshot.series
-            source = .live(projectName: snapshot.projectName, range: snapshot.range)
-        }
-
-        var sourceLabel: String {
-            switch source {
-            case let .live(projectName, range):
-                "Live \u{00B7} \(projectName) \u{00B7} \(range.title)"
-            case .sample:
-                "Sample data"
-            }
         }
 
         private static func sampleDate(dayOffset: Int) -> Date {
