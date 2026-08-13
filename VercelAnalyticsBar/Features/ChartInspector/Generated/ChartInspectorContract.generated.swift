@@ -65,6 +65,13 @@ enum ChartLineJoin: String, Codable, CaseIterable, Sendable {
     case bevel
 }
 
+enum ChartInterpolation: String, Codable, CaseIterable, Sendable {
+    case linear
+    case monotone
+    case cardinal
+    case catmullRom
+}
+
 enum ChartStyleValidationError: Error, Equatable {
     case outOfRange(field: String, range: ClosedRange<Double>)
 }
@@ -80,10 +87,11 @@ struct ChartStyle: Codable, Equatable, Sendable {
     static let `default`: ChartStyle = {
         do {
             return try ChartStyle(
-                lineColor: .rgb(red: 2, green: 192, blue: 108),
-                lineWidth: 1,
+                lineColor: .rgb(red: 0, green: 107, blue: 255),
+                lineWidth: 1.5,
                 lineCap: .round,
                 lineJoin: .round,
+                interpolation: .monotone,
                 areaTopOpacity: 0.2,
                 areaBottomOpacity: 0,
                 chartHeight: 140,
@@ -102,6 +110,7 @@ struct ChartStyle: Codable, Equatable, Sendable {
     let lineWidth: Double
     let lineCap: ChartLineCap
     let lineJoin: ChartLineJoin
+    let interpolation: ChartInterpolation
     let areaTopOpacity: Double
     let areaBottomOpacity: Double
     let chartHeight: Double
@@ -116,6 +125,7 @@ struct ChartStyle: Codable, Equatable, Sendable {
         lineWidth: Double,
         lineCap: ChartLineCap,
         lineJoin: ChartLineJoin,
+        interpolation: ChartInterpolation,
         areaTopOpacity: Double,
         areaBottomOpacity: Double,
         chartHeight: Double,
@@ -136,6 +146,7 @@ struct ChartStyle: Codable, Equatable, Sendable {
         self.lineWidth = lineWidth
         self.lineCap = lineCap
         self.lineJoin = lineJoin
+        self.interpolation = interpolation
         self.areaTopOpacity = areaTopOpacity
         self.areaBottomOpacity = areaBottomOpacity
         self.chartHeight = chartHeight
@@ -153,6 +164,7 @@ struct ChartStyle: Codable, Equatable, Sendable {
             lineWidth: container.decode(Double.self, forKey: .lineWidth),
             lineCap: container.decode(ChartLineCap.self, forKey: .lineCap),
             lineJoin: container.decode(ChartLineJoin.self, forKey: .lineJoin),
+            interpolation: container.decode(ChartInterpolation.self, forKey: .interpolation),
             areaTopOpacity: container.decode(Double.self, forKey: .areaTopOpacity),
             areaBottomOpacity: container.decode(Double.self, forKey: .areaBottomOpacity),
             chartHeight: container.decode(Double.self, forKey: .chartHeight),

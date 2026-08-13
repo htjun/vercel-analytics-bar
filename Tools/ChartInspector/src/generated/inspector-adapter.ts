@@ -7,14 +7,16 @@ import {
   CHART_STYLE_RANGES,
   LINE_CAP_VALUES,
   LINE_JOIN_VALUES,
+  INTERPOLATION_VALUES,
 } from "./contract";
-import type { ChartStyle, ChartLineCap, ChartLineJoin } from "./contract";
+import type { ChartStyle, ChartLineCap, ChartLineJoin, ChartInterpolation } from "./contract";
 
 export const CHART_STYLE_INSPECTOR_FIELDS = [
   { name: "lineColor", path: "line.color", control: "color" },
   { name: "lineWidth", path: "line.width", control: "range" },
   { name: "lineCap", path: "line.cap", control: "select" },
   { name: "lineJoin", path: "line.join", control: "select" },
+  { name: "interpolation", path: "line.interpolation", control: "select" },
   { name: "areaTopOpacity", path: "area.topOpacity", control: "range" },
   { name: "areaBottomOpacity", path: "area.bottomOpacity", control: "range" },
   { name: "chartHeight", path: "layout.height", control: "range" },
@@ -31,6 +33,7 @@ export const chartFieldConfig = {
     width: dialRange(CHART_STYLE_DEFAULT.lineWidth, CHART_STYLE_RANGES.lineWidth),
     cap: { type: "select" as const, options: [...LINE_CAP_VALUES], default: CHART_STYLE_DEFAULT.lineCap },
     join: { type: "select" as const, options: [...LINE_JOIN_VALUES], default: CHART_STYLE_DEFAULT.lineJoin },
+    interpolation: { type: "select" as const, options: [...INTERPOLATION_VALUES], default: CHART_STYLE_DEFAULT.interpolation },
   },
   area: {
     topOpacity: dialRange(CHART_STYLE_DEFAULT.areaTopOpacity, CHART_STYLE_RANGES.areaTopOpacity),
@@ -55,6 +58,7 @@ export function dialValuesFromStyle(style: ChartStyle) {
       width: style.lineWidth,
       cap: style.lineCap,
       join: style.lineJoin,
+      interpolation: style.interpolation,
     },
     area: {
       topOpacity: style.areaTopOpacity,
@@ -79,6 +83,7 @@ export function styleFromDialValues(values: ResolvedValues<typeof chartFieldConf
     lineWidth: values.line.width,
     lineCap: values.line.cap as ChartLineCap,
     lineJoin: values.line.join as ChartLineJoin,
+    interpolation: values.line.interpolation as ChartInterpolation,
     areaTopOpacity: values.area.topOpacity,
     areaBottomOpacity: values.area.bottomOpacity,
     chartHeight: values.layout.height,

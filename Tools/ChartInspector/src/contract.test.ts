@@ -6,6 +6,7 @@ import {
   INSPECTOR_PROTOCOL_VERSION,
   INSPECTOR_SOURCE,
   LINE_CAP_VALUES,
+  INTERPOLATION_VALUES,
   LINE_JOIN_VALUES,
   MAX_INSPECTOR_REVISION,
   MIN_INSPECTOR_REVISION,
@@ -44,10 +45,11 @@ describe("generated Chart Inspector contract", () => {
 
   it("preserves the canonical chart appearance and field constraints", () => {
     expect(CHART_STYLE_DEFAULT).toEqual({
-      lineColor: "#02C06C",
-      lineWidth: 1,
+      lineColor: "#006BFF",
+      lineWidth: 1.5,
       lineCap: "round",
       lineJoin: "round",
+      interpolation: "monotone",
       areaTopOpacity: 0.2,
       areaBottomOpacity: 0,
       chartHeight: 140,
@@ -59,6 +61,7 @@ describe("generated Chart Inspector contract", () => {
     });
     expect(LINE_CAP_VALUES).toEqual(["butt", "round", "square"]);
     expect(LINE_JOIN_VALUES).toEqual(["miter", "round", "bevel"]);
+    expect(INTERPOLATION_VALUES).toEqual(["linear", "monotone", "cardinal", "catmullRom"]);
     expect(CHART_STYLE_RANGES).toEqual({
       lineWidth: { minimum: 0.5, maximum: 12, step: 0.5, integer: false },
       areaTopOpacity: { minimum: 0, maximum: 1, step: 0.01, integer: false },
@@ -76,6 +79,7 @@ describe("generated Chart Inspector contract", () => {
       { name: "lineWidth", path: "line.width", control: "range" },
       { name: "lineCap", path: "line.cap", control: "select" },
       { name: "lineJoin", path: "line.join", control: "select" },
+      { name: "interpolation", path: "line.interpolation", control: "select" },
       { name: "areaTopOpacity", path: "area.topOpacity", control: "range" },
       { name: "areaBottomOpacity", path: "area.bottomOpacity", control: "range" },
       { name: "chartHeight", path: "layout.height", control: "range" },
@@ -87,10 +91,15 @@ describe("generated Chart Inspector contract", () => {
     ]);
     expect(chartFieldConfig).toEqual({
       line: {
-        color: { type: "color", default: "#02C06C" },
-        width: [1, 0.5, 12, 0.5],
+        color: { type: "color", default: "#006BFF" },
+        width: [1.5, 0.5, 12, 0.5],
         cap: { type: "select", options: ["butt", "round", "square"], default: "round" },
         join: { type: "select", options: ["miter", "round", "bevel"], default: "round" },
+        interpolation: {
+          type: "select",
+          options: ["linear", "monotone", "cardinal", "catmullRom"],
+          default: "monotone",
+        },
       },
       area: {
         topOpacity: [0.2, 0, 1, 0.01],
@@ -115,6 +124,7 @@ describe("generated Chart Inspector contract", () => {
       lineWidth: 2.5,
       lineCap: "square",
       lineJoin: "bevel",
+      interpolation: "catmullRom",
       areaTopOpacity: 0.45,
       areaBottomOpacity: 0.15,
       chartHeight: 220,

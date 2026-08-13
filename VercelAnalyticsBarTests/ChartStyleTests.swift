@@ -7,10 +7,11 @@ struct ChartStyleTests {
     @Test func defaultsMatchTheCanonicalChartPresentation() {
         let style = ChartStyle.default
 
-        #expect(style.lineColor.rawValue == "#02C06C")
-        #expect(style.lineWidth == 1)
+        #expect(style.lineColor.rawValue == "#006BFF")
+        #expect(style.lineWidth == 1.5)
         #expect(style.lineCap == .round)
         #expect(style.lineJoin == .round)
+        #expect(style.interpolation == .monotone)
         #expect(style.areaTopOpacity == 0.2)
         #expect(style.areaBottomOpacity == 0)
         #expect(style.chartHeight == 140)
@@ -71,6 +72,13 @@ struct ChartStyleTests {
         #expect(throws: DecodingError.self) {
             try JSONDecoder().decode(ChartStyle.self, from: invalidJoin)
         }
+
+        object = try #require(JSONSerialization.jsonObject(with: encodedDefault) as? [String: Any])
+        object["interpolation"] = "smooth"
+        let invalidInterpolation = try JSONSerialization.data(withJSONObject: object)
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(ChartStyle.self, from: invalidInterpolation)
+        }
     }
 
     @MainActor
@@ -125,6 +133,7 @@ private func makeStyle(
     lineWidth: Double = 2,
     lineCap: ChartLineCap = .butt,
     lineJoin: ChartLineJoin = .miter,
+    interpolation: ChartInterpolation = .linear,
     areaTopOpacity: Double = 0.24,
     areaBottomOpacity: Double = 0.03,
     chartHeight: Double = 140,
@@ -139,6 +148,7 @@ private func makeStyle(
         lineWidth: lineWidth,
         lineCap: lineCap,
         lineJoin: lineJoin,
+        interpolation: interpolation,
         areaTopOpacity: areaTopOpacity,
         areaBottomOpacity: areaBottomOpacity,
         chartHeight: chartHeight,

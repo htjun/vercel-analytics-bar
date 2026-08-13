@@ -15,11 +15,15 @@ export type ChartLineCap = (typeof LINE_CAP_VALUES)[number];
 export const LINE_JOIN_VALUES = ["miter","round","bevel"] as const;
 export type ChartLineJoin = (typeof LINE_JOIN_VALUES)[number];
 
+export const INTERPOLATION_VALUES = ["linear","monotone","cardinal","catmullRom"] as const;
+export type ChartInterpolation = (typeof INTERPOLATION_VALUES)[number];
+
 export interface ChartStyle {
   lineColor: string;
   lineWidth: number;
   lineCap: ChartLineCap;
   lineJoin: ChartLineJoin;
+  interpolation: ChartInterpolation;
   areaTopOpacity: number;
   areaBottomOpacity: number;
   chartHeight: number;
@@ -31,10 +35,11 @@ export interface ChartStyle {
 }
 
 export const CHART_STYLE_DEFAULT: ChartStyle = {
-  lineColor: "#02C06C",
-  lineWidth: 1,
+  lineColor: "#006BFF",
+  lineWidth: 1.5,
   lineCap: "round",
   lineJoin: "round",
+  interpolation: "monotone",
   areaTopOpacity: 0.2,
   areaBottomOpacity: 0,
   chartHeight: 140,
@@ -93,6 +98,7 @@ export function isChartStyle(value: unknown): value is ChartStyle {
     isNumberInRange(value.lineWidth, 0.5, 12) &&
     isOneOf(value.lineCap, LINE_CAP_VALUES) &&
     isOneOf(value.lineJoin, LINE_JOIN_VALUES) &&
+    isOneOf(value.interpolation, INTERPOLATION_VALUES) &&
     isNumberInRange(value.areaTopOpacity, 0, 1) &&
     isNumberInRange(value.areaBottomOpacity, 0, 1) &&
     isNumberInRange(value.chartHeight, 80, 360) &&

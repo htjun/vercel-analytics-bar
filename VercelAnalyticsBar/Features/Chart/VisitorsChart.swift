@@ -14,6 +14,7 @@ struct VisitorsChart: View {
                 x: .value("Time", point.timestamp),
                 y: .value("Visitors", point.visitors)
             )
+            .interpolationMethod(style.interpolation.chartInterpolationMethod)
             .foregroundStyle(
                 .linearGradient(
                     colors: [
@@ -29,6 +30,7 @@ struct VisitorsChart: View {
                 x: .value("Time", point.timestamp),
                 y: .value("Visitors", point.visitors)
             )
+            .interpolationMethod(style.interpolation.chartInterpolationMethod)
             .foregroundStyle(lineColor)
             .lineStyle(
                 StrokeStyle(
@@ -129,6 +131,17 @@ private extension ChartLineJoin {
         case .miter: .miter
         case .round: .round
         case .bevel: .bevel
+        }
+    }
+}
+
+private extension ChartInterpolation {
+    var chartInterpolationMethod: InterpolationMethod {
+        switch self {
+        case .linear: .linear
+        case .monotone: .monotone
+        case .cardinal: .cardinal
+        case .catmullRom: .catmullRom
         }
     }
 }

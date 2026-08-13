@@ -88,6 +88,7 @@
                     "lineWidth": 6.5,
                     "lineCap": "round",
                     "lineJoin": "bevel",
+                    "interpolation": "catmullRom",
                     "areaTopOpacity": 0.6,
                     "areaBottomOpacity": 0.12,
                     "chartHeight": 220,
@@ -103,6 +104,7 @@
             #expect(response.state.values.lineWidth == 6.5)
             #expect(response.state.values.lineCap == .round)
             #expect(response.state.values.lineJoin == .bevel)
+            #expect(response.state.values.interpolation == .catmullRom)
             #expect(response.state.values.areaTopOpacity == 0.6)
             #expect(response.state.values.areaBottomOpacity == 0.12)
             #expect(response.state.values.chartHeight == 220)
@@ -322,6 +324,7 @@
             lineWidth: lineWidth,
             lineCap: style.lineCap,
             lineJoin: style.lineJoin,
+            interpolation: style.interpolation,
             areaTopOpacity: style.areaTopOpacity,
             areaBottomOpacity: style.areaBottomOpacity,
             chartHeight: style.chartHeight,
