@@ -6,6 +6,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let model: AppModel
     let chartStyle: ChartStyleStore
     private var statusBarController: StatusBarController?
+    private var settingsWindowController: HostedWindowController?
+    #if CHART_INSPECTOR
+        private var chartInspectorWindowController: HostedWindowController?
+    #endif
 
     override init() {
         AppFontRegistry.registerBundledFonts()
@@ -27,9 +31,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_: Notification) {
         model.startRefreshLoop()
+        settingsWindowController = makeSettingsWindowController()
         statusBarController = StatusBarController(
             model: model,
-            chartStyle: chartStyle
+            chartStyle: chartStyle,
+            companionWindows: { [weak self] in
+                [self?.settingsWindowController?.window].compactMap(\.self)
+            },
+            onOpenSettings: { [weak self] in
+                self?.settingsWindowController?.present()
+            }
         )
     }
 
@@ -40,7 +51,52 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_: Notification) {
         statusBarController?.tearDown()
         statusBarController = nil
+        settingsWindowController = nil
+        #if CHART_INSPECTOR
+            chartInspectorWindowController = nil
+        #endif
         model.stopRefreshLoop()
+    }
+
+    private func makeSettingsWindowController() -> HostedWindowController {
+        HostedWindowController(
+            title: "\(ProductInfo.name) Settings",
+            contentSize: CGSize(width: 520, height: 680),
+            rootView: SettingsRootView(
+                model: model,
+                isChartInspectorEnabled: isChartInspectorEnabled,
+                onOpenChartInspector: { [weak self] in
+                    self?.presentChartInspector()
+                }
+            )
+        )
+    }
+
+    private func presentChartInspector() {
+        #if CHART_INSPECTOR
+            guard isChartInspectorEnabled else { return }
+            if chartInspectorWindowController == nil {
+                chartInspectorWindowController = HostedWindowController(
+                    title: "Chart Inspector",
+                    contentSize: CGSize(width: 820, height: 640),
+                    minimumContentSize: CGSize(width: 740, height: 560),
+                    isResizable: true,
+                    rootView: ChartInspectorView(
+                        model: model,
+                        styleStore: chartStyle
+                    )
+                )
+            }
+            chartInspectorWindowController?.present()
+        #endif
+    }
+
+    private var isChartInspectorEnabled: Bool {
+        #if CHART_INSPECTOR
+            ChartInspectorSource.isInspectorEnabled()
+        #else
+            false
+        #endif
     }
 }
 

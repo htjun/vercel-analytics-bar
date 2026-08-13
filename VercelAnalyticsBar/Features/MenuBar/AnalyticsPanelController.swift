@@ -64,6 +64,7 @@ final class AnalyticsPanelController {
 
     private let model: AppModel
     private let chartStyle: ChartStyleStore
+    private let onOpenSettings: () -> Void
     private let setStatusItemHighlighted: (Bool) -> Void
     private let statusItemWindow: () -> NSWindow?
     private let companionWindows: () -> [NSWindow]
@@ -75,12 +76,14 @@ final class AnalyticsPanelController {
     init(
         model: AppModel,
         chartStyle: ChartStyleStore,
+        onOpenSettings: @escaping () -> Void = {},
         setStatusItemHighlighted: @escaping (Bool) -> Void,
         statusItemWindow: @escaping () -> NSWindow? = { nil },
         companionWindows: @escaping () -> [NSWindow] = { [] }
     ) {
         self.model = model
         self.chartStyle = chartStyle
+        self.onOpenSettings = onOpenSettings
         self.setStatusItemHighlighted = setStatusItemHighlighted
         self.statusItemWindow = statusItemWindow
         self.companionWindows = companionWindows
@@ -163,6 +166,7 @@ final class AnalyticsPanelController {
             MenuBarRootView(
                 model: model,
                 chartStyle: chartStyle,
+                onOpenSettings: onOpenSettings,
                 onDismissPanel: { [weak self] in
                     self?.dismiss()
                 }

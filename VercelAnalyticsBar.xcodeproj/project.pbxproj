@@ -18,6 +18,7 @@
 		A1000000000000000000002A /* AnalyticsPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000002A /* AnalyticsPanelController.swift */; };
 		A1000000000000000000002B /* ChartInspectorContract.generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000002B /* ChartInspectorContract.generated.swift */; };
 		A10000000000000000000006 /* MenuBarRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000000A /* MenuBarRootView.swift */; };
+		A10000000000000000000007 /* SettingsRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000000B /* SettingsRootView.swift */; };
 		A10000000000000000000008 /* AccountPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000000C /* AccountPersistence.swift */; };
 		A10000000000000000000009 /* AppModelTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000000D /* AppModelTestSupport.swift */; };
 		A1000000000000000000000E /* AppModelSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000000E /* AppModelSupport.swift */; };
@@ -83,6 +84,7 @@
 		A3000000000000000000002A /* AnalyticsPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsPanelController.swift; sourceTree = "<group>"; };
 		A3000000000000000000002B /* ChartInspectorContract.generated.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Generated/ChartInspectorContract.generated.swift; sourceTree = "<group>"; };
 		A3000000000000000000000A /* MenuBarRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarRootView.swift; sourceTree = "<group>"; };
+		A3000000000000000000000B /* SettingsRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsRootView.swift; sourceTree = "<group>"; };
 		A3000000000000000000000C /* AccountPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountPersistence.swift; sourceTree = "<group>"; };
 		A3000000000000000000000D /* AppModelTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModelTestSupport.swift; sourceTree = "<group>"; };
 		A3000000000000000000000E /* AppModelSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModelSupport.swift; sourceTree = "<group>"; };
@@ -238,6 +240,7 @@
 				A4000000000000000000001B /* Chart */,
 				A4000000000000000000001C /* ChartInspector */,
 				A40000000000000000000018 /* MenuBar */,
+				A40000000000000000000019 /* Settings */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -254,6 +257,14 @@
 				A3000000000000000000000A /* MenuBarRootView.swift */,
 			);
 			path = MenuBar;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000019 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				A3000000000000000000000B /* SettingsRootView.swift */,
+			);
+			path = Settings;
 			sourceTree = "<group>";
 		};
 		A4000000000000000000001A /* Resources */ = {
@@ -426,6 +437,7 @@
 				A1000000000000000000002A /* AnalyticsPanelController.swift in Sources */,
 				A10000000000000000000025 /* HostedWindowController.swift in Sources */,
 				A10000000000000000000006 /* MenuBarRootView.swift in Sources */,
+				A10000000000000000000007 /* SettingsRootView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

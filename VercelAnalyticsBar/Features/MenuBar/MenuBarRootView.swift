@@ -39,6 +39,7 @@ enum MenuBarContentMode: Equatable {
 struct MenuBarRootView: View {
     let model: AppModel
     let chartStyle: ChartStyleStore
+    let onOpenSettings: () -> Void
     let onDismissPanel: () -> Void
     @State private var isProjectSelectorPresented = false
     @State private var projectSearchQuery = ""
@@ -146,6 +147,7 @@ struct MenuBarRootView: View {
                     await model.selectAnalyticsRange(range)
                 }
             },
+            onOpenSettings: onOpenSettings,
             onOpenDashboard: { url in
                 onDismissPanel()
                 openURL(url)

@@ -139,6 +139,7 @@ struct AnalyticsCardView<SelectorContent: View>: View {
     @ViewBuilder let projectSelectorContent: () -> SelectorContent
     let onSelectProject: () -> Void
     let onSelectRange: (VercelAnalyticsRange) -> Void
+    let onOpenSettings: () -> Void
     let onOpenDashboard: (URL) -> Void
     @State private var isRangeSelectorPresented = false
 
@@ -172,8 +173,21 @@ struct AnalyticsCardView<SelectorContent: View>: View {
     }
 
     private var header: some View {
-        selectorGroup
-            .frame(width: 368, height: 30, alignment: .leading)
+        HStack(spacing: 0) {
+            selectorGroup
+            Spacer(minLength: 0)
+            Button(action: onOpenSettings) {
+                Image("SettingsSliders")
+                    .resizable()
+                    .frame(width: 16, height: 16)
+                    .frame(width: 30, height: 30)
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .overlay(Circle().stroke(AnalyticsCardColors.border, lineWidth: 1))
+            .accessibilityLabel("Open Settings")
+        }
+        .frame(width: 368, height: 30)
     }
 
     private var selectorGroup: some View {
