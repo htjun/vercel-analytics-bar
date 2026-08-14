@@ -106,9 +106,6 @@ final class StatusBarController: NSObject {
         button.title = presentation.title
         button.toolTip = presentation.toolTip
         button.setAccessibilityValue(presentation.accessibilityValue)
-        if panelController.isPresented {
-            panelController.reposition(anchor: panelAnchor())
-        }
     }
 
     private func presentPanel() {

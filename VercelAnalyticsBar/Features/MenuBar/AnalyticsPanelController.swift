@@ -93,15 +93,12 @@ final class AnalyticsPanelController {
     }
 
     func present(anchor: AnalyticsPanelAnchor?) {
-        guard !isPresented else {
-            reposition(anchor: anchor)
-            return
-        }
+        guard !isPresented else { return }
 
         sessionID = UUID()
         isPresented = true
         updateHostedContent()
-        reposition(anchor: anchor)
+        applyInitialPlacement(anchor: anchor)
         window.orderFrontRegardless()
         window.makeKey()
         setStatusItemHighlighted(true)
@@ -125,7 +122,7 @@ final class AnalyticsPanelController {
         setStatusItemHighlighted(false)
     }
 
-    func reposition(anchor: AnalyticsPanelAnchor?) {
+    private func applyInitialPlacement(anchor: AnalyticsPanelAnchor?) {
         guard isPresented, let anchor else { return }
         let glassFrame = AnalyticsPanelPlacement.frame(
             anchor: anchor.frame,

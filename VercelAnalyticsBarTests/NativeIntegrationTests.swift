@@ -94,19 +94,27 @@ import VercelAnalyticsCore
         frame: CGRect(x: 680, y: 850, width: 40, height: 24),
         visibleFrame: CGRect(x: 100, y: 50, width: 1200, height: 800)
     )
+    let changedAnchor = AnalyticsPanelAnchor(
+        frame: CGRect(x: 1100, y: 850, width: 40, height: 24),
+        visibleFrame: anchor.visibleFrame
+    )
     let initialSessionID = controller.sessionID
 
     controller.present(anchor: anchor)
     let presentedSessionID = controller.sessionID
+    let presentedFrame = controller.window.frame
+    let presentedShadowFrame = controller.window.shadowWindow.frame
     #expect(controller.isPresented)
     #expect(presentedSessionID != initialSessionID)
-    #expect(controller.window.frame == CGRect(x: 500, y: 284, width: 400, height: 562))
+    expectPanelFrames(controller, equalTo: CGRect(x: 500, y: 284, width: 400, height: 562))
     #expect(highlightStates == [true])
     #expect(controller.hasLocalEventMonitor)
     #expect(controller.hasGlobalEventMonitor)
 
-    controller.present(anchor: anchor)
+    controller.present(anchor: changedAnchor)
     #expect(controller.sessionID == presentedSessionID)
+    #expect(controller.window.frame == presentedFrame)
+    #expect(controller.window.shadowWindow.frame == presentedShadowFrame)
     #expect(highlightStates == [true])
 
     let transientChild = NSWindow()
@@ -121,9 +129,18 @@ import VercelAnalyticsCore
     #expect(!controller.hasLocalEventMonitor)
     #expect(!controller.hasGlobalEventMonitor)
 
-    controller.present(anchor: anchor)
+    controller.present(anchor: changedAnchor)
     #expect(controller.sessionID != presentedSessionID)
+    expectPanelFrames(controller, equalTo: CGRect(x: 892, y: 284, width: 400, height: 562))
     controller.tearDown()
+}
+
+@MainActor
+private func expectPanelFrames(_ controller: AnalyticsPanelController, equalTo glassFrame: CGRect) {
+    #expect(controller.window.frame == glassFrame)
+    #expect(controller.window.shadowWindow.frame == AnalyticsPanelPlacement.shadowFrame(
+        forGlassFrame: glassFrame
+    ))
 }
 
 @MainActor
