@@ -257,27 +257,6 @@ struct RefreshTestHarness {
     }
 }
 
-func makeAnalyticsSnapshot(
-    projectName: String,
-    visitors: Int,
-    pageViews: Int,
-    last24HoursVisitors: Int,
-    refreshedAt: Date,
-    range: VercelAnalyticsRange = .last7Days,
-    topPages: [VercelAnalyticsBreakdown] = []
-) -> AnalyticsSnapshot {
-    AnalyticsSnapshot(
-        projectName: projectName,
-        range: range,
-        visitors: AnalyticsMetric(label: "Visitors", value: visitors, previousValue: visitors * 9 / 10),
-        pageViews: AnalyticsMetric(label: "Page Views", value: pageViews, previousValue: pageViews * 9 / 10),
-        series: [],
-        topPages: topPages,
-        last24HoursVisitors: last24HoursVisitors,
-        refreshedAt: refreshedAt
-    )
-}
-
 @Test func accountDataStoreMigratesSelectionAndClearsPreferencesAndCache() throws {
     let suiteName = "VercelAnalyticsBarTests.\(UUID().uuidString)"
     let userDefaults = try #require(UserDefaults(suiteName: suiteName))

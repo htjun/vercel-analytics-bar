@@ -36,7 +36,7 @@ final class StatusBarController: NSObject {
         chartStyle: ChartStyleStore,
         statusBar: NSStatusBar = .system,
         companionWindows: @escaping () -> [NSWindow] = { [] },
-        onOpenSettings: @escaping () -> Void = {}
+        onOpenSettings: @escaping (AdjacentWindowPresentationContext) -> Void = { _ in }
     ) {
         self.model = model
         self.statusBar = statusBar

@@ -38,8 +38,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             companionWindows: { [weak self] in
                 [self?.settingsWindowController?.window].compactMap(\.self)
             },
-            onOpenSettings: { [weak self] in
-                self?.settingsWindowController?.present()
+            onOpenSettings: { [weak self] context in
+                self?.settingsWindowController?.present(adjacentTo: context)
             }
         )
     }

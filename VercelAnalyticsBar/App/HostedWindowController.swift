@@ -1,8 +1,72 @@
 import AppKit
 import SwiftUI
 
+struct AdjacentWindowPresentationContext: Equatable {
+    let anchorFrame: CGRect
+    let visibleFrame: CGRect
+}
+
+enum AdjacentWindowPlacement {
+    static let gap: CGFloat = 12
+    static let screenMargin: CGFloat = 8
+
+    static func frame(
+        anchor: CGRect,
+        windowSize: CGSize,
+        visibleFrame: CGRect,
+        gap: CGFloat = gap,
+        margin: CGFloat = screenMargin
+    ) -> CGRect {
+        let availableMinX = visibleFrame.minX + margin
+        let availableMaxX = visibleFrame.maxX - margin
+        let leftSpace = anchor.minX - gap - availableMinX
+        let rightSpace = availableMaxX - anchor.maxX - gap
+        let fitsLeft = leftSpace >= windowSize.width
+        let fitsRight = rightSpace >= windowSize.width
+
+        guard fitsLeft || fitsRight else {
+            return centeredFrame(windowSize: windowSize, visibleFrame: visibleFrame, margin: margin)
+        }
+
+        let originX = if fitsRight, !fitsLeft || rightSpace >= leftSpace {
+            anchor.maxX + gap
+        } else {
+            anchor.minX - gap - windowSize.width
+        }
+        let minimumY = visibleFrame.minY + margin
+        let maximumY = visibleFrame.maxY - margin - windowSize.height
+        let proposedY = anchor.maxY - windowSize.height
+        let originY = min(max(proposedY, minimumY), max(minimumY, maximumY))
+
+        return CGRect(origin: CGPoint(x: originX, y: originY), size: windowSize)
+    }
+
+    private static func centeredFrame(
+        windowSize: CGSize,
+        visibleFrame: CGRect,
+        margin: CGFloat
+    ) -> CGRect {
+        let minimumX = visibleFrame.minX + margin
+        let maximumX = visibleFrame.maxX - margin - windowSize.width
+        let minimumY = visibleFrame.minY + margin
+        let maximumY = visibleFrame.maxY - margin - windowSize.height
+        let proposedX = visibleFrame.midX - windowSize.width / 2
+        let proposedY = visibleFrame.midY - windowSize.height / 2
+
+        return CGRect(
+            origin: CGPoint(
+                x: min(max(proposedX, minimumX), max(minimumX, maximumX)),
+                y: min(max(proposedY, minimumY), max(minimumY, maximumY))
+            ),
+            size: windowSize
+        )
+    }
+}
+
 @MainActor
 final class HostedWindowController: NSWindowController {
+    private var hasAppliedInitialAdjacentPlacement = false
+
     init(
         title: String,
         contentSize: CGSize,
@@ -41,6 +105,20 @@ final class HostedWindowController: NSWindowController {
     func present() {
         NSApplication.shared.activate(ignoringOtherApps: true)
         window?.makeKeyAndOrderFront(nil)
+    }
+
+    func present(adjacentTo context: AdjacentWindowPresentationContext) {
+        if !hasAppliedInitialAdjacentPlacement, let window {
+            let frame = AdjacentWindowPlacement.frame(
+                anchor: context.anchorFrame,
+                windowSize: window.frame.size,
+                visibleFrame: context.visibleFrame
+            )
+            window.setFrame(frame, display: false)
+            hasAppliedInitialAdjacentPlacement = true
+        }
+
+        present()
     }
 }
 

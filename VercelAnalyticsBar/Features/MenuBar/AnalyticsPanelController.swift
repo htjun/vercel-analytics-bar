@@ -64,7 +64,7 @@ final class AnalyticsPanelController {
 
     private let model: AppModel
     private let chartStyle: ChartStyleStore
-    private let onOpenSettings: () -> Void
+    private let onOpenSettings: (AdjacentWindowPresentationContext) -> Void
     private let setStatusItemHighlighted: (Bool) -> Void
     private let statusItemWindow: () -> NSWindow?
     private let companionWindows: () -> [NSWindow]
@@ -76,7 +76,7 @@ final class AnalyticsPanelController {
     init(
         model: AppModel,
         chartStyle: ChartStyleStore,
-        onOpenSettings: @escaping () -> Void = {},
+        onOpenSettings: @escaping (AdjacentWindowPresentationContext) -> Void = { _ in },
         setStatusItemHighlighted: @escaping (Bool) -> Void,
         statusItemWindow: @escaping () -> NSWindow? = { nil },
         companionWindows: @escaping () -> [NSWindow] = { [] }
@@ -166,13 +166,25 @@ final class AnalyticsPanelController {
             MenuBarRootView(
                 model: model,
                 chartStyle: chartStyle,
-                onOpenSettings: onOpenSettings,
+                onOpenSettings: { [weak self] in
+                    self?.openSettings()
+                },
                 onDismissPanel: { [weak self] in
                     self?.dismiss()
                 }
             )
             .id(sessionID)
         )
+    }
+
+    private func openSettings() {
+        let visibleFrame = window.screen?.visibleFrame
+            ?? NSScreen.main?.visibleFrame
+            ?? window.frame
+        onOpenSettings(AdjacentWindowPresentationContext(
+            anchorFrame: window.frame,
+            visibleFrame: visibleFrame
+        ))
     }
 
     private func installEventMonitors() {

@@ -249,19 +249,7 @@ import VercelAnalyticsCore
     let accountDataStore = InMemoryAccountDataStore()
     let alphaProvider = ControlledSnapshotProvider()
     let betaProvider = ControlledSnapshotProvider()
-    let initialRefreshDate = Date(timeIntervalSince1970: 1_785_549_600)
-    let alphaSnapshot = makeAnalyticsSnapshot(
-        projectName: "Alpha", visitors: 100, pageViews: 200, last24HoursVisitors: 11,
-        refreshedAt: initialRefreshDate, range: .last24Hours
-    )
-    let refreshedAlphaSnapshot = makeAnalyticsSnapshot(
-        projectName: "Alpha", visitors: 101, pageViews: 202, last24HoursVisitors: 12,
-        refreshedAt: initialRefreshDate.addingTimeInterval(60), range: .last24Hours
-    )
-    let betaSnapshot = makeAnalyticsSnapshot(
-        projectName: "Beta", visitors: 300, pageViews: 500, last24HoursVisitors: 22,
-        refreshedAt: initialRefreshDate, range: .last24Hours
-    )
+    let snapshots = makeProjectSwitchSnapshotFixture()
     let model = AppModel(
         credentialStore: InMemoryCredentialStore(),
         accountDataStore: accountDataStore,
@@ -279,26 +267,26 @@ import VercelAnalyticsCore
     let alphaLoadTask = Task { await model.load() }
     await alphaProvider.waitUntilRequested()
     #expect(await alphaProvider.requestedRanges == [.last24Hours])
-    await alphaProvider.succeed(with: alphaSnapshot)
+    await alphaProvider.succeed(with: snapshots.alpha)
     await alphaLoadTask.value
 
     let betaSwitchTask = Task { await model.selectProject("project-beta") }
     await betaProvider.waitUntilRequested()
     #expect(model.currentProjectID == "project-beta")
     #expect(model.state == .loading)
-    await betaProvider.succeed(with: betaSnapshot)
+    await betaProvider.succeed(with: snapshots.beta)
     await betaSwitchTask.value
 
     let alphaSwitchTask = Task { await model.selectProject("project-alpha") }
     await alphaProvider.waitUntilRequested()
     #expect(model.currentProjectID == "project-alpha")
-    #expect(model.state == .loaded(alphaSnapshot))
+    #expect(model.state == .loaded(snapshots.alpha))
     #expect(model.abbreviatedVisitors == "11")
 
-    await alphaProvider.succeed(with: refreshedAlphaSnapshot)
+    await alphaProvider.succeed(with: snapshots.refreshedAlpha)
     await alphaSwitchTask.value
 
-    #expect(model.state == .loaded(refreshedAlphaSnapshot))
+    #expect(model.state == .loaded(snapshots.refreshedAlpha))
     #expect(model.abbreviatedVisitors == "12")
     #expect(accountDataStore.currentProjectID == "project-alpha")
 }
