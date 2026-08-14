@@ -76,7 +76,7 @@ import VercelAnalyticsCore
     await model.refreshProjects()
 
     #expect(model.accountState == .failed(.invalidToken))
-    #expect(model.projectState == .failed("Connect a Vercel account before syncing projects."))
+    #expect(model.projectState == .failed("Connect a Vercel account before refreshing projects."))
     #expect(model.activeToken == nil)
     #expect(credentialStore.readCount == 1)
 }

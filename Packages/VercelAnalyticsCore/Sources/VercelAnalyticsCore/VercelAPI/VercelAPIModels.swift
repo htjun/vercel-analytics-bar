@@ -47,6 +47,7 @@ struct ProjectsResponseDTO: Decodable {
 struct ProjectDTO: Decodable {
     let id: String
     let name: String
+    let updatedAt: APIDate?
 }
 
 struct PaginationDTO: Decodable {

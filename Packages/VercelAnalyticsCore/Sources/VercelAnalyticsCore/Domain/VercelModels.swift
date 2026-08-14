@@ -43,6 +43,7 @@ public struct VercelAccountDiscovery: Equatable, Sendable {
 public struct VercelProject: Equatable, Identifiable, Sendable {
     public let id: String
     public let name: String
+    public let updatedAt: Date?
     public let teamID: String?
     public let teamName: String?
     public let scopeSlug: String?
@@ -50,12 +51,14 @@ public struct VercelProject: Equatable, Identifiable, Sendable {
     public init(
         id: String,
         name: String,
+        updatedAt: Date? = nil,
         teamID: String? = nil,
         teamName: String? = nil,
         scopeSlug: String? = nil
     ) {
         self.id = id
         self.name = name
+        self.updatedAt = updatedAt
         self.teamID = teamID
         self.teamName = teamName
         self.scopeSlug = scopeSlug
@@ -65,6 +68,17 @@ public struct VercelProject: Equatable, Identifiable, Sendable {
 public extension VercelProject {
     static func sorted(_ projects: [VercelProject]) -> [VercelProject] {
         projects.sorted { lhs, rhs in
+            switch (lhs.updatedAt, rhs.updatedAt) {
+            case let (lhsDate?, rhsDate?) where lhsDate != rhsDate:
+                return lhsDate > rhsDate
+            case (_?, nil):
+                return true
+            case (nil, _?):
+                return false
+            default:
+                break
+            }
+
             let nameOrder = lhs.name.localizedCaseInsensitiveCompare(rhs.name)
             if nameOrder != .orderedSame {
                 return nameOrder == .orderedAscending

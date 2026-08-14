@@ -59,12 +59,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func makeSettingsWindowController() -> HostedWindowController {
-        HostedWindowController(
+        let showsChartInspector = isChartInspectorEnabled
+        let contentSize = CGSize(
+            width: SettingsLayout.contentWidth,
+            height: SettingsLayout.contentHeight(showsChartInspector: showsChartInspector)
+        )
+        return HostedWindowController(
             title: "\(ProductInfo.name) Settings",
-            contentSize: CGSize(width: 520, height: 680),
+            contentSize: contentSize,
+            titleVisibility: .hidden,
             rootView: SettingsRootView(
                 model: model,
-                isChartInspectorEnabled: isChartInspectorEnabled,
+                isChartInspectorEnabled: showsChartInspector,
                 onOpenChartInspector: { [weak self] in
                     self?.presentChartInspector()
                 }

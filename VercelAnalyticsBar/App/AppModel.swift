@@ -47,6 +47,8 @@ final class AppModel {
     private(set) var accountState: AccountState = .disconnected
     private(set) var connectedAccount: VercelAccountProfile?
     private(set) var projectState: ProjectState = .idle
+    private(set) var isRefreshingProjects = false
+    private(set) var projectRefreshError: String?
     private(set) var projectCatalog: ProjectCatalog
     private(set) var selectedRange: VercelAnalyticsRange
     private(set) var projectSelectionError: String?
@@ -178,16 +180,15 @@ final class AppModel {
 extension AppModel {
     func refreshProjects() async {
         guard let activeToken else {
-            projectState = .failed("Connect a Vercel account before syncing projects.")
+            let message = "Connect a Vercel account before refreshing projects."
+            projectRefreshError = message
+            if case .loaded = projectState {
+                return
+            }
+            projectState = .failed(message)
             return
         }
-        await refreshProjects(token: activeToken)
-    }
-
-    func syncNow() async {
-        await refreshProjects()
-        guard case .loaded = projectState else { return }
-        await load(trigger: .manual)
+        await refreshProjects(token: activeToken, preservesLoadedProjects: true)
     }
 
     func setLaunchAtLogin(enabled: Bool) {
@@ -199,6 +200,14 @@ extension AppModel {
             launchAtLoginStatus = launchAtLoginManager.status
             launchAtLoginError = error.localizedDescription
         }
+    }
+
+    func clearProjectRefreshError() {
+        projectRefreshError = nil
+    }
+
+    func clearLaunchAtLoginError() {
+        launchAtLoginError = nil
     }
 
     func setProjectSelected(_ projectID: String, selected: Bool) {
@@ -269,6 +278,8 @@ extension AppModel {
         var failure: (any Error)?
         activeToken = nil
         connectedAccount = nil
+        isRefreshingProjects = false
+        projectRefreshError = nil
 
         do {
             try credentialStore.delete()
@@ -300,25 +311,37 @@ extension AppModel {
             projectCatalog.reset()
             selectedRange = .last7Days
             projectSelectionError = nil
+            launchAtLoginError = nil
         } else {
             accountState = .failed(.storageFailure)
         }
     }
 
-    private func refreshProjects(token: String) async {
+    private func refreshProjects(token: String, preservesLoadedProjects: Bool = false) async {
         guard let projectProviderFactory else { return }
 
-        projectState = .loading
+        projectRefreshError = nil
+        let retainedProjectState: ProjectState? = if preservesLoadedProjects, case .loaded = projectState {
+            projectState
+        } else {
+            nil
+        }
+        if retainedProjectState == nil {
+            projectState = .loading
+        }
+        isRefreshingProjects = true
+        defer { isRefreshingProjects = false }
 
         do {
             let discovery = try await projectProviderFactory(token).discoverAccount()
             try projectCatalog.reconcile(with: discovery.projects)
             connectedAccount = discovery.profile
             projectSelectionError = nil
-            snapshotRefreshCoordinator.present(.idle)
+            projectRefreshError = nil
             projectState = .loaded(projectCatalog.projects)
         } catch {
-            projectState = .failed(error.localizedDescription)
+            projectRefreshError = error.localizedDescription
+            projectState = retainedProjectState ?? .failed(error.localizedDescription)
         }
     }
 

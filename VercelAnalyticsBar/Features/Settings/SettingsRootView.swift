@@ -2,281 +2,371 @@ import AppKit
 import SwiftUI
 import VercelAnalyticsCore
 
+enum SettingsLayout {
+    static let contentWidth: CGFloat = 384
+    static let productionHeight: CGFloat = 528
+    static let developerHeight: CGFloat = 572
+    static let horizontalPadding: CGFloat = 16
+    static let titleTopPadding: CGFloat = 24
+    static let titleHeight: CGFloat = 14
+    static let titleToIdentitySpacing: CGFloat = 24
+    static let identityHeight: CGFloat = 20
+    static let identityToListSpacing: CGFloat = 16
+    static let projectListSize = CGSize(width: 352, height: 300)
+    static let projectListCornerRadius: CGFloat = 8
+    static let projectListHorizontalPadding: CGFloat = 12
+    static let projectListVerticalPadding: CGFloat = 8
+    static let projectRowHeight: CGFloat = 26
+    static let projectListToLoginSpacing: CGFloat = 24
+    static let loginRowHeight: CGFloat = 26
+    static let loginToActionsSpacing: CGFloat = 24
+    static let actionSpacing: CGFloat = 8
+    static let actionSize = CGSize(width: 112, height: 32)
+    static let actionsToInspectorSpacing: CGFloat = 12
+    static let inspectorSize = CGSize(width: 352, height: 32)
+    static let bottomPadding: CGFloat = 24
+
+    static func contentHeight(showsChartInspector: Bool) -> CGFloat {
+        showsChartInspector ? developerHeight : productionHeight
+    }
+}
+
+enum SettingsAccountIdentity {
+    static func label(for profile: VercelAccountProfile?) -> String {
+        guard let profile else { return "Vercel account" }
+
+        let name = normalized(profile.name)
+        let username = normalized(profile.username)
+        switch (name, username) {
+        case let (name?, username?) where name.caseInsensitiveCompare(username) != .orderedSame:
+            return "\(name) (\(username))"
+        case let (name?, _):
+            return name
+        case let (_, username?):
+            return username
+        default:
+            return "Vercel account"
+        }
+    }
+
+    private static func normalized(_ value: String?) -> String? {
+        guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else {
+            return nil
+        }
+        return value
+    }
+}
+
+private enum SettingsAlert: Identifiable {
+    case disconnect
+    case error(String)
+
+    var id: String {
+        switch self {
+        case .disconnect:
+            "disconnect"
+        case let .error(message):
+            "error:\(message)"
+        }
+    }
+}
+
 struct SettingsRootView: View {
     let model: AppModel
     let isChartInspectorEnabled: Bool
     let onOpenChartInspector: () -> Void
-    @State private var searchQuery = ""
+
+    @State private var presentedAlert: SettingsAlert?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(ProductInfo.name)
-                .font(.title2.weight(.semibold))
+        VStack(alignment: .leading, spacing: 0) {
+            Spacer()
+                .frame(height: SettingsLayout.titleTopPadding)
 
-            settingsContent
+            Text("Settings")
+                .font(AppTypography.geistSemibold16)
+                .foregroundStyle(.primary)
+                .frame(height: SettingsLayout.titleHeight)
 
-            Divider()
-            ApplicationControls(
-                isChartInspectorEnabled: isChartInspectorEnabled,
-                onOpenChartInspector: onOpenChartInspector
-            )
+            Spacer()
+                .frame(height: SettingsLayout.titleToIdentitySpacing)
 
-            IndependenceNotice()
+            accountIdentity
+
+            Spacer()
+                .frame(height: SettingsLayout.identityToListSpacing)
+
+            projectList
+
+            Spacer()
+                .frame(height: SettingsLayout.projectListToLoginSpacing)
+
+            launchAtLogin
+
+            Spacer()
+                .frame(height: SettingsLayout.loginToActionsSpacing)
+
+            actions
+
+            chartInspector
+
+            Spacer()
+                .frame(height: SettingsLayout.bottomPadding)
         }
-        .padding(24)
-        .frame(width: 520, height: 680)
+        .padding(.horizontal, SettingsLayout.horizontalPadding)
+        .frame(
+            width: SettingsLayout.contentWidth,
+            height: SettingsLayout.contentHeight(showsChartInspector: isChartInspectorEnabled),
+            alignment: .topLeading
+        )
+        .background(Color(nsColor: .windowBackgroundColor))
+        .alert(item: $presentedAlert, content: alert)
     }
 
-    @ViewBuilder
-    private var settingsContent: some View {
-        switch model.accountState {
-        case .connected:
-            connectedContent
-        case .restoring, .validating:
-            ProgressContent(message: "Loading account settings…")
-        case .disconnected, .failed:
-            disconnectedContent
+    private var accountIdentity: some View {
+        HStack(spacing: 6) {
+            AccountAvatar(url: model.connectedAccount?.avatarURL)
+
+            Text(SettingsAccountIdentity.label(for: model.connectedAccount))
+                .font(AppTypography.geistRegular12)
+                .foregroundStyle(.primary)
+                .lineLimit(1)
         }
+        .frame(height: SettingsLayout.identityHeight)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(SettingsAccountIdentity.label(for: model.connectedAccount))
     }
 
-    private var disconnectedContent: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Vercel account disconnected")
-                .font(.headline)
-
-            Text("Open the menu bar to connect your account.")
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    private var connectedContent: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Label("Vercel account connected", systemImage: "checkmark.circle.fill")
-                    .font(.headline)
-                    .foregroundStyle(.green)
-
-                Spacer()
-
-                Button("Sync now") {
-                    Task {
-                        await model.syncNow()
-                    }
-                }
-                .disabled(model.projectState == .loading)
-            }
-
-            Text("Your access token is stored securely in the macOS Keychain.")
-                .foregroundStyle(.secondary)
-
-            launchAtLoginContent
-            analyticsStatusContent
-            projectContent
-
-            Button("Disconnect", role: .destructive) {
-                model.disconnect()
-            }
-        }
-    }
-
-    private var launchAtLoginContent: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Toggle(
-                "Open at login",
-                isOn: Binding(
-                    get: { model.launchAtLoginStatus.isEnabled },
-                    set: { model.setLaunchAtLogin(enabled: $0) }
-                )
-            )
-            .disabled(model.launchAtLoginStatus == .unavailable)
-
-            Text("Login Item: \(model.launchAtLoginStatus.label)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            if let error = model.launchAtLoginError {
-                Text(error)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var analyticsStatusContent: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            switch model.state {
+    private var projectList: some View {
+        Group {
+            switch model.projectState {
             case .idle:
-                Label("Analytics not loaded", systemImage: "chart.line.uptrend.xyaxis")
+                projectStatus("Connect your Vercel account from the menu bar.")
             case .loading:
-                Label("Refreshing analytics", systemImage: "arrow.clockwise")
-            case let .loaded(snapshot):
-                analyticsLoadedStatus(snapshot)
-            case let .empty(message):
-                Label("Analytics unavailable", systemImage: "questionmark.circle")
-                Text(message)
-                    .font(.caption)
-            case let .failed(message):
-                Label("Analytics unavailable", systemImage: "exclamationmark.triangle")
-                Text(message)
-                    .font(.caption)
-            }
-        }
-        .font(.subheadline)
-        .foregroundStyle(.secondary)
-    }
-
-    private func analyticsLoadedStatus(_ snapshot: AnalyticsSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            if model.snapshotFreshness == .stale {
-                Label("Showing stale analytics", systemImage: "clock.badge.exclamationmark")
-                    .foregroundStyle(.orange)
-            } else {
-                Label("Analytics up to date", systemImage: "checkmark.circle")
-            }
-
-            Text("Updated \(snapshot.refreshedAt.formatted(date: .abbreviated, time: .shortened))")
-                .font(.caption)
-
-            if let refreshMessage = model.refreshMessage {
-                Text(refreshMessage)
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var projectContent: some View {
-        switch model.projectState {
-        case .idle:
-            Text("Sync to load your Vercel projects.")
-                .foregroundStyle(.secondary)
-        case .loading:
-            ProgressContent(message: "Loading Vercel projects…")
-        case let .loaded(projects):
-            projectList(projects)
-        case let .failed(message):
-            VStack(alignment: .leading, spacing: 8) {
-                Label("Projects unavailable", systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.red)
-                Text(message)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Button("Retry") {
-                    Task {
-                        await model.refreshProjects()
+                ProgressView()
+                    .controlSize(.small)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .accessibilityLabel("Loading Vercel projects")
+            case let .loaded(projects):
+                if projects.isEmpty {
+                    projectStatus("No accessible projects were found.")
+                } else {
+                    ScrollView {
+                        LazyVStack(alignment: .leading, spacing: 0) {
+                            ForEach(projects) { project in
+                                projectRow(project)
+                            }
+                        }
+                        .padding(.horizontal, SettingsLayout.projectListHorizontalPadding)
+                        .padding(.vertical, SettingsLayout.projectListVerticalPadding)
                     }
                 }
+            case .failed:
+                projectStatus("Projects could not be loaded.")
             }
         }
-    }
-
-    private func projectList(_ projects: [VercelProject]) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Projects")
-                    .font(.headline)
-                Spacer()
-                Text("\(model.selectedProjectIDs.count) selected")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            TextField("Find Project…", text: $searchQuery)
-                .textFieldStyle(.roundedBorder)
-
-            let filteredProjects = model.projects(matching: searchQuery)
-            if filteredProjects.isEmpty {
-                Text("No projects match this search.")
-                    .frame(maxWidth: .infinity, minHeight: 80)
-                    .foregroundStyle(.secondary)
-            } else {
-                List(filteredProjects) { project in
-                    projectRow(project)
-                }
-                .listStyle(.inset)
-                .frame(minHeight: 300)
-            }
-
-            if projects.isEmpty {
-                Text("No accessible projects were found.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            } else {
-                Text("Analytics status is checked when metrics are loaded.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            if let error = model.projectSelectionError {
-                Label(error, systemImage: "exclamationmark.triangle")
-                    .font(.caption)
-                    .foregroundStyle(.red)
-            }
+        .frame(
+            width: SettingsLayout.projectListSize.width,
+            height: SettingsLayout.projectListSize.height
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: SettingsLayout.projectListCornerRadius)
+                .stroke(AnalyticsCardColors.border, lineWidth: 1)
         }
+        .clipShape(RoundedRectangle(cornerRadius: SettingsLayout.projectListCornerRadius))
     }
 
     private func projectRow(_ project: VercelProject) -> some View {
-        Toggle(
-            isOn: Binding(
-                get: { model.selectedProjectIDs.contains(project.id) },
-                set: { model.setProjectSelected(project.id, selected: $0) }
-            )
-        ) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(project.name)
-                if let metadata = model.teamMetadata(for: project) {
-                    Text(metadata)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+        let isSelected = model.selectedProjectIDs.contains(project.id)
+        let isOnlySelection = isSelected && model.selectedProjectIDs.count == 1
+
+        return Toggle(isOn: Binding(
+            get: { model.selectedProjectIDs.contains(project.id) },
+            set: { selected in
+                model.setProjectSelected(project.id, selected: selected)
+                if let message = model.projectSelectionError {
+                    presentedAlert = .error(message)
                 }
             }
+        )) {
+            Text(projectLabel(project))
+                .font(AppTypography.geistRegular12)
+                .foregroundStyle(.primary)
+                .lineLimit(1)
         }
         .toggleStyle(.checkbox)
+        .frame(maxWidth: .infinity, minHeight: SettingsLayout.projectRowHeight, alignment: .leading)
+        .disabled(isOnlySelection || model.isRefreshingProjects)
     }
-}
 
-private struct ApplicationControls: View {
-    let isChartInspectorEnabled: Bool
-    let onOpenChartInspector: () -> Void
+    private func projectLabel(_ project: VercelProject) -> String {
+        guard let team = model.teamMetadata(for: project) else { return project.name }
+        return "\(project.name) (\(team))"
+    }
 
-    var body: some View {
-        HStack {
-            #if CHART_INSPECTOR
-                if isChartInspectorEnabled {
-                    Button("Chart Inspector", action: onOpenChartInspector)
+    private func projectStatus(_ message: String) -> some View {
+        Text(message)
+            .font(AppTypography.geistRegular12)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 24)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var launchAtLogin: some View {
+        Toggle(
+            "Open at login",
+            isOn: Binding(
+                get: { model.launchAtLoginStatus.isEnabled },
+                set: { enabled in
+                    model.setLaunchAtLogin(enabled: enabled)
+                    if let message = model.launchAtLoginError {
+                        presentedAlert = .error(message)
+                        model.clearLaunchAtLoginError()
+                    }
                 }
-            #endif
+            )
+        )
+        .font(AppTypography.geistRegular12)
+        .toggleStyle(.checkbox)
+        .frame(height: SettingsLayout.loginRowHeight)
+        .disabled(model.launchAtLoginStatus == .unavailable)
+        .help(model.launchAtLoginStatus.label)
+    }
 
-            Spacer()
+    private var actions: some View {
+        HStack(spacing: SettingsLayout.actionSpacing) {
+            SettingsActionButton(
+                title: "Refresh",
+                isBusy: model.isRefreshingProjects,
+                isDisabled: model.accountState != .connected
+            ) {
+                Task {
+                    await model.refreshProjects()
+                    if let message = model.projectRefreshError {
+                        presentedAlert = .error(message)
+                        model.clearProjectRefreshError()
+                    }
+                }
+            }
 
-            Button("Quit Vercel Analytics Bar") {
+            SettingsActionButton(
+                title: "Disconnect",
+                isDisabled: model.accountState != .connected
+            ) {
+                presentedAlert = .disconnect
+            }
+
+            SettingsActionButton(title: "Quit (⌘ + Q)") {
                 NSApplication.shared.terminate(nil)
             }
         }
     }
-}
 
-private struct IndependenceNotice: View {
-    var body: some View {
-        Text("Vercel Analytics Bar is an independent app and is not affiliated with Vercel. "
-            + "It connects directly to Vercel using your Personal Access Token.")
-            .font(.caption)
-            .foregroundStyle(.secondary)
+    @ViewBuilder
+    private var chartInspector: some View {
+        #if CHART_INSPECTOR
+            if isChartInspectorEnabled {
+                Spacer()
+                    .frame(height: SettingsLayout.actionsToInspectorSpacing)
+
+                SettingsActionButton(
+                    title: "Chart Inspector",
+                    width: SettingsLayout.inspectorSize.width,
+                    action: onOpenChartInspector
+                )
+            }
+        #endif
+    }
+
+    private func alert(_ alert: SettingsAlert) -> Alert {
+        switch alert {
+        case .disconnect:
+            Alert(
+                title: Text("Disconnect Vercel account?"),
+                message: Text("You will need to reconnect with a Vercel access token."),
+                primaryButton: .destructive(Text("Disconnect"), action: model.disconnect),
+                secondaryButton: .cancel()
+            )
+        case let .error(message):
+            Alert(
+                title: Text("Settings Error"),
+                message: Text(message),
+                dismissButton: .default(Text("OK"))
+            )
+        }
     }
 }
 
-private struct ProgressContent: View {
-    let message: String
+private struct AccountAvatar: View {
+    let url: URL?
 
     var body: some View {
-        HStack(spacing: 10) {
-            ProgressView()
-                .controlSize(.small)
-            Text(message)
+        Group {
+            if let url {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case let .success(image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    case .empty, .failure:
+                        fallback
+                    @unknown default:
+                        fallback
+                    }
+                }
+            } else {
+                fallback
+            }
+        }
+        .frame(width: SettingsLayout.identityHeight, height: SettingsLayout.identityHeight)
+        .clipShape(Circle())
+        .accessibilityHidden(true)
+    }
+
+    private var fallback: some View {
+        ZStack {
+            Circle()
+                .fill(Color.secondary.opacity(0.18))
+
+            Image(systemName: "person.fill")
+                .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(.secondary)
         }
+    }
+}
+
+private struct SettingsActionButton: View {
+    let title: String
+    var width = SettingsLayout.actionSize.width
+    var isBusy = false
+    var isDisabled = false
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Group {
+                if isBusy {
+                    ProgressView()
+                        .controlSize(.small)
+                        .accessibilityLabel(title)
+                } else {
+                    Text(title)
+                        .font(AppTypography.geistMedium12)
+                        .lineLimit(1)
+                }
+            }
+            .frame(width: width, height: SettingsLayout.actionSize.height)
+            .contentShape(RoundedRectangle(cornerRadius: 6))
+            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 6))
+            .overlay {
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(AnalyticsCardColors.border, lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .disabled(isDisabled || isBusy)
+        .opacity(isDisabled ? 0.5 : 1)
     }
 }

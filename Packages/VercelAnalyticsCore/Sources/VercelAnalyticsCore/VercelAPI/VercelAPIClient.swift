@@ -233,6 +233,7 @@ public struct VercelAPIClient: Sendable, VercelProjectListingProviding {
             VercelProject(
                 id: project.id,
                 name: project.name,
+                updatedAt: project.updatedAt?.value,
                 teamID: scope.teamID,
                 teamName: scope.teamName,
                 scopeSlug: scope.scopeSlug

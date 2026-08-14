@@ -60,6 +60,45 @@ import VercelAnalyticsCore
     #expect(VercelAccountProfile().displayName == "Vercel account")
 }
 
+@Test func clientDecodesProjectUpdatedAtMillisecondsAndSortsNewestFirst() async throws {
+    let transport = FixtureTransport(
+        responses: [
+            "/v2/user": [.response(statusCode: 200, body: #"{"user":{"id":"user_fixture"}}"#)],
+            "/v2/teams": [.response(statusCode: 200, body: emptyTeamsPage)],
+            "/v9/projects": [.response(statusCode: 200, body: projectsWithUpdatedAtPage)],
+        ]
+    )
+    let client = VercelAPIClient(token: "fixture-token", transport: transport)
+
+    let projects = try await client.listAccessibleProjects()
+
+    #expect(projects.map(\.id) == ["newest", "same-a", "same-b", "older", "missing"])
+    #expect(projects[0].updatedAt == Date(timeIntervalSince1970: 1_786_000_000))
+    #expect(projects[4].updatedAt == nil)
+}
+
+@Test func projectSortingUsesDeterministicTiesAndPlacesMissingDatesLast() {
+    let newest = Date(timeIntervalSince1970: 300)
+    let tied = Date(timeIntervalSince1970: 200)
+    let projects = [
+        VercelProject(id: "missing", name: "Aardvark"),
+        VercelProject(id: "older", name: "Alpha", updatedAt: Date(timeIntervalSince1970: 100)),
+        VercelProject(id: "z-id", name: "beta", updatedAt: tied, teamName: "Zulu"),
+        VercelProject(id: "b-id", name: "Alpha", updatedAt: tied, teamName: "Bravo"),
+        VercelProject(id: "a-id", name: "alpha", updatedAt: tied, teamName: "Bravo"),
+        VercelProject(id: "newest", name: "Zebra", updatedAt: newest),
+    ]
+
+    #expect(VercelProject.sorted(projects).map(\.id) == [
+        "newest",
+        "a-id",
+        "b-id",
+        "z-id",
+        "older",
+        "missing",
+    ])
+}
+
 @Test func clientContinuesWithTeamProjectsWhenPersonalScopeIsUnavailable() async throws {
     let transport = FixtureTransport(
         responses: [
@@ -217,4 +256,16 @@ private let singleTeamProjectPage = #"""
 """#
 private let personalProjectPage = #"""
 {"projects":[{"id":"prj_personal_fixture","name":"Personal Project"}],"pagination":{"next":null}}
+"""#
+private let projectsWithUpdatedAtPage = #"""
+{
+  "projects": [
+    {"id":"missing","name":"Aardvark"},
+    {"id":"older","name":"Older","updatedAt":1785000000000},
+    {"id":"same-b","name":"beta","updatedAt":1785500000000},
+    {"id":"same-a","name":"Alpha","updatedAt":1785500000000},
+    {"id":"newest","name":"Newest","updatedAt":1786000000000}
+  ],
+  "pagination":{"next":null}
+}
 """#

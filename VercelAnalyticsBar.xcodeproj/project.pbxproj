@@ -56,6 +56,8 @@
 		A10000000000000000000033 /* VercelProjectSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000033 /* VercelProjectSelectionView.swift */; };
 		A10000000000000000000034 /* WindowPlacementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000034 /* WindowPlacementTests.swift */; };
 		A10000000000000000000035 /* AnalyticsSnapshotTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000035 /* AnalyticsSnapshotTestSupport.swift */; };
+		A10000000000000000000036 /* SettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000036 /* SettingsTests.swift */; };
+		A10000000000000000000037 /* SettingsTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000037 /* SettingsTestSupport.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -124,6 +126,8 @@
 		A30000000000000000000033 /* VercelProjectSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VercelProjectSelectionView.swift; sourceTree = "<group>"; };
 		A30000000000000000000034 /* WindowPlacementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowPlacementTests.swift; sourceTree = "<group>"; };
 		A30000000000000000000035 /* AnalyticsSnapshotTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsSnapshotTestSupport.swift; sourceTree = "<group>"; };
+		A30000000000000000000036 /* SettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsTests.swift; sourceTree = "<group>"; };
+		A30000000000000000000037 /* SettingsTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsTestSupport.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -206,6 +210,8 @@
 				A30000000000000000000026 /* AnalyticsCardIntegrationTests.swift */,
 				A3000000000000000000000D /* AppModelTestSupport.swift */,
 				A30000000000000000000035 /* AnalyticsSnapshotTestSupport.swift */,
+				A30000000000000000000036 /* SettingsTests.swift */,
+				A30000000000000000000037 /* SettingsTestSupport.swift */,
 				A30000000000000000000030 /* AppModelCredentialTests.swift */,
 				A3000000000000000000002F /* PersistenceSecurityTests.swift */,
 				A30000000000000000000011 /* RefreshCoordinatorTests.swift */,
@@ -459,6 +465,8 @@
 				A10000000000000000000026 /* AnalyticsCardIntegrationTests.swift in Sources */,
 				A10000000000000000000009 /* AppModelTestSupport.swift in Sources */,
 				A10000000000000000000035 /* AnalyticsSnapshotTestSupport.swift in Sources */,
+				A10000000000000000000036 /* SettingsTests.swift in Sources */,
+				A10000000000000000000037 /* SettingsTestSupport.swift in Sources */,
 				A10000000000000000000030 /* AppModelCredentialTests.swift in Sources */,
 				A1000000000000000000002F /* PersistenceSecurityTests.swift in Sources */,
 				A10000000000000000000011 /* RefreshCoordinatorTests.swift in Sources */,

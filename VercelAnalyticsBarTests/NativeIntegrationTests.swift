@@ -328,7 +328,7 @@ private func makePanelController(
 }
 
 @MainActor
-@Test func appModelSyncNowRefreshesProjectsAndAnalytics() async {
+@Test func appModelManualRefreshDoesNotRequestAnalytics() async {
     let project = VercelProject(id: "project-alpha", name: "Alpha")
     let provider = ControlledSnapshotProvider()
     let model = AppModel(
@@ -343,20 +343,8 @@ private func makePanelController(
 
     await model.connect(token: "valid-token")
     #expect(model.confirmProjectSelection([project.id]))
-    let syncTask = Task { await model.syncNow() }
-    await provider.waitUntilRequested()
+    await model.refreshProjects()
     #expect(model.projectState == .loaded([project]))
-
-    let snapshot = makeAnalyticsSnapshot(
-        projectName: "Alpha",
-        visitors: 100,
-        pageViews: 200,
-        last24HoursVisitors: 11,
-        refreshedAt: Date(timeIntervalSince1970: 1_785_549_600),
-        range: .last24Hours
-    )
-    await provider.succeed(with: snapshot)
-    await syncTask.value
-
-    #expect(model.state == .loaded(snapshot))
+    #expect(await provider.requestedRanges.isEmpty)
+    #expect(model.state == .idle)
 }

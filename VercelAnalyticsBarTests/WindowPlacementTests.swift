@@ -88,3 +88,22 @@ import Testing
     #expect(window.frame.origin == movedOrigin)
     window.orderOut(nil)
 }
+
+@MainActor
+@Test func settingsWindowHidesItsTitleTextButKeepsNativeFixedWindowChrome() throws {
+    let controller = HostedWindowController(
+        title: "Vercel Analytics Bar Settings",
+        contentSize: CGSize(width: SettingsLayout.contentWidth, height: SettingsLayout.productionHeight),
+        titleVisibility: .hidden,
+        rootView: EmptyView()
+    )
+    let window = try #require(controller.window)
+
+    #expect(window.title == "Vercel Analytics Bar Settings")
+    #expect(window.titleVisibility == .hidden)
+    #expect(window.styleMask.contains(.titled))
+    #expect(window.styleMask.contains(.closable))
+    #expect(!window.styleMask.contains(.resizable))
+    #expect(window.contentMinSize == CGSize(width: 384, height: 528))
+    #expect(window.contentMaxSize == CGSize(width: 384, height: 528))
+}

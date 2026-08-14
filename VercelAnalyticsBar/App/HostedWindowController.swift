@@ -72,6 +72,7 @@ final class HostedWindowController: NSWindowController {
         contentSize: CGSize,
         minimumContentSize: CGSize? = nil,
         isResizable: Bool = false,
+        titleVisibility: NSWindow.TitleVisibility = .visible,
         rootView: some View
     ) {
         var styleMask: NSWindow.StyleMask = [.titled, .closable]
@@ -86,6 +87,7 @@ final class HostedWindowController: NSWindowController {
             defer: false
         )
         window.title = title
+        window.titleVisibility = titleVisibility
         window.contentViewController = NSHostingController(rootView: rootView)
         window.isReleasedWhenClosed = false
         window.contentMinSize = minimumContentSize ?? contentSize
