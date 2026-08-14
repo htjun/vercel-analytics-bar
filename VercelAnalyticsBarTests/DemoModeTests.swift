@@ -51,6 +51,8 @@ struct DemoModeTests {
         #expect(model.projectProviderFactory == nil)
         #expect(model.analyticsProviderFactory == nil)
         #expect(model.launchAtLoginStatus == .unavailable)
+        #expect(model.selectedProjects(matching: "").count == 5)
+        #expect(model.currentProject?.name == "node-storefront")
 
         await model.restoreConnection()
         await model.load()
@@ -61,6 +63,14 @@ struct DemoModeTests {
             return
         }
         #expect(snapshot == fixture)
+
+        await model.selectProject("checkout-worker")
+        #expect(model.currentProject?.name == "checkout-worker")
+        guard case let .loaded(switchedSnapshot) = model.state else {
+            Issue.record("Expected the demo fixture to remain loaded after switching projects")
+            return
+        }
+        #expect(switchedSnapshot == fixture)
     }
 
     @MainActor
@@ -96,8 +106,16 @@ struct DemoModeTests {
             from: Self.fixtureRoot.appendingPathComponent("empty-breakdowns.json")
         )
 
-        #expect(ideal.projectName == "example-site")
-        #expect(ideal.topPages.first?.label == "/docs/getting-started")
+        #expect(ideal.projectName == "node-storefront")
+        #expect(ideal.visitors.value == 802)
+        #expect(ideal.visitors.previousValue == 716)
+        #expect(ideal.pageViews.value == 3_146)
+        #expect(ideal.pageViews.previousValue == 3_277)
+        #expect(ideal.range == .last24Hours)
+        #expect(ideal.series.count == 24)
+        #expect(ideal.series.map(\.pageViews).reduce(0, +) == ideal.pageViews.value)
+        #expect(ideal.last24HoursVisitors == 802)
+        #expect(ideal.topPages.first?.label == "/dashboard")
         #expect(longValues.visitors.value > 1_000_000_000_000)
         #expect(longValues.projectName.count > 40)
         #expect(emptyBreakdowns.topPages.isEmpty)

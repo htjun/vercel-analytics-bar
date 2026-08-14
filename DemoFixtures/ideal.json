@@ -1,44 +1,56 @@
 {
-  "projectName": "example-site",
-  "range": "last30Days",
+  "projectName": "node-storefront",
+  "range": "last24Hours",
   "visitors": {
     "label": "Visitors",
-    "value": 3234,
-    "previousValue": 1168
+    "value": 802,
+    "previousValue": 716
   },
   "pageViews": {
     "label": "Page Views",
-    "value": 6423,
-    "previousValue": 6554
+    "value": 3146,
+    "previousValue": 3277
   },
   "series": [
-    { "timestamp": "2026-07-31T00:00:00Z", "visitors": 120, "pageViews": 241 },
-    { "timestamp": "2026-08-01T00:00:00Z", "visitors": 165, "pageViews": 302 },
-    { "timestamp": "2026-08-02T00:00:00Z", "visitors": 142, "pageViews": 279 },
-    { "timestamp": "2026-08-03T00:00:00Z", "visitors": 198, "pageViews": 388 },
-    { "timestamp": "2026-08-04T00:00:00Z", "visitors": 176, "pageViews": 341 },
-    { "timestamp": "2026-08-05T00:00:00Z", "visitors": 234, "pageViews": 451 },
-    { "timestamp": "2026-08-06T00:00:00Z", "visitors": 215, "pageViews": 429 },
-    { "timestamp": "2026-08-07T00:00:00Z", "visitors": 286, "pageViews": 572 },
-    { "timestamp": "2026-08-08T00:00:00Z", "visitors": 249, "pageViews": 486 },
-    { "timestamp": "2026-08-09T00:00:00Z", "visitors": 312, "pageViews": 615 },
-    { "timestamp": "2026-08-10T00:00:00Z", "visitors": 278, "pageViews": 544 },
-    { "timestamp": "2026-08-11T00:00:00Z", "visitors": 354, "pageViews": 688 }
+    { "timestamp": "2026-08-10T09:00:00Z", "visitors": 15, "pageViews": 60 },
+    { "timestamp": "2026-08-10T10:00:00Z", "visitors": 23, "pageViews": 84 },
+    { "timestamp": "2026-08-10T11:00:00Z", "visitors": 34, "pageViews": 130 },
+    { "timestamp": "2026-08-10T12:00:00Z", "visitors": 24, "pageViews": 93 },
+    { "timestamp": "2026-08-10T13:00:00Z", "visitors": 28, "pageViews": 106 },
+    { "timestamp": "2026-08-10T14:00:00Z", "visitors": 20, "pageViews": 78 },
+    { "timestamp": "2026-08-10T15:00:00Z", "visitors": 18, "pageViews": 70 },
+    { "timestamp": "2026-08-10T16:00:00Z", "visitors": 40, "pageViews": 158 },
+    { "timestamp": "2026-08-10T17:00:00Z", "visitors": 84, "pageViews": 328 },
+    { "timestamp": "2026-08-10T18:00:00Z", "visitors": 73, "pageViews": 289 },
+    { "timestamp": "2026-08-10T19:00:00Z", "visitors": 29, "pageViews": 114 },
+    { "timestamp": "2026-08-10T20:00:00Z", "visitors": 14, "pageViews": 55 },
+    { "timestamp": "2026-08-10T21:00:00Z", "visitors": 19, "pageViews": 73 },
+    { "timestamp": "2026-08-10T22:00:00Z", "visitors": 39, "pageViews": 153 },
+    { "timestamp": "2026-08-10T23:00:00Z", "visitors": 57, "pageViews": 225 },
+    { "timestamp": "2026-08-11T00:00:00Z", "visitors": 62, "pageViews": 249 },
+    { "timestamp": "2026-08-11T01:00:00Z", "visitors": 52, "pageViews": 209 },
+    { "timestamp": "2026-08-11T02:00:00Z", "visitors": 49, "pageViews": 195 },
+    { "timestamp": "2026-08-11T03:00:00Z", "visitors": 33, "pageViews": 131 },
+    { "timestamp": "2026-08-11T04:00:00Z", "visitors": 23, "pageViews": 91 },
+    { "timestamp": "2026-08-11T05:00:00Z", "visitors": 20, "pageViews": 76 },
+    { "timestamp": "2026-08-11T06:00:00Z", "visitors": 17, "pageViews": 66 },
+    { "timestamp": "2026-08-11T07:00:00Z", "visitors": 17, "pageViews": 63 },
+    { "timestamp": "2026-08-11T08:00:00Z", "visitors": 12, "pageViews": 50 }
   ],
   "topPages": [
-    { "label": "/docs/getting-started", "visitors": 710, "pageViews": 872 },
-    { "label": "/products/analytics", "visitors": 175, "pageViews": 202 },
-    { "label": "/blog/example-release", "visitors": 52, "pageViews": 60 },
-    { "label": "/pricing", "visitors": 24, "pageViews": 29 },
-    { "label": "/about", "visitors": 25, "pageViews": 28 }
+    { "label": "/dashboard", "visitors": 253, "pageViews": 541 },
+    { "label": "/docs/deployments/configuring-custom-domains", "visitors": 209, "pageViews": 492 },
+    { "label": "/products/analytics", "visitors": 157, "pageViews": 374 },
+    { "label": "/blog/introducing-web-analytics", "visitors": 102, "pageViews": 247 },
+    { "label": "/pricing", "visitors": 81, "pageViews": 194 }
   ],
   "topReferrers": [
-    { "label": "google.com", "visitors": 510, "pageViews": 640 },
-    { "label": "news.ycombinator.com", "visitors": 205, "pageViews": 260 },
-    { "label": "github.com", "visitors": 160, "pageViews": 195 },
-    { "label": "x.com", "visitors": 88, "pageViews": 101 },
-    { "label": "vercel.com", "visitors": 42, "pageViews": 55 }
+    { "label": "google.com", "visitors": 119, "pageViews": 626 },
+    { "label": "news.ycombinator.com", "visitors": 39, "pageViews": 228 },
+    { "label": "github.com", "visitors": 36, "pageViews": 184 },
+    { "label": "x.com", "visitors": 28, "pageViews": 144 },
+    { "label": "vercel.com", "visitors": 16, "pageViews": 84 }
   ],
-  "last24HoursVisitors": 354,
+  "last24HoursVisitors": 802,
   "refreshedAt": "2026-08-11T08:38:00Z"
 }

@@ -179,7 +179,7 @@
       {
         "name": "axisMarkCount",
         "type": "integer",
-        "default": 3,
+        "default": 4,
         "minimum": 2,
         "maximum": 12,
         "step": 1,

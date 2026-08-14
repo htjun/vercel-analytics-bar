@@ -62,6 +62,8 @@ import VercelAnalyticsCore
     #expect(AnalyticsCardLayout.breakdownCountWidth == 40)
     #expect(AnalyticsCardLayout.breakdownColumnSpacing == 8)
     #expect(AnalyticsCardLayout.breakdownLabelWidth == 296)
+    #expect(AnalyticsInteraction.hoverDuration == 0.2)
+    #expect(AnalyticsInteraction.hoverBackgroundOpacity == 0.9)
     #expect(AnalyticsCardPresentation.sampleFixture.projectName == "example-site")
     #expect(AnalyticsCardPresentation.pageFixtures.count == 5)
     #expect(AnalyticsCardPresentation.sampleFixture.topPages.first?.visitors == 710)

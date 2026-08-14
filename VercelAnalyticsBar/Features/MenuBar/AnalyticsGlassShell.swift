@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum AnalyticsCardColors {
-    static let cardBackground = Color.white.opacity(0.94)
+    static let cardBackground = Color.white.opacity(0.85)
     static let glassRim = Color.white.opacity(0.32)
     static let glassCyanFringe = Color(red: 104 / 255, green: 222 / 255, blue: 1).opacity(0.18)
     static let glassWarmFringe = Color(red: 1, green: 206 / 255, blue: 156 / 255).opacity(0.14)

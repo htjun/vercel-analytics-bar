@@ -5,6 +5,51 @@ import Testing
 
 @Suite("Chart style")
 struct ChartStyleTests {
+    @MainActor
+    @Test func xAxisDatesAreEvenlySpacedAcrossTheSeriesRange() {
+        let start = Date(timeIntervalSince1970: 1_000_000)
+        let end = start.addingTimeInterval(9 * 86_400)
+        let dates = VisitorsChart.evenlySpacedDates(from: start, through: end, count: 4)
+
+        #expect(dates.count == 4)
+        #expect(dates[0].timeIntervalSince(start) == 1.125 * 86_400)
+        #expect(dates[1].timeIntervalSince(dates[0]) == 2.25 * 86_400)
+        #expect(dates[2].timeIntervalSince(dates[1]) == 2.25 * 86_400)
+        #expect(dates[3].timeIntervalSince(dates[2]) == 2.25 * 86_400)
+        #expect(end.timeIntervalSince(dates[3]) == 1.125 * 86_400)
+    }
+
+    @MainActor
+    @Test func hourlyXAxisDatesUseEvenlySpacedObservedBuckets() {
+        let start = Date(timeIntervalSince1970: 1_000_000)
+        let dates = (0 ..< 24).map { index in
+            start.addingTimeInterval(Double(index) * 3_600)
+        }
+
+        let marks = VisitorsChart.xAxisDates(for: dates, count: 4)
+
+        #expect(marks == [dates[3], dates[9], dates[15], dates[21]])
+        #expect(VisitorsChart.usesHourlyXAxisLabels(from: dates[0], through: dates[23]))
+    }
+
+    @MainActor
+    @Test func yAxisUsesItsHighestGridLineAsTheScaleMaximum() {
+        let marks = VisitorsChart.yAxisValues(
+            for: [15, 34, 24, 85, 13],
+            desiredCount: 4,
+            headroom: 0.1
+        )
+
+        #expect(marks == [0, 25, 50, 75, 100])
+        #expect(marks.last! > 85)
+    }
+
+    @MainActor
+    @Test func yAxisHandlesEmptyAndSmallDatasets() {
+        #expect(VisitorsChart.yAxisValues(for: [], desiredCount: 4, headroom: 0.1) == [0, 1])
+        #expect(VisitorsChart.yAxisValues(for: [1], desiredCount: 4, headroom: 0.1) == [0, 1, 2])
+    }
+
     @Test func defaultsMatchTheCanonicalChartPresentation() {
         let style = ChartStyle.default
 
@@ -18,7 +63,7 @@ struct ChartStyleTests {
         #expect(style.chartHeight == 150)
         #expect(style.chartSidePadding == 12)
         #expect(style.chartVerticalPadding == 5)
-        #expect(style.axisMarkCount == 3)
+        #expect(style.axisMarkCount == 4)
         #expect(style.yScaleHeadroom == 0.1)
         #expect(style.showsXAxisLabels)
         #expect(style.showsYAxisLabels)

@@ -184,6 +184,7 @@ struct AnalyticsCardView<SelectorContent: View>: View {
                     .contentShape(Circle())
             }
             .buttonStyle(.plain)
+            .analyticsHoverBackground(in: Circle())
             .overlay(Circle().stroke(AnalyticsCardColors.border, lineWidth: 1))
             .accessibilityLabel("Open Settings")
         }
@@ -196,6 +197,7 @@ struct AnalyticsCardView<SelectorContent: View>: View {
                 selectorLabel(title: presentation.projectName, width: 150)
             }
             .buttonStyle(.plain)
+            .analyticsHoverBackground(in: Rectangle())
             .accessibilityLabel("Project: \(presentation.projectName)")
             .popover(isPresented: $isProjectSelectorPresented, arrowEdge: .top) {
                 projectSelectorContent()
@@ -207,6 +209,7 @@ struct AnalyticsCardView<SelectorContent: View>: View {
                 selectorLabel(title: presentation.selectedRange.title, width: 115)
             }
             .buttonStyle(.plain)
+            .analyticsHoverBackground(in: Rectangle())
             .accessibilityLabel("Range: \(presentation.selectedRange.title)")
             .popover(isPresented: $isRangeSelectorPresented, arrowEdge: .top) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -271,7 +274,7 @@ struct AnalyticsCardView<SelectorContent: View>: View {
             .frame(height: 16, alignment: .topLeading)
 
             Text(metric.valueText)
-                .font(AppTypography.interDisplayLight48)
+                .font(AppTypography.interDisplay48)
                 .tracking(AppTypography.metricTracking)
                 .foregroundStyle(AnalyticsCardColors.primaryText)
                 .lineLimit(1)
@@ -303,12 +306,14 @@ struct AnalyticsCardView<SelectorContent: View>: View {
                         HStack(spacing: AnalyticsCardLayout.breakdownColumnSpacing) {
                             Text(row.label)
                                 .font(AppTypography.geistRegular12)
+                                .tracking(AppTypography.breakdownTracking)
                                 .lineLimit(1)
                                 .truncationMode(.tail)
                                 .frame(width: AnalyticsCardLayout.breakdownLabelWidth, alignment: .leading)
 
                             Text(AnalyticsCountFormatter.compact(row.visitors))
                                 .font(AppTypography.geistMedium12)
+                                .tracking(AppTypography.breakdownTracking)
                                 .lineLimit(1)
                                 .frame(width: AnalyticsCardLayout.breakdownCountWidth, alignment: .trailing)
                                 .accessibilityLabel(
@@ -361,7 +366,6 @@ struct AnalyticsCardView<SelectorContent: View>: View {
             .help("Open this project's analytics in Vercel")
         } else {
             dashboardLabel
-                .opacity(0.45)
         }
     }
 
@@ -378,6 +382,7 @@ struct AnalyticsCardView<SelectorContent: View>: View {
         .padding(.leading, 12)
         .padding(.trailing, 8)
         .frame(width: 122, height: 30)
+        .analyticsHoverBackground(in: Capsule())
         .overlay(Capsule().stroke(AnalyticsCardColors.border, lineWidth: 1))
         .contentShape(Capsule())
     }
@@ -391,5 +396,36 @@ struct AnalyticsCardView<SelectorContent: View>: View {
         case .neutral:
             AnalyticsCardColors.secondaryText
         }
+    }
+}
+
+enum AnalyticsInteraction {
+    static let hoverDuration = 0.2
+    static let hoverBackgroundOpacity = 0.9
+}
+
+private struct AnalyticsHoverBackground<HoverShape: Shape>: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isHovering = false
+    let shape: HoverShape
+
+    func body(content: Content) -> some View {
+        content
+            .background(
+                shape.fill(
+                    Color.white.opacity(isHovering ? AnalyticsInteraction.hoverBackgroundOpacity : 0)
+                )
+            )
+            .animation(
+                .easeInOut(duration: reduceMotion ? 0 : AnalyticsInteraction.hoverDuration),
+                value: isHovering
+            )
+            .onHover { isHovering = $0 }
+    }
+}
+
+private extension View {
+    func analyticsHoverBackground<HoverShape: Shape>(in shape: HoverShape) -> some View {
+        modifier(AnalyticsHoverBackground(shape: shape))
     }
 }

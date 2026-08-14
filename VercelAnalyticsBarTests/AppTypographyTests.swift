@@ -81,7 +81,7 @@ import Testing
     let metricFont = AppFontRegistry.nsFont(
         postScriptName: "InterVariable",
         size: 48,
-        variations: [.opticalSize: 32, .weight: 300],
+        variations: [.opticalSize: 32, .weight: 250],
         openTypeFeatures: AppTypography.metricFeatures
     )
 
@@ -93,10 +93,10 @@ import Testing
 
     #expect(metricFont.familyName == "Inter Variable")
     #expect(metricFont.pointSize == 48)
-    #expect(resolvedVariationValue(.weight, in: metricFont) == 300)
+    #expect(resolvedVariationValue(.weight, in: metricFont) == 250)
     #expect(resolvedVariationValue(.opticalSize, in: metricFont) == 32)
     #expect(openTypeFeatureTags(in: metricFont) == Set(["zero", "cv02", "cv03", "cv09"]))
-    #expect(AppTypography.metricTracking == -1)
+    #expect(AppTypography.metricTracking == 0)
 }
 
 private func resolvedVariationValue(_ axis: AppFontRegistry.VariationAxis, in font: NSFont) -> CGFloat? {

@@ -115,7 +115,8 @@ enum AppFontRegistry {
 
 @MainActor
 enum AppTypography {
-    static let metricTracking: CGFloat = -1
+    static let metricTracking: CGFloat = 0
+    static let breakdownTracking: CGFloat = 0.1
     static let connectionTitleTracking: CGFloat = -0.16
     static let geistSlashedZeroFeatures = ["ss09"]
     static let interSlashedZeroFeatures = ["zero"]
@@ -183,11 +184,11 @@ enum AppTypography {
         )
     }
 
-    static var interDisplayLight48: Font {
+    static var interDisplay48: Font {
         AppFontRegistry.font(
             postScriptName: "InterVariable",
             size: 48,
-            variations: [.opticalSize: 32, .weight: 300],
+            variations: [.opticalSize: 32, .weight: 250],
             openTypeFeatures: metricFeatures
         )
     }

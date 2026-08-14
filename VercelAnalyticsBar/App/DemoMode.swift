@@ -98,6 +98,19 @@ struct DemoAnalyticsSnapshotProvider: AnalyticsSnapshotProviding {
 
 @MainActor
 enum DemoAppModelFactory {
+    static let projects = [
+        VercelProject(id: "node-storefront", name: "node-storefront"),
+        VercelProject(id: "checkout-worker", name: "checkout-worker"),
+        VercelProject(id: "commerce-api", name: "commerce-api"),
+        VercelProject(id: "product-docs", name: "product-docs"),
+        VercelProject(id: "storefront-design-system", name: "storefront-design-system"),
+    ]
+
+    private static let projectSelection = ProjectSelection(
+        selectedProjectIDs: Set(projects.map(\.id)),
+        currentProjectID: "node-storefront"
+    )
+
     static func makeModel(bundle: Bundle = .main) -> AppModel {
         let provider: DemoAnalyticsSnapshotProvider
         do {
@@ -117,8 +130,12 @@ enum DemoAppModelFactory {
     ) -> AppModel {
         AppModel(
             provider: provider,
+            initialProjects: projects,
             credentialStore: DemoCredentialStore(),
-            accountDataStore: DemoAccountDataStore(analyticsRange: initialRange),
+            accountDataStore: DemoAccountDataStore(
+                projectSelection: projectSelection,
+                analyticsRange: initialRange
+            ),
             snapshotCacheStore: DemoSnapshotCacheStore(),
             launchAtLoginManager: DemoLaunchAtLoginManager(),
             tokenValidator: { _ in }
@@ -143,10 +160,11 @@ private final class DemoCredentialStore: VercelCredentialStore {
 }
 
 private final class DemoAccountDataStore: VercelAccountDataStore {
-    private var projectSelection = ProjectSelection.empty
+    private var projectSelection: ProjectSelection
     private var analyticsRange: VercelAnalyticsRange
 
-    init(analyticsRange: VercelAnalyticsRange) {
+    init(projectSelection: ProjectSelection, analyticsRange: VercelAnalyticsRange) {
+        self.projectSelection = projectSelection
         self.analyticsRange = analyticsRange
     }
 

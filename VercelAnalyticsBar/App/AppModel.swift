@@ -75,6 +75,7 @@ final class AppModel {
 
     init(
         provider: (any AnalyticsSnapshotProviding)? = nil,
+        initialProjects: [VercelProject] = [],
         credentialStore: any VercelCredentialStore = KeychainVercelCredentialStore(),
         accountDataStore: any VercelAccountDataStore = UserDefaultsVercelAccountDataStore(),
         snapshotCacheStore: any AnalyticsSnapshotCacheStore = FileAnalyticsSnapshotCacheStore(),
@@ -104,6 +105,16 @@ final class AppModel {
         projectCatalog = ProjectCatalog(persistence: accountDataStore)
         selectedRange = (try? accountDataStore.readAnalyticsRange()) ?? .last7Days
         launchAtLoginStatus = launchAtLoginManager.status
+
+        if !initialProjects.isEmpty {
+            do {
+                try projectCatalog.restore()
+                try projectCatalog.reconcile(with: initialProjects)
+                projectState = .loaded(projectCatalog.projects)
+            } catch {
+                projectState = .failed(error.localizedDescription)
+            }
+        }
     }
 
     func restoreConnection() async {
@@ -248,7 +259,11 @@ extension AppModel {
             return
         }
 
-        await loadLiveSnapshot(trigger: .projectSwitch)
+        if provider != nil, accountState != .connected {
+            await load(trigger: .projectSwitch)
+        } else {
+            await loadLiveSnapshot(trigger: .projectSwitch)
+        }
     }
 
     func selectAnalyticsRange(_ range: VercelAnalyticsRange) async {

@@ -57,7 +57,7 @@ describe("generated Chart Inspector contract", () => {
       chartHeight: 150,
       chartSidePadding: 12,
       chartVerticalPadding: 5,
-      axisMarkCount: 3,
+      axisMarkCount: 4,
       yScaleHeadroom: 0.1,
       showsXAxisLabels: true,
       showsYAxisLabels: true,
@@ -195,7 +195,7 @@ describe("generated Chart Inspector contract", () => {
         topBottomPadding: [5, 0, 64, 1],
       },
       axes: {
-        markCount: [3, 2, 12, 1],
+        markCount: [4, 2, 12, 1],
         yScaleHeadroom: [0.1, 0, 1, 0.01],
         xLabels: true,
         yLabels: true,

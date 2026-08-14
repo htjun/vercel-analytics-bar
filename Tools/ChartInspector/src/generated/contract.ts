@@ -82,7 +82,7 @@ export const CHART_STYLE_DEFAULT: ChartStyle = {
   chartHeight: 150,
   chartSidePadding: 12,
   chartVerticalPadding: 5,
-  axisMarkCount: 3,
+  axisMarkCount: 4,
   yScaleHeadroom: 0.1,
   showsXAxisLabels: true,
   showsYAxisLabels: true,

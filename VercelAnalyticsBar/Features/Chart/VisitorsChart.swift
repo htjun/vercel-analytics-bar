@@ -46,7 +46,7 @@ struct VisitorsChart: View {
         }
         .chartLegend(.hidden)
         .chartXAxis {
-            AxisMarks(values: .automatic(desiredCount: style.axisMarkCount)) { value in
+            AxisMarks(values: xAxisValues) { value in
                 if style.showsVerticalGridLines {
                     AxisGridLine(
                         stroke: style.verticalGridLineStyle.strokeStyle(
@@ -69,16 +69,22 @@ struct VisitorsChart: View {
                     )
                 }
                 if style.showsXAxisLabels, let date = value.as(Date.self) {
-                    AxisValueLabel {
-                        Text(date, format: .dateTime.day().month(.abbreviated))
-                            .font(AppTypography.geistMonoRegular11)
-                            .textCase(.uppercase)
+                    AxisValueLabel(collisionResolution: .disabled) {
+                        if usesHourlyXAxisLabels {
+                            Text(date, format: .dateTime.hour())
+                                .font(AppTypography.geistMonoRegular11)
+                                .textCase(.uppercase)
+                        } else {
+                            Text(date, format: .dateTime.day().month(.abbreviated))
+                                .font(AppTypography.geistMonoRegular11)
+                                .textCase(.uppercase)
+                        }
                     }
                 }
             }
         }
         .chartYAxis {
-            AxisMarks(position: .leading, values: .automatic(desiredCount: style.axisMarkCount)) { _ in
+            AxisMarks(position: .leading, values: yAxisValues) { _ in
                 if style.showsHorizontalGridLines {
                     AxisGridLine(
                         stroke: style.horizontalGridLineStyle.strokeStyle(
@@ -106,6 +112,7 @@ struct VisitorsChart: View {
                 }
             }
         }
+        .chartXScale(range: .plotDimension(startPadding: 0, endPadding: 0))
         .chartYScale(domain: 0 ... chartMaximum)
         .padding(.horizontal, style.chartSidePadding)
         .padding(.vertical, style.chartVerticalPadding)
@@ -131,8 +138,103 @@ struct VisitorsChart: View {
     }
 
     private var chartMaximum: Int {
-        let maximum = points.map(\.visitors).max() ?? 0
-        return max(1, maximum + max(1, Int(Double(maximum) * style.yScaleHeadroom)))
+        yAxisValues.last ?? 1
+    }
+
+    private var yAxisValues: [Int] {
+        Self.yAxisValues(
+            for: points.map(\.visitors),
+            desiredCount: style.axisMarkCount,
+            headroom: style.yScaleHeadroom
+        )
+    }
+
+    private var xAxisValues: [Date] {
+        Self.xAxisDates(
+            for: points.map(\.timestamp),
+            count: style.axisMarkCount
+        )
+    }
+
+    private var usesHourlyXAxisLabels: Bool {
+        guard let start = points.map(\.timestamp).min(),
+              let end = points.map(\.timestamp).max()
+        else {
+            return false
+        }
+
+        return Self.usesHourlyXAxisLabels(from: start, through: end)
+    }
+
+    static func xAxisDates(for dates: [Date], count: Int) -> [Date] {
+        let sortedDates = dates.sorted()
+        guard let start = sortedDates.first,
+              let end = sortedDates.last,
+              count > 0
+        else {
+            return []
+        }
+
+        guard usesHourlyXAxisLabels(from: start, through: end) else {
+            return evenlySpacedDates(from: start, through: end, count: count)
+        }
+
+        let markCount = min(count, sortedDates.count)
+        return (0 ..< markCount).map { index in
+            let position = (Double(index) + 0.5) * Double(sortedDates.count) / Double(markCount)
+            return sortedDates[min(sortedDates.count - 1, Int(position.rounded(.down)))]
+        }
+    }
+
+    static func usesHourlyXAxisLabels(from start: Date, through end: Date) -> Bool {
+        end.timeIntervalSince(start) <= 36 * 60 * 60
+    }
+
+    static func yAxisValues(
+        for values: [Int],
+        desiredCount: Int,
+        headroom: Double
+    ) -> [Int] {
+        let dataMaximum = max(0, values.max() ?? 0)
+        let paddedMaximum = max(
+            1,
+            dataMaximum + max(1, Int(Double(dataMaximum) * headroom))
+        )
+        let roughStep = Double(paddedMaximum) / Double(max(1, desiredCount))
+        let step = niceYAxisStep(for: roughStep)
+        let axisMaximum = Int(ceil(Double(paddedMaximum) / Double(step))) * step
+
+        return Array(stride(from: 0, through: axisMaximum, by: step))
+    }
+
+    private static func niceYAxisStep(for roughStep: Double) -> Int {
+        guard roughStep > 0 else { return 1 }
+
+        let magnitude = pow(10, floor(log10(roughStep)))
+        let normalizedStep = roughStep / magnitude
+        let niceNormalizedStep: Double = switch normalizedStep {
+        case ...1.5:
+            1
+        case ...2.25:
+            2
+        case ...3.75:
+            2.5
+        case ...7.5:
+            5
+        default:
+            10
+        }
+
+        return max(1, Int((niceNormalizedStep * magnitude).rounded()))
+    }
+
+    static func evenlySpacedDates(from start: Date, through end: Date, count: Int) -> [Date] {
+        guard count > 1, end > start else { return [start] }
+
+        let interval = end.timeIntervalSince(start) / Double(count)
+        return (0 ..< count).map { index in
+            start.addingTimeInterval((Double(index) + 0.5) * interval)
+        }
     }
 }
 
