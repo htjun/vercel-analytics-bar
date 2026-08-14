@@ -263,11 +263,12 @@ func makeAnalyticsSnapshot(
     pageViews: Int,
     last24HoursVisitors: Int,
     refreshedAt: Date,
+    range: VercelAnalyticsRange = .last7Days,
     topPages: [VercelAnalyticsBreakdown] = []
 ) -> AnalyticsSnapshot {
     AnalyticsSnapshot(
         projectName: projectName,
-        range: .last7Days,
+        range: range,
         visitors: AnalyticsMetric(label: "Visitors", value: visitors, previousValue: visitors * 9 / 10),
         pageViews: AnalyticsMetric(label: "Page Views", value: pageViews, previousValue: pageViews * 9 / 10),
         series: [],

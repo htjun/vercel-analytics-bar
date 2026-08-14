@@ -352,7 +352,8 @@ private func makePanelController(
         visitors: 100,
         pageViews: 200,
         last24HoursVisitors: 11,
-        refreshedAt: Date(timeIntervalSince1970: 1_785_549_600)
+        refreshedAt: Date(timeIntervalSince1970: 1_785_549_600),
+        range: .last24Hours
     )
     await provider.succeed(with: snapshot)
     await syncTask.value

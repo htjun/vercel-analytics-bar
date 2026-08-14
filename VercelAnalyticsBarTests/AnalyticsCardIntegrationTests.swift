@@ -18,12 +18,14 @@ import VercelAnalyticsCore
         )
     }
     await harness.provider.waitUntilRequested()
+    #expect(await harness.provider.requestedRanges == [.last24Hours])
     await harness.provider.succeed(with: makeAnalyticsSnapshot(
         projectName: "Alpha",
         visitors: 42,
         pageViews: 84,
         last24HoursVisitors: 12,
-        refreshedAt: Date(timeIntervalSince1970: 1_785_628_800)
+        refreshedAt: Date(timeIntervalSince1970: 1_785_628_800),
+        range: .last24Hours
     ))
 
     #expect(await selectionTask.value)
@@ -85,10 +87,10 @@ import VercelAnalyticsCore
         return
     }
     #expect(snapshot.projectName == "Alpha")
-    #expect(snapshot.range == .last7Days)
-    #expect(snapshot.visitors.value == 165)
-    #expect(snapshot.pageViews.value == 284)
-    #expect(snapshot.series.count == 2)
+    #expect(snapshot.range == .last24Hours)
+    #expect(snapshot.visitors.value == 24)
+    #expect(snapshot.pageViews.value == 41)
+    #expect(snapshot.series.count == 1)
     #expect(snapshot.topPages == [
         VercelAnalyticsBreakdown(label: "/products", visitors: 80, pageViews: 128),
     ])
@@ -96,7 +98,7 @@ import VercelAnalyticsCore
         VercelAnalyticsBreakdown(label: "google.com", visitors: 48, pageViews: 64),
     ])
     #expect(model.abbreviatedVisitors == "24")
-    #expect(await transport.requests.count == 6)
+    #expect(await transport.requests.count == 5)
 }
 
 private actor StaticAnalyticsTransport: VercelHTTPTransport {

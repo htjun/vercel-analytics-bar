@@ -10,7 +10,8 @@ import VercelAnalyticsCore
         visitors: 100,
         pageViews: 200,
         last24HoursVisitors: 11,
-        refreshedAt: Date(timeIntervalSince1970: 1_785_549_600)
+        refreshedAt: Date(timeIntervalSince1970: 1_785_549_600),
+        range: .last24Hours
     )
     let harness = RefreshTestHarness(
         now: Date(timeIntervalSince1970: 1_785_549_630),
@@ -34,7 +35,8 @@ import VercelAnalyticsCore
         visitors: 100,
         pageViews: 200,
         last24HoursVisitors: 11,
-        refreshedAt: Date(timeIntervalSince1970: 1_785_549_600)
+        refreshedAt: Date(timeIntervalSince1970: 1_785_549_600),
+        range: .last24Hours
     )
     let harness = RefreshTestHarness(cacheEntries: [
         SnapshotCacheEntry(projectID: "project-alpha", snapshot: cachedSnapshot),
@@ -52,7 +54,8 @@ import VercelAnalyticsCore
         visitors: 150,
         pageViews: 250,
         last24HoursVisitors: 15,
-        refreshedAt: harness.clock.now()
+        refreshedAt: harness.clock.now(),
+        range: .last24Hours
     )
     await harness.provider.succeed(with: liveSnapshot)
     await refresh.value
@@ -81,14 +84,15 @@ import VercelAnalyticsCore
         visitors: 100,
         pageViews: 200,
         last24HoursVisitors: 11,
-        refreshedAt: Date(timeIntervalSince1970: 1_785_549_600)
+        refreshedAt: Date(timeIntervalSince1970: 1_785_549_600),
+        range: .last24Hours
     ))
     await harness.sleeper.waitUntilSleeping()
     #expect(await harness.sleeper.durations == [.seconds(300), .seconds(300)])
     harness.model.stopRefreshLoop()
     await harness.sleeper.release()
     await Task.yield()
-    #expect(await harness.provider.requestedRanges == [.last7Days])
+    #expect(await harness.provider.requestedRanges == [.last24Hours])
 }
 
 @MainActor
@@ -105,7 +109,8 @@ import VercelAnalyticsCore
         visitors: 100,
         pageViews: 200,
         last24HoursVisitors: 11,
-        refreshedAt: Date(timeIntervalSince1970: 1_785_549_600)
+        refreshedAt: Date(timeIntervalSince1970: 1_785_549_600),
+        range: .last24Hours
     ))
     await refresh.value
 

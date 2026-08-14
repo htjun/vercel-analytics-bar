@@ -145,6 +145,8 @@ final class AppModel {
         do {
             try await tokenValidator(normalizedToken)
             try credentialStore.save(normalizedToken)
+            try accountDataStore.saveAnalyticsRange(.last24Hours)
+            selectedRange = .last24Hours
             activeToken = normalizedToken
             didAttemptRestore = true
             accountState = .connected

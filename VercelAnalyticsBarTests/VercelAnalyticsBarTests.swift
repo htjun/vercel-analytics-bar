@@ -56,11 +56,12 @@ import VercelAnalyticsCore
 @MainActor
 @Test func appModelStoresOnlyValidatedToken() async {
     let credentialStore = InMemoryCredentialStore()
+    let accountDataStore = InMemoryAccountDataStore(analyticsRange: .last30Days)
     let validator = TokenValidationRecorder()
     let model = AppModel(
         provider: FixtureAnalyticsSnapshotProvider(),
         credentialStore: credentialStore,
-        accountDataStore: InMemoryAccountDataStore(),
+        accountDataStore: accountDataStore,
         snapshotCacheStore: InMemorySnapshotCacheStore(),
         tokenValidator: { token in
             await validator.validate(token)
@@ -71,16 +72,19 @@ import VercelAnalyticsCore
 
     #expect(model.accountState == .connected)
     #expect(credentialStore.token == "valid-token")
+    #expect(model.selectedRange == .last24Hours)
+    #expect(accountDataStore.analyticsRange == .last24Hours)
     #expect(await validator.tokens == ["valid-token"])
 }
 
 @MainActor
 @Test func appModelDoesNotStoreInvalidToken() async {
     let credentialStore = InMemoryCredentialStore()
+    let accountDataStore = InMemoryAccountDataStore(analyticsRange: .last30Days)
     let model = AppModel(
         provider: FixtureAnalyticsSnapshotProvider(),
         credentialStore: credentialStore,
-        accountDataStore: InMemoryAccountDataStore(),
+        accountDataStore: accountDataStore,
         snapshotCacheStore: InMemorySnapshotCacheStore(),
         tokenValidator: { _ in
             throw VercelAPIError.authentication(status: 403)
@@ -91,6 +95,8 @@ import VercelAnalyticsCore
 
     #expect(model.accountState == .failed(.invalidToken))
     #expect(credentialStore.token == nil)
+    #expect(model.selectedRange == .last30Days)
+    #expect(accountDataStore.analyticsRange == .last30Days)
 }
 
 @MainActor
@@ -113,11 +119,12 @@ import VercelAnalyticsCore
 @MainActor
 @Test func appModelRestoresValidatedTokenFromCredentialStore() async {
     let credentialStore = InMemoryCredentialStore(token: "stored-token")
+    let accountDataStore = InMemoryAccountDataStore(analyticsRange: .last30Days)
     let validator = TokenValidationRecorder()
     let model = AppModel(
         provider: FixtureAnalyticsSnapshotProvider(),
         credentialStore: credentialStore,
-        accountDataStore: InMemoryAccountDataStore(),
+        accountDataStore: accountDataStore,
         snapshotCacheStore: InMemorySnapshotCacheStore(),
         tokenValidator: { token in
             await validator.validate(token)
@@ -127,6 +134,8 @@ import VercelAnalyticsCore
     await model.restoreConnection()
 
     #expect(model.accountState == .connected)
+    #expect(model.selectedRange == .last30Days)
+    #expect(accountDataStore.analyticsRange == .last30Days)
     #expect(await validator.tokens == ["stored-token"])
 }
 
@@ -242,14 +251,16 @@ import VercelAnalyticsCore
     let betaProvider = ControlledSnapshotProvider()
     let initialRefreshDate = Date(timeIntervalSince1970: 1_785_549_600)
     let alphaSnapshot = makeAnalyticsSnapshot(
-        projectName: "Alpha", visitors: 100, pageViews: 200, last24HoursVisitors: 11, refreshedAt: initialRefreshDate
+        projectName: "Alpha", visitors: 100, pageViews: 200, last24HoursVisitors: 11,
+        refreshedAt: initialRefreshDate, range: .last24Hours
     )
     let refreshedAlphaSnapshot = makeAnalyticsSnapshot(
         projectName: "Alpha", visitors: 101, pageViews: 202, last24HoursVisitors: 12,
-        refreshedAt: initialRefreshDate.addingTimeInterval(60)
+        refreshedAt: initialRefreshDate.addingTimeInterval(60), range: .last24Hours
     )
     let betaSnapshot = makeAnalyticsSnapshot(
-        projectName: "Beta", visitors: 300, pageViews: 500, last24HoursVisitors: 22, refreshedAt: initialRefreshDate
+        projectName: "Beta", visitors: 300, pageViews: 500, last24HoursVisitors: 22,
+        refreshedAt: initialRefreshDate, range: .last24Hours
     )
     let model = AppModel(
         credentialStore: InMemoryCredentialStore(),
@@ -267,6 +278,7 @@ import VercelAnalyticsCore
 
     let alphaLoadTask = Task { await model.load() }
     await alphaProvider.waitUntilRequested()
+    #expect(await alphaProvider.requestedRanges == [.last24Hours])
     await alphaProvider.succeed(with: alphaSnapshot)
     await alphaLoadTask.value
 
