@@ -8,22 +8,22 @@ struct ChartStyleTests {
     @MainActor
     @Test func xAxisDatesAreEvenlySpacedAcrossTheSeriesRange() {
         let start = Date(timeIntervalSince1970: 1_000_000)
-        let end = start.addingTimeInterval(9 * 86_400)
+        let end = start.addingTimeInterval(9 * 86400)
         let dates = VisitorsChart.evenlySpacedDates(from: start, through: end, count: 4)
 
         #expect(dates.count == 4)
-        #expect(dates[0].timeIntervalSince(start) == 1.125 * 86_400)
-        #expect(dates[1].timeIntervalSince(dates[0]) == 2.25 * 86_400)
-        #expect(dates[2].timeIntervalSince(dates[1]) == 2.25 * 86_400)
-        #expect(dates[3].timeIntervalSince(dates[2]) == 2.25 * 86_400)
-        #expect(end.timeIntervalSince(dates[3]) == 1.125 * 86_400)
+        #expect(dates[0].timeIntervalSince(start) == 1.125 * 86400)
+        #expect(dates[1].timeIntervalSince(dates[0]) == 2.25 * 86400)
+        #expect(dates[2].timeIntervalSince(dates[1]) == 2.25 * 86400)
+        #expect(dates[3].timeIntervalSince(dates[2]) == 2.25 * 86400)
+        #expect(end.timeIntervalSince(dates[3]) == 1.125 * 86400)
     }
 
     @MainActor
     @Test func hourlyXAxisDatesUseEvenlySpacedObservedBuckets() {
         let start = Date(timeIntervalSince1970: 1_000_000)
         let dates = (0 ..< 24).map { index in
-            start.addingTimeInterval(Double(index) * 3_600)
+            start.addingTimeInterval(Double(index) * 3600)
         }
 
         let marks = VisitorsChart.xAxisDates(for: dates, count: 4)
