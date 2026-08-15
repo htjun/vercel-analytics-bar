@@ -346,35 +346,16 @@
             #expect(store.style == response.state.values)
         }
 
-        @Test func previewUsesTheLiveSnapshotSeries() {
-            let snapshot = AnalyticsSnapshot.fixture
-            let preview = ChartInspectorPreview(analyticsState: .loaded(snapshot))
-
-            #expect(preview.points == snapshot.series)
-        }
-
-        @Test func previewUsesSampleDataUntilANonEmptyLiveSeriesIsAvailable() {
-            let emptySnapshot = AnalyticsSnapshot(
-                projectName: "Empty",
-                range: .last7Days,
-                visitors: AnalyticsMetric(label: "Visitors", value: 0, previousValue: 0),
-                pageViews: AnalyticsMetric(label: "Page Views", value: 0, previousValue: 0),
-                series: [],
-                last24HoursVisitors: 0,
-                refreshedAt: .distantPast
+        @Test func previewSampleMatchesTheIdealMockSeries() throws {
+            let fixtureRoot = URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+                .appendingPathComponent("DemoFixtures", isDirectory: true)
+            let snapshot = try DemoFixtureLoader.load(
+                from: fixtureRoot.appendingPathComponent("ideal.json")
             )
 
-            let loadingPreview = ChartInspectorPreview(analyticsState: .loading)
-            let emptyStatePreview = ChartInspectorPreview(analyticsState: .empty("No data"))
-            let failedPreview = ChartInspectorPreview(analyticsState: .failed("Unavailable"))
-            let emptySeriesPreview = ChartInspectorPreview(analyticsState: .loaded(emptySnapshot))
-            let livePreview = ChartInspectorPreview(analyticsState: .loaded(.fixture))
-
-            #expect(loadingPreview.points == ChartInspectorPreview.samplePoints)
-            #expect(emptyStatePreview == loadingPreview)
-            #expect(failedPreview == loadingPreview)
-            #expect(emptySeriesPreview == loadingPreview)
-            #expect(livePreview.points == AnalyticsSnapshot.fixture.series)
+            #expect(ChartInspectorPreview().points == snapshot.series)
         }
     }
 

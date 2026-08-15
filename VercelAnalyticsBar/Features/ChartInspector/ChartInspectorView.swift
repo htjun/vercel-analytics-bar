@@ -5,12 +5,11 @@
     import VercelAnalyticsCore
 
     struct ChartInspectorView: View {
-        let model: AppModel
         let styleStore: ChartStyleStore
         @State private var pageState = ChartInspectorPageState()
 
         var body: some View {
-            let preview = ChartInspectorPreview(analyticsState: model.state)
+            let preview = ChartInspectorPreview()
 
             HSplitView {
                 ChartInspectorPreviewView(
@@ -76,36 +75,31 @@
     }
 
     struct ChartInspectorPreview: Equatable {
-        static let samplePoints = [
-            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 0), visitors: 18, pageViews: 32),
-            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 1), visitors: 26, pageViews: 45),
-            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 2), visitors: 12, pageViews: 22),
-            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 3), visitors: 13, pageViews: 23),
-            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 4), visitors: 28, pageViews: 48),
-            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 5), visitors: 42, pageViews: 71),
-            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 6), visitors: 14, pageViews: 25),
-            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 7), visitors: 21, pageViews: 37),
-            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 8), visitors: 286, pageViews: 492),
-            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 9), visitors: 254, pageViews: 439),
-            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 10), visitors: 157, pageViews: 274),
-            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 11), visitors: 196, pageViews: 342),
-            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 12), visitors: 28, pageViews: 49),
-            VercelAnalyticsPoint(timestamp: sampleDate(dayOffset: 13), visitors: 7, pageViews: 13),
-        ]
+        static let samplePoints: [VercelAnalyticsPoint] = {
+            let values = [
+                (15, 60), (23, 84), (34, 130), (24, 93), (28, 106), (20, 78),
+                (18, 70), (40, 158), (84, 328), (73, 289), (29, 114), (14, 55),
+                (19, 73), (39, 153), (57, 225), (62, 249), (52, 209), (49, 195),
+                (33, 131), (23, 91), (20, 76), (17, 66), (17, 63), (12, 50),
+            ]
+
+            return values.enumerated().map { index, value in
+                VercelAnalyticsPoint(
+                    timestamp: sampleDate(hourOffset: index),
+                    visitors: value.0,
+                    pageViews: value.1
+                )
+            }
+        }()
 
         let points: [VercelAnalyticsPoint]
 
-        init(analyticsState: AppModel.State) {
-            guard case let .loaded(snapshot) = analyticsState, !snapshot.series.isEmpty else {
-                points = Self.samplePoints
-                return
-            }
-
-            points = snapshot.series
+        init() {
+            points = Self.samplePoints
         }
 
-        private static func sampleDate(dayOffset: Int) -> Date {
-            Date(timeIntervalSince1970: 1_784_419_200 + Double(dayOffset * 86400))
+        private static func sampleDate(hourOffset: Int) -> Date {
+            Date(timeIntervalSince1970: 1_786_352_400 + Double(hourOffset * 3600))
         }
     }
 
