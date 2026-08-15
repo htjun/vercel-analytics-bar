@@ -86,7 +86,10 @@
                         webView.loadFileURL(source.entryURL, allowingReadAccessTo: rootURL)
                     }
                 case .failure:
-                    pageState.fail("The bundled Component Editor resources are missing. Rebuild the web assets and try again.")
+                    pageState
+                        .fail(
+                            "The bundled Component Editor resources are missing. Rebuild the web assets and try again."
+                        )
                 }
             }
 
@@ -136,7 +139,8 @@
             func webView(_: WKWebView, didFailProvisionalNavigation _: WKNavigation?, withError _: any Error) {
                 pageState
                     .fail(
-                        "The Component Editor could not connect or load its resources. Check the selected mode and try again."
+                        "The Component Editor could not connect or load its resources. "
+                            + "Check the selected mode and try again."
                     )
             }
 

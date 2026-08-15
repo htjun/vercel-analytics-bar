@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   CHART_STYLE_DEFAULT,
   CHART_STYLE_RANGES,
+  BREAKDOWN_LIST_STYLE_DEFAULT,
   ANIMATION_EASING_VALUES,
   BORDER_STYLE_VALUES,
   FIRST_STYLE_CHANGE_REVISION,
@@ -15,14 +16,19 @@ import {
   MIN_INSPECTOR_REVISION,
   NATIVE_SOURCE,
   NATIVE_STATE_MESSAGE,
+  isBreakdownListStyle,
   isChartStyle,
+  isNativeStateMessage,
 } from "./generated/contract";
-import type { ChartStyle } from "./generated/contract";
+import type { BreakdownListStyle, ChartStyle } from "./generated/contract";
 import {
   CHART_STYLE_INSPECTOR_FIELDS,
+  LIST_STYLE_INSPECTOR_FIELDS,
   chartFieldConfig,
   chartDialValuesFromStyle,
   chartStyleFromDialValues,
+  listDialValuesFromStyle,
+  listStyleFromDialValues,
 } from "./generated/inspector-adapter";
 
 describe("generated Chart Inspector contract", () => {
@@ -330,5 +336,49 @@ describe("generated Chart Inspector contract", () => {
     const accentDialValues = chartDialValuesFromStyle({ ...style, lineColor: "accent" });
     expect(accentDialValues.line.color).toBe("#007AFF");
     expect(chartStyleFromDialValues(accentDialValues).lineColor).toBe("#007AFF");
+  });
+
+  it("validates and translates the List component contract", () => {
+    const style: BreakdownListStyle = {
+      ...BREAKDOWN_LIST_STYLE_DEFAULT,
+      tabSpacing: 16,
+      visibleRowCount: 4,
+      headerToRowsSpacing: 12,
+      rowHeight: 18,
+      rowSpacing: 6,
+      valueFontWeight: "regular",
+    };
+
+    expect(BREAKDOWN_LIST_STYLE_DEFAULT).toMatchObject({
+      tabSpacing: 12,
+      inactiveTabOpacity: 0.4,
+      hoveredTabOpacity: 0.6,
+      visibleRowCount: 5,
+      headerToRowsSpacing: 16,
+      rowHeight: 16,
+      rowSpacing: 8,
+      rowAnimationDuration: 0.22,
+      rowAnimationDelay: 0.04,
+    });
+    expect(isBreakdownListStyle(style)).toBe(true);
+    expect(isBreakdownListStyle({ ...BREAKDOWN_LIST_STYLE_DEFAULT, rowHeight: 20 })).toBe(false);
+    expect(listStyleFromDialValues(listDialValuesFromStyle(style))).toEqual(style);
+    expect(LIST_STYLE_INSPECTOR_FIELDS).toHaveLength(23);
+    expect(isNativeStateMessage({
+      protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+      type: NATIVE_STATE_MESSAGE,
+      source: NATIVE_SOURCE,
+      revision: 1,
+      component: "list",
+      values: style,
+    })).toBe(true);
+    expect(isNativeStateMessage({
+      protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+      type: NATIVE_STATE_MESSAGE,
+      source: NATIVE_SOURCE,
+      revision: 1,
+      component: "chart",
+      values: style,
+    })).toBe(false);
   });
 });

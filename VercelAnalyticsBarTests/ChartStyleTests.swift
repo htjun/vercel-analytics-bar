@@ -1,8 +1,10 @@
+// swiftlint:disable file_length
 import Foundation
 import SwiftUI
 import Testing
 @testable import VercelAnalyticsBar
 
+// swiftlint:disable type_body_length
 @Suite("Chart style")
 struct ChartStyleTests {
     @MainActor
@@ -334,6 +336,8 @@ struct ChartStyleTests {
         ]
     }
 }
+
+// swiftlint:enable type_body_length
 
 // swiftlint:disable:next function_body_length
 private func makeStyle(

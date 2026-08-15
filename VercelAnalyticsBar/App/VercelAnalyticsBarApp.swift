@@ -1,6 +1,14 @@
 import AppKit
 import VercelAnalyticsCore
 
+#if CHART_INSPECTOR
+    enum ComponentEditorWindowConfiguration {
+        static let title = "Component Editor"
+        static let defaultContentSize = CGSize(width: 1000, height: 700)
+        static let minimumContentSize = CGSize(width: 740, height: 560)
+    }
+#endif
+
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let model: AppModel
@@ -83,9 +91,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard isChartInspectorEnabled else { return }
             if chartInspectorWindowController == nil {
                 chartInspectorWindowController = HostedWindowController(
-                    title: "Component Editor",
-                    contentSize: CGSize(width: 1000, height: 700),
-                    minimumContentSize: CGSize(width: 740, height: 560),
+                    title: ComponentEditorWindowConfiguration.title,
+                    contentSize: ComponentEditorWindowConfiguration.defaultContentSize,
+                    minimumContentSize: ComponentEditorWindowConfiguration.minimumContentSize,
                     isResizable: true,
                     rootView: ChartInspectorView(
                         styleStore: componentStyle

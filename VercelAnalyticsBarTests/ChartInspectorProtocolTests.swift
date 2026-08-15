@@ -5,6 +5,7 @@
     @testable import VercelAnalyticsBar
     import VercelAnalyticsCore
 
+    // swiftlint:disable type_body_length
     @MainActor
     @Suite("Chart Inspector protocol")
     struct ChartInspectorProtocolTests {
@@ -144,6 +145,12 @@
             #expect(listState.component == .list)
             #expect(chartState.revision == listState.revision)
             #expect(listState.values == .list(.default))
+        }
+
+        @Test func componentEditorUsesThePlannedWindowTitleAndSizes() {
+            #expect(ComponentEditorWindowConfiguration.title == "Component Editor")
+            #expect(ComponentEditorWindowConfiguration.defaultContentSize == CGSize(width: 1000, height: 700))
+            #expect(ComponentEditorWindowConfiguration.minimumContentSize == CGSize(width: 740, height: 560))
         }
 
         @Test func listActionsOnlyAffectTheSelectedComponent() throws {
@@ -461,6 +468,8 @@
             #expect(ChartInspectorPreview().points == snapshot.series)
         }
     }
+
+    // swiftlint:enable type_body_length
 
     private func expectDetailedStyle(_ style: ChartStyle) {
         #expect(style.lineColor.rawValue == "#AABBCC")

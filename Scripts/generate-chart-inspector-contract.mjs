@@ -602,14 +602,18 @@ function renderComponentSwift({ protocol, style, listStyle }) {
     fields: style.fields,
     name: "ChartStyle",
     validationErrorName: "ChartStyleValidationError",
+    disableTypeBodyLength: true,
+    disableInitializerLength: true,
+    disableDecodingLength: true,
   });
   const list = renderSwiftStyleStruct({
     style,
     fields: listStyle.fields,
     name: "BreakdownListStyle",
     validationErrorName: "BreakdownListStyleValidationError",
+    disableInitializerLength: true,
     extraValidation: `        try Self.validateLayout(\n            visibleRowCount: visibleRowCount,\n            headerToRowsSpacing: headerToRowsSpacing,\n            rowHeight: rowHeight,\n            rowSpacing: rowSpacing\n        )`,
-    extraMembers: `\n    private static func validateLayout(\n        visibleRowCount: Int,\n        headerToRowsSpacing: Double,\n        rowHeight: Double,\n        rowSpacing: Double\n    ) throws {\n        let rows = Double(visibleRowCount)\n        let totalHeight = 16 + headerToRowsSpacing + rows * rowHeight + max(rows - 1, 0) * rowSpacing\n        guard totalHeight <= 144 else {\n            throw BreakdownListStyleValidationError.layoutOverflow\n        }\n    }`,
+    extraMembers: `    private static func validateLayout(\n        visibleRowCount: Int,\n        headerToRowsSpacing: Double,\n        rowHeight: Double,\n        rowSpacing: Double\n    ) throws {\n        let rows = Double(visibleRowCount)\n        let totalHeight = 16 + headerToRowsSpacing + rows * rowHeight + max(rows - 1, 0) * rowSpacing\n        guard totalHeight <= 144 else {\n            throw BreakdownListStyleValidationError.layoutOverflow\n        }\n    }`,
     extraErrorCase: "    case layoutOverflow",
   });
 
@@ -704,6 +708,9 @@ function renderSwiftStyleStruct({
   fields,
   name,
   validationErrorName,
+  disableTypeBodyLength = false,
+  disableInitializerLength = false,
+  disableDecodingLength = false,
   extraValidation = "",
   extraMembers = "",
   extraErrorCase = "",
@@ -729,11 +736,9 @@ function renderSwiftStyleStruct({
 
   return `enum ${validationErrorName}: Error, Equatable {
     case outOfRange(field: String, range: ClosedRange<Double>)
-${extraErrorCase}
-}
+${extraErrorCase ? `${extraErrorCase}\n` : ""}}
 
-// swiftlint:disable:next type_body_length
-struct ${name}: Codable, Equatable, Sendable {
+${disableTypeBodyLength ? "// swiftlint:disable:next type_body_length\n" : ""}struct ${name}: Codable, Equatable, Sendable {
 ${ranges}
 
     static let \`default\`: ${name} = {
@@ -748,18 +753,15 @@ ${defaults}
 
 ${properties}
 
-    // swiftlint:disable:next function_body_length
-    init(
+${disableInitializerLength ? "    // swiftlint:disable:next function_body_length\n" : ""}    init(
 ${parameters}
     ) throws {
-${validations}
-${extraValidation}
+${validations}${extraValidation ? `\n${extraValidation}` : ""}
 
 ${assignments}
     }
 
-    // swiftlint:disable:next function_body_length
-    init(from decoder: any Decoder) throws {
+${disableDecodingLength ? "    // swiftlint:disable:next function_body_length\n" : ""}    init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         try self.init(
 ${decoding}
@@ -774,8 +776,7 @@ ${decoding}
         guard value.isFinite, range.contains(value) else {
             throw ${validationErrorName}.outOfRange(field: field, range: range)
         }
-    }
-${extraMembers}
+    }${extraMembers ? `\n\n${extraMembers}` : ""}
 }`;
 }
 
@@ -1044,10 +1045,6 @@ function typeScriptInspectorControlFor(field, constantPrefix) {
     return `{ type: "select" as const, options: [...${constantName(field.enum, "VALUES")}], default: ${constantPrefix}_DEFAULT.${field.name} }`;
   }
   return `dialRange(${constantPrefix}_DEFAULT.${field.name}, ${constantPrefix}_RANGES.${field.name})`;
-}
-
-function listLayoutFits(visibleRowCount, headerToRowsSpacing, rowHeight, rowSpacing) {
-  return 16 + headerToRowsSpacing + visibleRowCount * rowHeight + Math.max(visibleRowCount - 1, 0) * rowSpacing <= 144;
 }
 
 function typeScriptInspectorControl(field) {

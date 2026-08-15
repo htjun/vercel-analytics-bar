@@ -51,9 +51,9 @@
             }
             switch component {
             case .chart:
-                values = .chart(try container.decode(ChartStyle.self, forKey: .values))
+                values = try .chart(container.decode(ChartStyle.self, forKey: .values))
             case .list:
-                values = .list(try container.decode(BreakdownListStyle.self, forKey: .values))
+                values = try .list(container.decode(BreakdownListStyle.self, forKey: .values))
             }
         }
     }
@@ -227,12 +227,11 @@
         private func canonicalStyleJSON() throws -> String {
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            let data: Data
-            switch styleStore.style(for: selectedComponent) {
+            let data: Data = switch styleStore.style(for: selectedComponent) {
             case let .chart(style):
-                data = try encoder.encode(style)
+                try encoder.encode(style)
             case let .list(style):
-                data = try encoder.encode(style)
+                try encoder.encode(style)
             }
             guard let json = String(data: data, encoding: .utf8) else {
                 throw ChartInspectorProtocolError.invalidBody

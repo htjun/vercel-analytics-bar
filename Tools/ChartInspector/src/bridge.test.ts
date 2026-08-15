@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ChartInspectorBridge } from "./bridge";
 import {
+  BREAKDOWN_LIST_STYLE_DEFAULT,
   INSPECTOR_PROTOCOL_VERSION,
   MAX_INSPECTOR_REVISION,
   NATIVE_SOURCE,
@@ -82,7 +83,7 @@ describe("ChartInspectorBridge", () => {
     expect(bridge.postStyleChanged({ ...defaultStyle, lineWidth: 3 })).toBe(false);
     expect(
       bridge.receiveState({
-        protocolVersion: 7,
+        protocolVersion: INSPECTOR_PROTOCOL_VERSION + 1,
         type: "state",
   source: NATIVE_SOURCE,
   revision: 0,
@@ -225,6 +226,62 @@ describe("ChartInspectorBridge", () => {
         type: "copyStyle",
         source: "chart-inspector",
         component: "chart",
+      },
+    ]);
+  });
+
+  it("scopes edits and commands to the native-selected List component", () => {
+    const messages: unknown[] = [];
+    const bridge = new ChartInspectorBridge((message) => messages.push(message));
+    const listStyle = {
+      ...BREAKDOWN_LIST_STYLE_DEFAULT,
+      visibleRowCount: 4,
+      headerToRowsSpacing: 12,
+      rowHeight: 18,
+      rowSpacing: 6,
+    };
+
+    expect(bridge.receiveState({
+      protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+      type: "state",
+      source: NATIVE_SOURCE,
+      revision: 3,
+      component: "list",
+      values: BREAKDOWN_LIST_STYLE_DEFAULT,
+    })).toBe(true);
+    expect(bridge.postStyleChanged({ component: "chart", values: defaultStyle })).toBe(false);
+    expect(bridge.postStyleChanged({ component: "list", values: listStyle })).toBe(true);
+
+    bridge.postReplayAnimation();
+    bridge.postReset();
+    bridge.postCopyStyle();
+
+    expect(messages).toEqual([
+      {
+        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        type: "styleChanged",
+        source: "chart-inspector",
+        revision: 4,
+        component: "list",
+        values: listStyle,
+      },
+      {
+        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        type: "replayAnimation",
+        source: "chart-inspector",
+        component: "list",
+      },
+      {
+        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        type: "reset",
+        source: "chart-inspector",
+        component: "list",
+      },
+      {
+        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        type: "copyStyle",
+        source: "chart-inspector",
+        component: "list",
       },
     ]);
   });

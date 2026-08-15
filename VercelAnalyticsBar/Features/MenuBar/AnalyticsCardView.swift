@@ -132,6 +132,7 @@ struct AnalyticsCardPresentation: Equatable {
     }
 }
 
+// swiftlint:disable:next type_body_length
 struct AnalyticsCardView<SelectorContent: View>: View {
     let presentation: AnalyticsCardPresentation
     let chartStyle: ChartStyle

@@ -71,7 +71,9 @@ final class AnalyticsPanelController {
     private let hostingView: NSHostingView<AnyView>
     private let chartIntroPlaybackGate = ChartIntroPlaybackGate()
     private let breakdownListIntroPlaybackGate = BreakdownListIntroPlaybackGate()
-    private let demoMetricTicker: DemoMetricTicker
+    #if MOCK_MODE
+        private let demoMetricTicker: DemoMetricTicker
+    #endif
     #if MOCK_MODE
         private var openedAt = Date()
     #endif
@@ -86,7 +88,7 @@ final class AnalyticsPanelController {
         setStatusItemHighlighted: @escaping (Bool) -> Void,
         statusItemWindow: @escaping () -> NSWindow? = { nil },
         companionWindows: @escaping () -> [NSWindow] = { [] },
-        demoMetricTicker: DemoMetricTicker = DemoMetricTicker()
+        demoMetricTicker: Any? = nil
     ) {
         self.model = model
         self.componentStyle = componentStyle
@@ -94,7 +96,9 @@ final class AnalyticsPanelController {
         self.setStatusItemHighlighted = setStatusItemHighlighted
         self.statusItemWindow = statusItemWindow
         self.companionWindows = companionWindows
-        self.demoMetricTicker = demoMetricTicker
+        #if MOCK_MODE
+            self.demoMetricTicker = (demoMetricTicker as? DemoMetricTicker) ?? DemoMetricTicker()
+        #endif
         hostingView = NSHostingView(rootView: AnyView(EmptyView()))
         window = AnalyticsPanel(hostingView: hostingView)
         updateHostedContent()
@@ -179,6 +183,7 @@ final class AnalyticsPanelController {
         }
     }
 
+    // swiftlint:disable:next function_body_length
     private func updateHostedContent() {
         let sessionID = sessionID
         let chartIntroPlayback: ChartIntroPlayback? = if isPresented {

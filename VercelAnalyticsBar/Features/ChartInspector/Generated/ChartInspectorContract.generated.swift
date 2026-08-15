@@ -98,7 +98,6 @@ enum ChartFontWeight: String, Codable, CaseIterable, Sendable {
 
 enum ChartStyleValidationError: Error, Equatable {
     case outOfRange(field: String, range: ClosedRange<Double>)
-
 }
 
 // swiftlint:disable:next type_body_length
@@ -427,7 +426,6 @@ struct ChartStyle: Codable, Equatable, Sendable {
             range: Self.chartBorderDashPhaseRange
         )
 
-
         self.lineColor = lineColor
         self.lineWidth = lineWidth
         self.lineCap = lineCap
@@ -544,7 +542,6 @@ struct ChartStyle: Codable, Equatable, Sendable {
             throw ChartStyleValidationError.outOfRange(field: field, range: range)
         }
     }
-
 }
 
 enum BreakdownListStyleValidationError: Error, Equatable {
@@ -552,7 +549,6 @@ enum BreakdownListStyleValidationError: Error, Equatable {
     case layoutOverflow
 }
 
-// swiftlint:disable:next type_body_length
 struct BreakdownListStyle: Codable, Equatable, Sendable {
     static let tabSpacingRange = 4.0 ... 24.0
     static let inactiveTabOpacityRange = 0.0 ... 1.0
@@ -759,7 +755,6 @@ struct BreakdownListStyle: Codable, Equatable, Sendable {
         self.rowAnimationDelay = rowAnimationDelay
     }
 
-    // swiftlint:disable:next function_body_length
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         try self.init(
