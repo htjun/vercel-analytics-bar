@@ -70,9 +70,7 @@ final class AnalyticsPanelController {
     private let companionWindows: () -> [NSWindow]
     private let hostingView: NSHostingView<AnyView>
     private let chartIntroPlaybackGate = ChartIntroPlaybackGate()
-    #if MOCK_MODE
-        private let demoMetricTicker = DemoMetricTicker()
-    #endif
+    private let demoMetricTicker: DemoMetricTicker
     private var presentationTask: Task<Void, Never>?
     private var localEventMonitor: Any?
     private var globalEventMonitor: Any?
@@ -83,7 +81,8 @@ final class AnalyticsPanelController {
         onOpenSettings: @escaping (AdjacentWindowPresentationContext) -> Void = { _ in },
         setStatusItemHighlighted: @escaping (Bool) -> Void,
         statusItemWindow: @escaping () -> NSWindow? = { nil },
-        companionWindows: @escaping () -> [NSWindow] = { [] }
+        companionWindows: @escaping () -> [NSWindow] = { [] },
+        demoMetricTicker: DemoMetricTicker = DemoMetricTicker()
     ) {
         self.model = model
         self.chartStyle = chartStyle
@@ -91,6 +90,7 @@ final class AnalyticsPanelController {
         self.setStatusItemHighlighted = setStatusItemHighlighted
         self.statusItemWindow = statusItemWindow
         self.companionWindows = companionWindows
+        self.demoMetricTicker = demoMetricTicker
         hostingView = NSHostingView(rootView: AnyView(EmptyView()))
         window = AnalyticsPanel(hostingView: hostingView)
         updateHostedContent()

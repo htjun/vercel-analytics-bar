@@ -24,6 +24,7 @@ final class StatusBarController: NSObject {
     private let statusBar: NSStatusBar
     private let statusItem: NSStatusItem
     private let panelController: AnalyticsPanelController
+    private let demoMetricTicker: DemoMetricTicker
 
     private var isInstalled = true
 
@@ -43,13 +44,16 @@ final class StatusBarController: NSObject {
         let statusItem = statusBar.statusItem(withLength: NSStatusItem.variableLength)
         self.statusItem = statusItem
         let statusItemButton = statusItem.button
+        let demoMetricTicker = DemoMetricTicker()
+        self.demoMetricTicker = demoMetricTicker
         panelController = AnalyticsPanelController(
             model: model,
             chartStyle: chartStyle,
             onOpenSettings: onOpenSettings,
             setStatusItemHighlighted: { statusItemButton?.highlight($0) },
             statusItemWindow: { statusItemButton?.window },
-            companionWindows: companionWindows
+            companionWindows: companionWindows,
+            demoMetricTicker: demoMetricTicker
         )
         super.init()
 
@@ -93,7 +97,14 @@ final class StatusBarController: NSObject {
     private func observeStatusItemPresentation() {
         guard isInstalled else { return }
         withObservationTracking {
-            updateStatusItem(with: StatusItemPresentation(abbreviatedVisitors: model.abbreviatedVisitors))
+            #if MOCK_MODE
+                let abbreviatedVisitors = model.abbreviatedVisitors(
+                    applyingDemoOffsets: demoMetricTicker.offsets
+                )
+            #else
+                let abbreviatedVisitors = model.abbreviatedVisitors
+            #endif
+            updateStatusItem(with: StatusItemPresentation(abbreviatedVisitors: abbreviatedVisitors))
         } onChange: { [weak self] in
             Task { @MainActor in
                 self?.observeStatusItemPresentation()

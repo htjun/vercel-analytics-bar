@@ -215,6 +215,22 @@ struct DemoModeTests {
         #expect(adjusted.updatedText == base.updatedText)
     }
 
+    @MainActor
+    @Test func metricOffsetsAlsoChangeTheDemoMenuBarVisitorCount() async throws {
+        let fixture = try DemoFixtureLoader.load(
+            from: Self.fixtureRoot.appendingPathComponent("ideal.json")
+        )
+        let model = DemoAppModelFactory.makeModel(
+            provider: DemoAnalyticsSnapshotProvider(snapshot: fixture),
+            initialRange: fixture.range
+        )
+        await model.load()
+
+        let offsets = DemoMetricOffsets(visitors: 7, pageViews: 13)
+
+        #expect(model.abbreviatedVisitors(applyingDemoOffsets: offsets) == "809")
+    }
+
     private static let fixtureRoot = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()
         .deletingLastPathComponent()

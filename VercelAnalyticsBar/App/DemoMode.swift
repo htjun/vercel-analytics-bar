@@ -9,6 +9,13 @@ extension AppModel {
             return
         }
     }
+
+    func abbreviatedVisitors(applyingDemoOffsets offsets: DemoMetricOffsets) -> String? {
+        guard case let .loaded(snapshot) = state else { return nil }
+        return AnalyticsCountFormatter.compact(
+            snapshot.last24HoursVisitors.saturatingAdding(offsets.visitors)
+        )
+    }
 }
 
 struct DemoMetricOffsets: Equatable, Sendable {
