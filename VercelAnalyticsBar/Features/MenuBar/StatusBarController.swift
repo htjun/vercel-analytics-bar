@@ -83,7 +83,7 @@ final class StatusBarController: NSObject {
         statusItem.isVisible = true
 
         guard let button = statusItem.button else { return }
-        let image = NSImage(named: "MenuBarChart")
+        let image = NSImage(named: "AnalyticsBarLogo")
         image?.isTemplate = true
         image?.size = CGSize(width: 16, height: 16)
         button.image = image

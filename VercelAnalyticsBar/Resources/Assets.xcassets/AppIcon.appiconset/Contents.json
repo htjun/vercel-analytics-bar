@@ -1,9 +1,9 @@
 {
   "images" : [
     {
-      "filename" : "AppIcon.svg",
+      "filename" : "AppIcon.png",
       "idiom" : "mac",
-      "scale" : "1x",
+      "scale" : "2x",
       "size" : "512x512"
     }
   ],

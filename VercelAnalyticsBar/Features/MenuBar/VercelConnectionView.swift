@@ -71,7 +71,7 @@ struct VercelConnectionView: View {
     private var introduction: some View {
         ZStack(alignment: .bottom) {
             VStack(spacing: 24) {
-                Image("VercelConnectionLogo")
+                Image("AnalyticsBarLogo")
                     .resizable()
                     .frame(width: 24, height: 24)
                     .accessibilityHidden(true)
