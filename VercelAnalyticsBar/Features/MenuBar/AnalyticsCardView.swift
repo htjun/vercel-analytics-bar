@@ -136,6 +136,7 @@ struct AnalyticsCardView<SelectorContent: View>: View {
     let presentation: AnalyticsCardPresentation
     let chartStyle: ChartStyle
     var chartIntroPlayback: ChartIntroPlayback?
+    var breakdownListIntroPlayback: BreakdownListIntroPlayback?
     @Binding var isProjectSelectorPresented: Bool
     @Binding var selectedBreakdown: AnalyticsBreakdownSelection
     @ViewBuilder let projectSelectorContent: () -> SelectorContent
@@ -302,31 +303,34 @@ struct AnalyticsCardView<SelectorContent: View>: View {
                     .foregroundStyle(AnalyticsCardColors.secondaryText)
                     .frame(width: AnalyticsCardLayout.breakdownRowWidth, height: 16, alignment: .leading)
             } else {
-                VStack(alignment: .leading, spacing: 8) {
-                    ForEach(rows.prefix(5)) { row in
-                        HStack(spacing: AnalyticsCardLayout.breakdownColumnSpacing) {
-                            Text(row.label)
-                                .font(AppTypography.geistRegular12)
-                                .tracking(AppTypography.breakdownTracking)
-                                .lineLimit(1)
-                                .truncationMode(.tail)
-                                .frame(width: AnalyticsCardLayout.breakdownLabelWidth, alignment: .leading)
+                StaggeredBreakdownRows(
+                    rows: rows,
+                    selection: selectedBreakdown,
+                    playback: breakdownListIntroPlayback
+                ) { row in
+                    HStack(spacing: AnalyticsCardLayout.breakdownColumnSpacing) {
+                        Text(row.label)
+                            .font(AppTypography.geistRegular12)
+                            .tracking(AppTypography.breakdownTracking)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                            .frame(width: AnalyticsCardLayout.breakdownLabelWidth, alignment: .leading)
 
-                            Text(AnalyticsCountFormatter.compact(row.visitors))
-                                .font(AppTypography.geistMedium12)
-                                .tracking(AppTypography.breakdownTracking)
-                                .lineLimit(1)
-                                .frame(width: AnalyticsCardLayout.breakdownCountWidth, alignment: .trailing)
-                                .accessibilityLabel(
-                                    row.visitors.formatted(
-                                        .number.grouping(.automatic).locale(Locale(identifier: "en_US"))
-                                    )
+                        Text(AnalyticsCountFormatter.compact(row.visitors))
+                            .font(AppTypography.geistMedium12)
+                            .tracking(AppTypography.breakdownTracking)
+                            .lineLimit(1)
+                            .frame(width: AnalyticsCardLayout.breakdownCountWidth, alignment: .trailing)
+                            .accessibilityLabel(
+                                row.visitors.formatted(
+                                    .number.grouping(.automatic).locale(Locale(identifier: "en_US"))
                                 )
-                        }
-                        .foregroundStyle(AnalyticsCardColors.primaryText)
-                        .frame(width: AnalyticsCardLayout.breakdownRowWidth, height: 16)
+                            )
                     }
+                    .foregroundStyle(AnalyticsCardColors.primaryText)
+                    .frame(width: AnalyticsCardLayout.breakdownRowWidth, height: 16)
                 }
+                .id(selectedBreakdown)
             }
         }
         .frame(width: AnalyticsCardLayout.breakdownRowWidth, height: 144, alignment: .topLeading)

@@ -40,6 +40,7 @@ struct MenuBarRootView: View {
     let model: AppModel
     let chartStyle: ChartStyleStore
     var chartIntroPlayback: ChartIntroPlayback?
+    var breakdownListIntroPlayback: BreakdownListIntroPlayback?
     #if MOCK_MODE
         let demoMetricTicker: DemoMetricTicker
         let openedAt: Date
@@ -135,6 +136,7 @@ struct MenuBarRootView: View {
             presentation: presentation(for: snapshot),
             chartStyle: chartStyle.style,
             chartIntroPlayback: chartIntroPlayback,
+            breakdownListIntroPlayback: breakdownListIntroPlayback,
             isProjectSelectorPresented: $isProjectSelectorPresented,
             selectedBreakdown: $selectedBreakdown,
             projectSelectorContent: {

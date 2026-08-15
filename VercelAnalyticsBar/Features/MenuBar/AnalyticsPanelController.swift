@@ -70,6 +70,7 @@ final class AnalyticsPanelController {
     private let companionWindows: () -> [NSWindow]
     private let hostingView: NSHostingView<AnyView>
     private let chartIntroPlaybackGate = ChartIntroPlaybackGate()
+    private let breakdownListIntroPlaybackGate = BreakdownListIntroPlaybackGate()
     private let demoMetricTicker: DemoMetricTicker
     #if MOCK_MODE
         private var openedAt = Date()
@@ -197,11 +198,27 @@ final class AnalyticsPanelController {
         } else {
             nil
         }
+        let breakdownListIntroPlayback: BreakdownListIntroPlayback? = if isPresented {
+            #if MOCK_MODE
+                BreakdownListIntroPlayback.panel(
+                    scope: .session(sessionID),
+                    gate: breakdownListIntroPlaybackGate
+                )
+            #else
+                BreakdownListIntroPlayback.panel(
+                    scope: .application,
+                    gate: breakdownListIntroPlaybackGate
+                )
+            #endif
+        } else {
+            nil
+        }
         #if MOCK_MODE
             let rootView = MenuBarRootView(
                 model: model,
                 chartStyle: chartStyle,
                 chartIntroPlayback: chartIntroPlayback,
+                breakdownListIntroPlayback: breakdownListIntroPlayback,
                 demoMetricTicker: demoMetricTicker,
                 openedAt: openedAt,
                 onOpenSettings: { [weak self] in
@@ -216,6 +233,7 @@ final class AnalyticsPanelController {
                 model: model,
                 chartStyle: chartStyle,
                 chartIntroPlayback: chartIntroPlayback,
+                breakdownListIntroPlayback: breakdownListIntroPlayback,
                 onOpenSettings: { [weak self] in
                     self?.openSettings()
                 },

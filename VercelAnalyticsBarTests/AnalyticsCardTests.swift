@@ -64,6 +64,8 @@ import VercelAnalyticsCore
     #expect(AnalyticsCardLayout.breakdownLabelWidth == 296)
     #expect(AnalyticsInteraction.hoverDuration == 0.2)
     #expect(AnalyticsInteraction.hoverBackgroundOpacity == 0.9)
+    #expect(AnalyticsBreakdownListIntro.rowDuration == 0.22)
+    #expect(AnalyticsBreakdownListIntro.rowDelay == 0.04)
     #expect(AnalyticsCardPresentation.sampleFixture.projectName == "example-site")
     #expect(AnalyticsCardPresentation.pageFixtures.count == 5)
     #expect(AnalyticsCardPresentation.sampleFixture.topPages.first?.visitors == 710)
@@ -73,6 +75,29 @@ import VercelAnalyticsCore
         AnalyticsCardPresentation.referralFixtures)
     #expect(AnalyticsCardPresentation.sampleFixture.emptyBreakdownText(for: .pages) == "No page data")
     #expect(AnalyticsCardPresentation.sampleFixture.emptyBreakdownText(for: .referrals) == "No referral data")
+}
+
+@MainActor
+@Test func breakdownListPlaybackRunsOncePerListForTheApplication() {
+    let gate = BreakdownListIntroPlaybackGate()
+
+    #expect(gate.claim(.pages, for: .application))
+    #expect(!gate.isEligible(for: .pages, scope: .application))
+    #expect(gate.isEligible(for: .referrals, scope: .application))
+    #expect(gate.claim(.referrals, for: .application))
+    #expect(!gate.claim(.pages, for: .application))
+}
+
+@MainActor
+@Test func breakdownListPlaybackRepeatsForEachMockPanelSession() {
+    let gate = BreakdownListIntroPlaybackGate()
+    let firstSession = UUID()
+    let secondSession = UUID()
+
+    #expect(gate.claim(.pages, for: .session(firstSession)))
+    #expect(!gate.claim(.pages, for: .session(firstSession)))
+    #expect(gate.claim(.pages, for: .session(secondSession)))
+    #expect(gate.claim(.referrals, for: .session(secondSession)))
 }
 
 @Test func analyticsGlassAppearanceHonorsReducedTransparency() {
