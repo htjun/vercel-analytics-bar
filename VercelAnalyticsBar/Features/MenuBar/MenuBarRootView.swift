@@ -38,7 +38,7 @@ enum MenuBarContentMode: Equatable {
 
 struct MenuBarRootView: View {
     let model: AppModel
-    let chartStyle: ChartStyleStore
+    let componentStyle: ComponentStyleStore
     var chartIntroPlayback: ChartIntroPlayback?
     var breakdownListIntroPlayback: BreakdownListIntroPlayback?
     #if MOCK_MODE
@@ -134,7 +134,8 @@ struct MenuBarRootView: View {
     private func snapshotContent(_ snapshot: AnalyticsSnapshot) -> some View {
         AnalyticsCardView(
             presentation: presentation(for: snapshot),
-            chartStyle: chartStyle.style,
+            chartStyle: componentStyle.chartStyle,
+            breakdownListStyle: componentStyle.listStyle,
             chartIntroPlayback: chartIntroPlayback,
             breakdownListIntroPlayback: breakdownListIntroPlayback,
             isProjectSelectorPresented: $isProjectSelectorPresented,

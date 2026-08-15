@@ -271,7 +271,7 @@ struct SettingsRootView: View {
                     .frame(height: SettingsLayout.actionsToInspectorSpacing)
 
                 SettingsActionButton(
-                    title: "Chart Inspector",
+                    title: "Component Editor",
                     width: SettingsLayout.inspectorSize.width,
                     action: onOpenChartInspector
                 )

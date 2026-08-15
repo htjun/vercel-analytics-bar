@@ -34,7 +34,7 @@ final class StatusBarController: NSObject {
 
     init(
         model: AppModel,
-        chartStyle: ChartStyleStore,
+        componentStyle: ComponentStyleStore,
         statusBar: NSStatusBar = .system,
         companionWindows: @escaping () -> [NSWindow] = { [] },
         onOpenSettings: @escaping (AdjacentWindowPresentationContext) -> Void = { _ in }
@@ -48,7 +48,7 @@ final class StatusBarController: NSObject {
         self.demoMetricTicker = demoMetricTicker
         panelController = AnalyticsPanelController(
             model: model,
-            chartStyle: chartStyle,
+            componentStyle: componentStyle,
             onOpenSettings: onOpenSettings,
             setStatusItemHighlighted: { statusItemButton?.highlight($0) },
             statusItemWindow: { statusItemButton?.window },

@@ -9,22 +9,22 @@
     @Suite("Chart Inspector protocol")
     struct ChartInspectorProtocolTests {
         @Test func readyHydratesTheWebPanelFromCanonicalNativeState() throws {
-            let session = ChartInspectorSession(styleStore: ChartStyleStore())
+            let session = ChartInspectorSession(styleStore: ComponentStyleStore())
 
             let response = try session.receive(readyMessage)
 
             #expect(session.isReady)
-            #expect(response.state.protocolVersion == 6)
+            #expect(response.state.protocolVersion == 7)
             #expect(response.state.revision == 0)
-            #expect(response.state.values == .default)
+            #expect(response.state.values == .chart(.default))
         }
 
         @Test func styleChangeRequiresHydrationAndANewerRevision() throws {
-            let store = ChartStyleStore()
+            let store = ComponentStyleStore()
             let session = ChartInspectorSession(styleStore: store)
             let changedStyle = try makeInspectorStyle(lineWidth: 4)
             let styleChange = ChartInspectorIncomingMessage(
-                protocolVersion: 6,
+                protocolVersion: 7,
                 type: .styleChanged,
                 source: "chart-inspector",
                 revision: 1,
@@ -37,7 +37,7 @@
 
             _ = try session.receive(readyMessage)
             let state = try session.receive(styleChange).state
-            #expect(store.style == changedStyle)
+            #expect(store.chartStyle == changedStyle)
             #expect(state.revision == 1)
 
             #expect(throws: ChartInspectorProtocolError.staleRevision) {
@@ -45,7 +45,7 @@
             }
 
             let invalidRevision = ChartInspectorIncomingMessage(
-                protocolVersion: 6,
+                protocolVersion: 7,
                 type: .styleChanged,
                 source: "chart-inspector",
                 revision: ChartInspectorProtocol.maximumRevision + 1,
@@ -57,12 +57,12 @@
         }
 
         @Test func maximumRevisionCannotOverflowDuringReset() throws {
-            let store = ChartStyleStore()
+            let store = ComponentStyleStore()
             let session = ChartInspectorSession(styleStore: store)
             _ = try session.receive(readyMessage)
             _ = try session.receive(
                 ChartInspectorIncomingMessage(
-                    protocolVersion: 6,
+                    protocolVersion: 7,
                     type: .styleChanged,
                     source: "chart-inspector",
                     revision: ChartInspectorProtocol.maximumRevision,
@@ -76,69 +76,134 @@
         }
 
         @Test func resetCopyAndRehydrationUseCanonicalNativeState() throws {
-            let store = try ChartStyleStore(style: makeInspectorStyle(lineWidth: 5))
+            let store = try ComponentStyleStore(chartStyle: makeInspectorStyle(lineWidth: 5))
             let session = ChartInspectorSession(styleStore: store)
             _ = try session.receive(readyMessage)
 
             let copiedResponse = try session.receive(commandMessage(.copyStyle))
             let copiedJSON = try #require(copiedResponse.copiedStyleJSON)
             let copiedStyle = try JSONDecoder().decode(ChartStyle.self, from: Data(copiedJSON.utf8))
-            #expect(copiedStyle == store.style)
+            #expect(copiedStyle == store.chartStyle)
 
             let resetResponse = try session.receive(commandMessage(.reset))
-            #expect(store.style == .default)
-            #expect(resetResponse.state.values == .default)
+            #expect(store.chartStyle == .default)
+            #expect(resetResponse.state.values == .chart(.default))
             #expect(resetResponse.state.revision == 1)
 
             let reopenedSession = ChartInspectorSession(styleStore: store)
             let reopenedState = try reopenedSession.receive(readyMessage).state
-            #expect(reopenedState.values == .default)
+            #expect(reopenedState.values == .chart(.default))
         }
 
         @Test func onlyAnimationCommandRequestsPreviewReplay() throws {
-            let store = ChartStyleStore()
+            let store = ComponentStyleStore()
             let session = ChartInspectorSession(styleStore: store)
             _ = try session.receive(readyMessage)
 
             let lineWidthResponse = try session.receive(
                 ChartInspectorIncomingMessage(
-                    protocolVersion: 6,
+                    protocolVersion: 7,
                     type: .styleChanged,
                     source: "chart-inspector",
                     revision: 1,
                     values: makeInspectorStyle(lineWidth: 4)
                 )
             )
-            #expect(!lineWidthResponse.replaysAnimation)
+            #expect(lineWidthResponse.replayedComponent == nil)
 
             let timingResponse = try session.receive(
                 ChartInspectorIncomingMessage(
-                    protocolVersion: 6,
+                    protocolVersion: 7,
                     type: .styleChanged,
                     source: "chart-inspector",
                     revision: 2,
                     values: makeInspectorStyle(lineWidth: 4, lineRevealDuration: 1.4)
                 )
             )
-            #expect(!timingResponse.replaysAnimation)
+            #expect(timingResponse.replayedComponent == nil)
 
             let resetResponse = try session.receive(commandMessage(.reset))
-            #expect(!resetResponse.replaysAnimation)
+            #expect(resetResponse.replayedComponent == nil)
 
             let revisionBeforeReplay = session.revision
             let replayResponse = try session.receive(commandMessage(.replayAnimation))
-            #expect(replayResponse.replaysAnimation)
+            #expect(replayResponse.replayedComponent == .chart)
             #expect(replayResponse.state.revision == revisionBeforeReplay)
             #expect(session.revision == revisionBeforeReplay)
         }
 
+        @Test func nativeComponentSelectionRehydratesAtTheCurrentRevision() throws {
+            let session = ChartInspectorSession(styleStore: ComponentStyleStore())
+            _ = try session.receive(readyMessage)
+
+            let chartState = session.stateMessage
+            session.select(.list)
+            let listState = session.stateMessage
+
+            #expect(chartState.component == .chart)
+            #expect(listState.component == .list)
+            #expect(chartState.revision == listState.revision)
+            #expect(listState.values == .list(.default))
+        }
+
+        @Test func listActionsOnlyAffectTheSelectedComponent() throws {
+            let chart = try makeInspectorStyle(lineWidth: 5)
+            let store = ComponentStyleStore(chartStyle: chart)
+            let session = ChartInspectorSession(styleStore: store)
+            _ = try session.receive(readyMessage)
+            session.select(.list)
+
+            let list = try makeInspectorListStyle(visibleRowCount: 4)
+            let response = try session.receive(body: styleChangeBody(
+                component: .list,
+                values: list,
+                revision: 1
+            ))
+
+            #expect(response.state.component == .list)
+            #expect(store.chartStyle == chart)
+            #expect(store.listStyle == list)
+
+            let copiedResponse = try session.receive(commandMessage(.copyStyle, component: .list))
+            let copiedJSON = try #require(copiedResponse.copiedStyleJSON)
+            #expect(try JSONDecoder().decode(BreakdownListStyle.self, from: Data(copiedJSON.utf8)) == list)
+
+            let replayResponse = try session.receive(commandMessage(.replayAnimation, component: .list))
+            #expect(replayResponse.replayedComponent == .list)
+
+            _ = try session.receive(commandMessage(.reset, component: .list))
+            #expect(store.chartStyle == chart)
+            #expect(store.listStyle == .default)
+        }
+
+        @Test func styleChangesRejectAComponentMismatch() throws {
+            let session = ChartInspectorSession(styleStore: ComponentStyleStore())
+            _ = try session.receive(readyMessage)
+
+            #expect(throws: ChartInspectorProtocolError.unexpectedComponent) {
+                try session.receive(body: styleChangeBody(
+                    component: .list,
+                    values: BreakdownListStyle.default,
+                    revision: 1
+                ))
+            }
+
+            #expect(throws: DecodingError.self) {
+                try session.receive(body: styleChangeBody(
+                    component: .chart,
+                    values: BreakdownListStyle.default,
+                    revision: 1
+                ))
+            }
+        }
+
         @Test func protocolIdentityAndBodyValidationRejectUnexpectedMessages() throws {
-            let session = ChartInspectorSession(styleStore: ChartStyleStore())
+            let session = ChartInspectorSession(styleStore: ComponentStyleStore())
 
             #expect(throws: ChartInspectorProtocolError.unexpectedProtocolVersion) {
                 try session.receive(
                     ChartInspectorIncomingMessage(
-                        protocolVersion: 7,
+                        protocolVersion: 8,
                         type: .ready,
                         source: "chart-inspector",
                         revision: nil,
@@ -149,7 +214,7 @@
             #expect(throws: ChartInspectorProtocolError.unexpectedSource) {
                 try session.receive(
                     ChartInspectorIncomingMessage(
-                        protocolVersion: 6,
+                        protocolVersion: 7,
                         type: .ready,
                         source: "unexpected",
                         revision: nil,
@@ -158,7 +223,7 @@
                 )
             }
             #expect(throws: (any Error).self) {
-                try session.receive(body: ["protocolVersion": 6, "type": "unknown"])
+                try session.receive(body: ["protocolVersion": 7, "type": "unknown"])
             }
         }
 
@@ -253,13 +318,13 @@
             #expect(state.phase == .loading)
             #expect(state.reloadToken == 1)
 
-            state.replayAnimation()
-            #expect(state.animationReplayToken == 1)
+            state.replayAnimation(for: .chart)
+            #expect(state.chartAnimationReplayToken == 1)
         }
 
         private var readyMessage: ChartInspectorIncomingMessage {
             ChartInspectorIncomingMessage(
-                protocolVersion: 6,
+                protocolVersion: 7,
                 type: .ready,
                 source: "chart-inspector",
                 revision: nil,
@@ -267,28 +332,50 @@
             )
         }
 
-        private func commandMessage(_ type: ChartInspectorIncomingMessageType) -> ChartInspectorIncomingMessage {
+        private func commandMessage(
+            _ type: ChartInspectorIncomingMessageType,
+            component: EditableComponent = .chart
+        ) -> ChartInspectorIncomingMessage {
             ChartInspectorIncomingMessage(
-                protocolVersion: 6,
+                protocolVersion: 7,
                 type: type,
                 source: "chart-inspector",
                 revision: nil,
+                component: component,
                 values: nil
             )
+        }
+
+        private func styleChangeBody(
+            component: EditableComponent,
+            values: some Encodable,
+            revision: Int
+        ) throws -> [String: Any] {
+            let data = try JSONEncoder().encode(values)
+            let styleValues = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+            return [
+                "protocolVersion": 7,
+                "type": "styleChanged",
+                "source": "chart-inspector",
+                "revision": revision,
+                "component": component.rawValue,
+                "values": styleValues,
+            ]
         }
     }
 
     extension ChartInspectorProtocolTests {
         // swiftlint:disable:next function_body_length
         @Test func everyStyleFieldRoundTripsThroughTheCanonicalNativeBoundary() throws {
-            let store = ChartStyleStore()
+            let store = ComponentStyleStore()
             let session = ChartInspectorSession(styleStore: store)
             _ = try session.receive(readyMessage)
             let response = try session.receive(body: [
-                "protocolVersion": 6,
+                "protocolVersion": 7,
                 "type": "styleChanged",
                 "source": "chart-inspector",
                 "revision": 4,
+                "component": "chart",
                 "values": [
                     "lineColor": "#aabbcc",
                     "lineWidth": 6.5,
@@ -342,8 +429,12 @@
                 ],
             ])
 
-            expectDetailedStyle(response.state.values)
-            #expect(store.style == response.state.values)
+            guard case let .chart(style) = response.state.values else {
+                Issue.record("Expected a chart state")
+                return
+            }
+            expectDetailedStyle(style)
+            #expect(store.chartStyle == style)
         }
 
         @Test func previewUsesTheLoadedMockSeries() throws {
@@ -436,4 +527,15 @@
             from: JSONSerialization.data(withJSONObject: object)
         )
     }
+
+    private func makeInspectorListStyle(visibleRowCount: Int) throws -> BreakdownListStyle {
+        let data = try JSONEncoder().encode(BreakdownListStyle.default)
+        var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object["visibleRowCount"] = visibleRowCount
+        return try JSONDecoder().decode(
+            BreakdownListStyle.self,
+            from: JSONSerialization.data(withJSONObject: object)
+        )
+    }
+
 #endif

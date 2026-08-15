@@ -3,12 +3,10 @@ import {
   INSPECTOR_PROTOCOL_VERSION,
   INSPECTOR_SOURCE,
   MAX_INSPECTOR_REVISION,
-  MIN_INSPECTOR_REVISION,
-  NATIVE_SOURCE,
-  NATIVE_STATE_MESSAGE,
-  isChartStyle,
+  isNativeStateMessage,
 } from "./generated/contract";
 import type {
+  BreakdownListStyle,
   ChartStyle,
   NativeStateMessage,
   WebCommandMessage,
@@ -17,10 +15,13 @@ import type {
 
 type MessageSender = (message: WebMessage) => void;
 type StateListener = (message: NativeStateMessage) => void;
+export type ComponentStyleChange =
+  | { component: "chart"; values: ChartStyle }
+  | { component: "list"; values: BreakdownListStyle };
 
 export class ChartInspectorBridge {
   private currentState: NativeStateMessage | undefined;
-  private readonly pendingStyles = new Map<number, ChartStyle>();
+  private readonly pendingStyles = new Map<number, ComponentStyleChange>();
   private nextRevision = FIRST_STYLE_CHANGE_REVISION;
   private readonly listeners = new Set<StateListener>();
 
@@ -44,7 +45,7 @@ export class ChartInspectorBridge {
 
     const pendingStyle = this.pendingStyles.get(value.revision);
     const isEquivalentAcknowledgement =
-      pendingStyle !== undefined && chartStylesAreEquivalent(pendingStyle, value.values);
+      pendingStyle !== undefined && componentStyleMatches(value, pendingStyle);
 
     this.currentState = value;
     this.nextRevision = Math.max(this.nextRevision, value.revision + 1);
@@ -59,8 +60,14 @@ export class ChartInspectorBridge {
     return true;
   }
 
-  postStyleChanged(style: ChartStyle): boolean {
+  postStyleChanged(changeOrChartStyle: ComponentStyleChange | ChartStyle): boolean {
     if (this.currentState === undefined) {
+      return false;
+    }
+    const change: ComponentStyleChange = "component" in changeOrChartStyle
+      ? changeOrChartStyle
+      : { component: "chart", values: changeOrChartStyle };
+    if (this.currentState.component !== change.component) {
       return false;
     }
     if (this.nextRevision > MAX_INSPECTOR_REVISION) {
@@ -69,22 +76,34 @@ export class ChartInspectorBridge {
 
     const latestPendingStyle = this.pendingStyles.get(this.nextRevision - 1);
     if (
-      chartStylesAreEquivalent(style, this.currentState.values) ||
-      (latestPendingStyle !== undefined && chartStylesAreEquivalent(style, latestPendingStyle))
+      componentStyleMatches(this.currentState, change) ||
+      (latestPendingStyle !== undefined && componentChangesAreEquivalent(change, latestPendingStyle))
     ) {
       return false;
     }
 
     const revision = this.nextRevision;
-    this.send({
-      protocolVersion: INSPECTOR_PROTOCOL_VERSION,
-      type: "styleChanged",
-      source: INSPECTOR_SOURCE,
-      revision,
-      values: style,
-    });
+    if (change.component === "chart") {
+      this.send({
+        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        type: "styleChanged",
+        source: INSPECTOR_SOURCE,
+        revision,
+        component: "chart",
+        values: change.values,
+      });
+    } else {
+      this.send({
+        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        type: "styleChanged",
+        source: INSPECTOR_SOURCE,
+        revision,
+        component: "list",
+        values: change.values,
+      });
+    }
     this.nextRevision += 1;
-    this.pendingStyles.set(revision, { ...style });
+    this.pendingStyles.set(revision, change);
     return true;
   }
 
@@ -116,6 +135,7 @@ export class ChartInspectorBridge {
       protocolVersion: INSPECTOR_PROTOCOL_VERSION,
       type,
       source: INSPECTOR_SOURCE,
+      component: this.currentState.component,
     });
   }
 }
@@ -126,34 +146,35 @@ export function createBrowserBridge(): ChartInspectorBridge {
   });
 }
 
-function isNativeStateMessage(value: unknown): value is NativeStateMessage {
-  if (!isRecord(value)) {
-    return false;
-  }
-
-  return (
-    value.protocolVersion === INSPECTOR_PROTOCOL_VERSION &&
-    value.type === NATIVE_STATE_MESSAGE &&
-    value.source === NATIVE_SOURCE &&
-    Number.isInteger(value.revision) &&
-    typeof value.revision === "number" &&
-    value.revision >= MIN_INSPECTOR_REVISION &&
-    value.revision <= MAX_INSPECTOR_REVISION &&
-    isChartStyle(value.values)
-  );
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
 export function chartStylesAreEquivalent(left: ChartStyle, right: ChartStyle): boolean {
   if (serializeStyle(left) === serializeStyle(right)) {
     return true;
   }
 
-  const accentEquivalent = left.lineColor === "#007AFF" && right.lineColor === "accent";
-  return accentEquivalent && serializeStyle({ ...left, lineColor: "accent" }) === serializeStyle(right);
+  const normalizedLeft = left.lineColor === "#007AFF" ? { ...left, lineColor: "accent" } : left;
+  const normalizedRight = right.lineColor === "#007AFF" ? { ...right, lineColor: "accent" } : right;
+  return serializeStyle(normalizedLeft) === serializeStyle(normalizedRight);
+}
+
+export function listStylesAreEquivalent(left: BreakdownListStyle, right: BreakdownListStyle): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function componentStyleMatches(state: NativeStateMessage, change: ComponentStyleChange): boolean {
+  return state.component === change.component &&
+    (state.component === "chart"
+      ? chartStylesAreEquivalent(state.values, change.values as ChartStyle)
+      : listStylesAreEquivalent(state.values, change.values as BreakdownListStyle));
+}
+
+function componentChangesAreEquivalent(
+  left: ComponentStyleChange,
+  right: ComponentStyleChange,
+): boolean {
+  return left.component === right.component &&
+    (left.component === "chart"
+      ? chartStylesAreEquivalent(left.values, right.values as ChartStyle)
+      : listStylesAreEquivalent(left.values, right.values as BreakdownListStyle));
 }
 
 function serializeStyle(style: ChartStyle): string {

@@ -4,7 +4,7 @@ import VercelAnalyticsCore
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let model: AppModel
-    let chartStyle: ChartStyleStore
+    let componentStyle: ComponentStyleStore
     private var statusBarController: StatusBarController?
     private var settingsWindowController: HostedWindowController?
     #if CHART_INSPECTOR
@@ -25,7 +25,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             )
         #endif
-        chartStyle = ChartStyleStore()
+        componentStyle = ComponentStyleStore()
         super.init()
     }
 
@@ -34,7 +34,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settingsWindowController = makeSettingsWindowController()
         statusBarController = StatusBarController(
             model: model,
-            chartStyle: chartStyle,
+            componentStyle: componentStyle,
             companionWindows: { [weak self] in
                 [self?.settingsWindowController?.window].compactMap(\.self)
             },
@@ -83,13 +83,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard isChartInspectorEnabled else { return }
             if chartInspectorWindowController == nil {
                 chartInspectorWindowController = HostedWindowController(
-                    title: "Chart Inspector",
-                    contentSize: CGSize(width: 820, height: 640),
+                    title: "Component Editor",
+                    contentSize: CGSize(width: 1000, height: 700),
                     minimumContentSize: CGSize(width: 740, height: 560),
                     isResizable: true,
                     rootView: ChartInspectorView(
-                        model: model,
-                        styleStore: chartStyle
+                        styleStore: componentStyle
                     )
                 )
             }

@@ -69,7 +69,7 @@ import VercelAnalyticsCore
     )
     let controller = StatusBarController(
         model: model,
-        chartStyle: ChartStyleStore()
+        componentStyle: ComponentStyleStore()
     )
     defer { controller.tearDown() }
 
@@ -87,7 +87,7 @@ import VercelAnalyticsCore
     var highlightStates: [Bool] = []
     let controller = AnalyticsPanelController(
         model: model,
-        chartStyle: ChartStyleStore(),
+        componentStyle: ComponentStyleStore(),
         setStatusItemHighlighted: { highlightStates.append($0) }
     )
     let anchor = AnalyticsPanelAnchor(
@@ -303,7 +303,7 @@ private func makePanelController(
     )
     return AnalyticsPanelController(
         model: model,
-        chartStyle: ChartStyleStore(),
+        componentStyle: ComponentStyleStore(),
         setStatusItemHighlighted: { _ in },
         statusItemWindow: { statusItemWindow },
         companionWindows: { companionWindows }

@@ -51,21 +51,29 @@ struct BreakdownListIntroPlayback {
             }
         )
     }
+
+    static func inspector() -> BreakdownListIntroPlayback {
+        BreakdownListIntroPlayback(
+            isEligible: { _ in true },
+            claim: { _ in true }
+        )
+    }
 }
 
 enum AnalyticsBreakdownListIntro {
     static let rowDuration = 0.22
     static let rowDelay = 0.04
 
-    static func animation(for index: Int) -> Animation {
-        .easeOut(duration: rowDuration)
-            .delay(Double(index) * rowDelay)
+    static func animation(for index: Int, style: BreakdownListStyle) -> Animation {
+        style.introAnimationEasing.animation(duration: style.rowAnimationDuration)
+            .delay(Double(index) * style.rowAnimationDelay)
     }
 }
 
 struct StaggeredBreakdownRows<RowContent: View>: View {
     let rows: [VercelAnalyticsBreakdown]
     let selection: AnalyticsBreakdownSelection
+    let style: BreakdownListStyle
     let playback: BreakdownListIntroPlayback?
     @ViewBuilder let rowContent: (VercelAnalyticsBreakdown) -> RowContent
 
@@ -76,22 +84,24 @@ struct StaggeredBreakdownRows<RowContent: View>: View {
     init(
         rows: [VercelAnalyticsBreakdown],
         selection: AnalyticsBreakdownSelection,
+        style: BreakdownListStyle,
         playback: BreakdownListIntroPlayback?,
         @ViewBuilder rowContent: @escaping (VercelAnalyticsBreakdown) -> RowContent
     ) {
         self.rows = rows
         self.selection = selection
+        self.style = style
         self.playback = playback
         self.rowContent = rowContent
-        _startsHidden = State(initialValue: playback?.isEligible(selection) ?? false)
+        _startsHidden = State(initialValue: style.introAnimationEnabled && (playback?.isEligible(selection) ?? false))
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ForEach(Array(rows.prefix(5).enumerated()), id: \.element.id) { index, row in
+        VStack(alignment: .leading, spacing: style.rowSpacing) {
+            ForEach(Array(rows.prefix(style.visibleRowCount).enumerated()), id: \.element.id) { index, row in
                 rowContent(row)
                     .opacity(rowOpacity)
-                    .animation(AnalyticsBreakdownListIntro.animation(for: index), value: hasRevealed)
+                    .animation(AnalyticsBreakdownListIntro.animation(for: index, style: style), value: hasRevealed)
             }
         }
         .onAppear(perform: revealIfNeeded)
@@ -107,7 +117,7 @@ struct StaggeredBreakdownRows<RowContent: View>: View {
     }
 
     private func revealIfNeeded() {
-        guard startsHidden, let playback else {
+        guard style.introAnimationEnabled, startsHidden, let playback else {
             hasRevealed = true
             return
         }
@@ -118,5 +128,20 @@ struct StaggeredBreakdownRows<RowContent: View>: View {
         }
 
         hasRevealed = true
+    }
+}
+
+private extension ChartAnimationEasing {
+    func animation(duration: Double) -> Animation {
+        switch self {
+        case .linear:
+            .linear(duration: duration)
+        case .easeIn:
+            .easeIn(duration: duration)
+        case .easeOut:
+            .easeOut(duration: duration)
+        case .easeInOut:
+            .easeInOut(duration: duration)
+        }
     }
 }

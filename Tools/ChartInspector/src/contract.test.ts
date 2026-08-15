@@ -21,8 +21,8 @@ import type { ChartStyle } from "./generated/contract";
 import {
   CHART_STYLE_INSPECTOR_FIELDS,
   chartFieldConfig,
-  dialValuesFromStyle,
-  styleFromDialValues,
+  chartDialValuesFromStyle,
+  chartStyleFromDialValues,
 } from "./generated/inspector-adapter";
 
 describe("generated Chart Inspector contract", () => {
@@ -36,7 +36,7 @@ describe("generated Chart Inspector contract", () => {
       nativeSource: NATIVE_SOURCE,
       nativeStateMessage: NATIVE_STATE_MESSAGE,
     }).toEqual({
-      version: 6,
+      version: 7,
       minimumRevision: 0,
       firstStyleChangeRevision: 1,
       maximumRevision: 1_000_000_000,
@@ -325,10 +325,10 @@ describe("generated Chart Inspector contract", () => {
       chartBorderDashCap: "square",
     };
 
-    expect(styleFromDialValues(dialValuesFromStyle(style))).toEqual(style);
+    expect(chartStyleFromDialValues(chartDialValuesFromStyle(style))).toEqual(style);
 
-    const accentDialValues = dialValuesFromStyle({ ...style, lineColor: "accent" });
+    const accentDialValues = chartDialValuesFromStyle({ ...style, lineColor: "accent" });
     expect(accentDialValues.line.color).toBe("#007AFF");
-    expect(styleFromDialValues(accentDialValues).lineColor).toBe("#007AFF");
+    expect(chartStyleFromDialValues(accentDialValues).lineColor).toBe("#007AFF");
   });
 });

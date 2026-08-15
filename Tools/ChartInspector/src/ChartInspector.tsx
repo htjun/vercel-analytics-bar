@@ -1,12 +1,23 @@
 import { DialRoot, useDialKitController } from "dialkit";
 import "dialkit/styles.css";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { chartStylesAreEquivalent, createBrowserBridge } from "./bridge";
-import type { ChartStyle } from "./generated/contract";
+import {
+  chartStylesAreEquivalent,
+  createBrowserBridge,
+  listStylesAreEquivalent,
+} from "./bridge";
+import type {
+  BreakdownListStyle,
+  ChartStyle,
+  NativeStateMessage,
+} from "./generated/contract";
 import {
   chartFieldConfig,
-  dialValuesFromStyle,
-  styleFromDialValues,
+  chartDialValuesFromStyle,
+  chartStyleFromDialValues,
+  listDialValuesFromStyle,
+  listFieldConfig,
+  listStyleFromDialValues,
 } from "./generated/inspector-adapter";
 
 const bridge = createBrowserBridge();
@@ -30,8 +41,46 @@ export const chartConfig = {
   },
 };
 
+export const listConfig = {
+  tabs: { ...listFieldConfig.tabs, _collapsed: true },
+  rows: { ...listFieldConfig.rows, _collapsed: true },
+  layout: { ...listFieldConfig.layout, _collapsed: true },
+  label: { ...listFieldConfig.label, _collapsed: true },
+  value: { ...listFieldConfig.value, _collapsed: true },
+  emptyState: { ...listFieldConfig.emptyState, _collapsed: true },
+  introAnimation: { ...listFieldConfig.introAnimation, _collapsed: true },
+  actions: {
+    _collapsed: false,
+    replayAnimation: { type: "action" as const, label: "Replay intro animation" },
+    reset: { type: "action" as const, label: "Reset to defaults" },
+    copyStyle: { type: "action" as const, label: "Copy canonical JSON" },
+  },
+};
+
 export function ChartInspector() {
-  const [nativeStyle, setNativeStyle] = useState<ChartStyle>();
+  const [nativeState, setNativeState] = useState<NativeStateMessage>();
+
+  useEffect(() => {
+    window.__chartInspectorReceiveState = (message) => bridge.receiveState(message);
+    const unsubscribe = bridge.subscribe(setNativeState);
+    bridge.postReady();
+
+    return () => {
+      unsubscribe();
+      delete window.__chartInspectorReceiveState;
+    };
+  }, []);
+
+  return (
+    <>
+      {nativeState?.component === "chart" && <ChartControls style={nativeState.values} />}
+      {nativeState?.component === "list" && <ListControls style={nativeState.values} />}
+      <DialRoot mode="inline" theme="system" productionEnabled />
+    </>
+  );
+}
+
+function ChartControls({ style }: { style: ChartStyle }) {
   const suppressNextStylePost = useRef(false);
   const dial = useDialKitController("Visitors Chart", chartConfig, {
     id: "vercel-analytics-visitors-chart",
@@ -48,36 +97,57 @@ export function ChartInspector() {
   const setDialValues = dial.setValues;
   const getDialValues = dial.getValues;
   const values = dial.values;
-  const nextStyle = useMemo(
-    () => (nativeStyle === undefined ? undefined : styleFromDialValues(values)),
-    [nativeStyle, values],
-  );
+  const nextStyle = useMemo(() => chartStyleFromDialValues(values), [values]);
 
   useEffect(() => {
-    window.__chartInspectorReceiveState = (message) => bridge.receiveState(message);
-    const unsubscribe = bridge.subscribe((message) => {
-      const currentDialStyle = styleFromDialValues(getDialValues());
-      suppressNextStylePost.current = !chartStylesAreEquivalent(currentDialStyle, message.values);
-      setNativeStyle(message.values);
-      setDialValues(dialValuesFromStyle(message.values));
-    });
-    bridge.postReady();
-
-    return () => {
-      unsubscribe();
-      delete window.__chartInspectorReceiveState;
-    };
-  }, [getDialValues, setDialValues]);
+    const currentDialStyle = chartStyleFromDialValues(getDialValues());
+    suppressNextStylePost.current = !chartStylesAreEquivalent(currentDialStyle, style);
+    setDialValues(chartDialValuesFromStyle(style));
+  }, [getDialValues, setDialValues, style]);
 
   useEffect(() => {
-    if (nextStyle !== undefined) {
-      if (suppressNextStylePost.current) {
-        suppressNextStylePost.current = false;
-        return;
-      }
-      bridge.postStyleChanged(nextStyle);
+    if (suppressNextStylePost.current) {
+      suppressNextStylePost.current = false;
+      return;
     }
+    bridge.postStyleChanged({ component: "chart", values: nextStyle });
   }, [nextStyle]);
 
-  return <DialRoot mode="inline" theme="system" productionEnabled />;
+  return null;
+}
+
+function ListControls({ style }: { style: BreakdownListStyle }) {
+  const suppressNextStylePost = useRef(false);
+  const dial = useDialKitController("Breakdown List", listConfig, {
+    id: "vercel-analytics-breakdown-list",
+    onAction: (action) => {
+      if (action === "actions.replayAnimation") {
+        bridge.postReplayAnimation();
+      } else if (action === "actions.reset") {
+        bridge.postReset();
+      } else if (action === "actions.copyStyle") {
+        bridge.postCopyStyle();
+      }
+    },
+  });
+  const setDialValues = dial.setValues;
+  const getDialValues = dial.getValues;
+  const values = dial.values;
+  const nextStyle = useMemo(() => listStyleFromDialValues(values), [values]);
+
+  useEffect(() => {
+    const currentDialStyle = listStyleFromDialValues(getDialValues());
+    suppressNextStylePost.current = !listStylesAreEquivalent(currentDialStyle, style);
+    setDialValues(listDialValuesFromStyle(style));
+  }, [getDialValues, setDialValues, style]);
+
+  useEffect(() => {
+    if (suppressNextStylePost.current) {
+      suppressNextStylePost.current = false;
+      return;
+    }
+    bridge.postStyleChanged({ component: "list", values: nextStyle });
+  }, [nextStyle]);
+
+  return null;
 }

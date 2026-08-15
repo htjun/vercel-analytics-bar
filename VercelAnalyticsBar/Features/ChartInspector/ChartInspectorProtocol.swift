@@ -2,11 +2,32 @@
     import Foundation
 
     struct ChartInspectorIncomingMessage: Decodable {
+        private enum CodingKeys: String, CodingKey {
+            case protocolVersion, type, source, revision, component, values
+        }
+
         let protocolVersion: Int
         let type: ChartInspectorIncomingMessageType
         let source: String
         let revision: Int?
-        let values: ChartStyle?
+        let component: EditableComponent?
+        let values: ComponentStyle?
+
+        init(
+            protocolVersion: Int,
+            type: ChartInspectorIncomingMessageType,
+            source: String,
+            revision: Int?,
+            component: EditableComponent? = nil,
+            values: ChartStyle?
+        ) {
+            self.protocolVersion = protocolVersion
+            self.type = type
+            self.source = source
+            self.revision = revision
+            self.component = component ?? (values == nil ? nil : .chart)
+            self.values = values.map(ComponentStyle.chart)
+        }
 
         static func decode(body: Any) throws -> ChartInspectorIncomingMessage {
             guard JSONSerialization.isValidJSONObject(body) else {
@@ -15,14 +36,54 @@
             let data = try JSONSerialization.data(withJSONObject: body)
             return try JSONDecoder().decode(ChartInspectorIncomingMessage.self, from: data)
         }
+
+        init(from decoder: any Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            protocolVersion = try container.decode(Int.self, forKey: .protocolVersion)
+            type = try container.decode(ChartInspectorIncomingMessageType.self, forKey: .type)
+            source = try container.decode(String.self, forKey: .source)
+            revision = try container.decodeIfPresent(Int.self, forKey: .revision)
+            component = try container.decodeIfPresent(EditableComponent.self, forKey: .component)
+
+            guard let component, container.contains(.values) else {
+                values = nil
+                return
+            }
+            switch component {
+            case .chart:
+                values = .chart(try container.decode(ChartStyle.self, forKey: .values))
+            case .list:
+                values = .list(try container.decode(BreakdownListStyle.self, forKey: .values))
+            }
+        }
     }
 
     struct ChartInspectorStateMessage: Encodable, Equatable {
+        private enum CodingKeys: String, CodingKey {
+            case protocolVersion, type, source, revision, component, values
+        }
+
         let protocolVersion = ChartInspectorProtocol.version
         let type = ChartInspectorProtocol.nativeStateMessage
         let source = ChartInspectorProtocol.nativeSource
         let revision: Int
-        let values: ChartStyle
+        let component: EditableComponent
+        let values: ComponentStyle
+
+        func encode(to encoder: any Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(protocolVersion, forKey: .protocolVersion)
+            try container.encode(type, forKey: .type)
+            try container.encode(source, forKey: .source)
+            try container.encode(revision, forKey: .revision)
+            try container.encode(component, forKey: .component)
+            switch values {
+            case let .chart(style):
+                try container.encode(style, forKey: .values)
+            case let .list(style):
+                try container.encode(style, forKey: .values)
+            }
+        }
 
         func jsonObject() throws -> [String: Any] {
             let data = try JSONEncoder().encode(self)
@@ -36,13 +97,15 @@
     struct ChartInspectorSessionResponse: Equatable {
         let state: ChartInspectorStateMessage
         let copiedStyleJSON: String?
-        let replaysAnimation: Bool
+        let replayedComponent: EditableComponent?
     }
 
     enum ChartInspectorProtocolError: Error, Equatable {
         case invalidBody
         case unexpectedProtocolVersion
         case unexpectedSource
+        case missingComponent
+        case unexpectedComponent
         case missingStyle
         case notReady
         case invalidRevision
@@ -51,16 +114,21 @@
 
     @MainActor
     final class ChartInspectorSession {
-        private let styleStore: ChartStyleStore
+        private let styleStore: ComponentStyleStore
         private(set) var isReady = false
         private(set) var revision = ChartInspectorProtocol.minimumRevision
+        private(set) var selectedComponent: EditableComponent = .chart
 
-        init(styleStore: ChartStyleStore) {
+        init(styleStore: ComponentStyleStore) {
             self.styleStore = styleStore
         }
 
         func pageWillLoad() {
             isReady = false
+        }
+
+        func select(_ component: EditableComponent) {
+            selectedComponent = component
         }
 
         func receive(body: Any) throws -> ChartInspectorSessionResponse {
@@ -76,44 +144,48 @@
             }
 
             let copiedStyleJSON: String?
-            let replaysAnimation: Bool
+            let replayedComponent: EditableComponent?
             switch message.type {
             case .ready:
                 isReady = true
                 copiedStyleJSON = nil
-                replaysAnimation = false
+                replayedComponent = nil
             case .styleChanged:
                 try applyStyleChange(message)
                 copiedStyleJSON = nil
-                replaysAnimation = false
+                replayedComponent = nil
             case .reset:
-                try requireReady()
+                try requireSelectedComponent(message)
                 guard revision < ChartInspectorProtocol.maximumRevision else {
                     throw ChartInspectorProtocolError.invalidRevision
                 }
-                styleStore.reset()
+                styleStore.reset(selectedComponent)
                 revision += 1
                 copiedStyleJSON = nil
-                replaysAnimation = false
+                replayedComponent = nil
             case .copyStyle:
-                try requireReady()
+                try requireSelectedComponent(message)
                 copiedStyleJSON = try canonicalStyleJSON()
-                replaysAnimation = false
+                replayedComponent = nil
             case .replayAnimation:
-                try requireReady()
+                try requireSelectedComponent(message)
                 copiedStyleJSON = nil
-                replaysAnimation = true
+                replayedComponent = selectedComponent
             }
 
             return ChartInspectorSessionResponse(
                 state: stateMessage,
                 copiedStyleJSON: copiedStyleJSON,
-                replaysAnimation: replaysAnimation
+                replayedComponent: replayedComponent
             )
         }
 
         var stateMessage: ChartInspectorStateMessage {
-            ChartInspectorStateMessage(revision: revision, values: styleStore.style)
+            ChartInspectorStateMessage(
+                revision: revision,
+                component: selectedComponent,
+                values: styleStore.style(for: selectedComponent)
+            )
         }
 
         private func requireReady() throws {
@@ -122,10 +194,23 @@
             }
         }
 
-        private func applyStyleChange(_ message: ChartInspectorIncomingMessage) throws {
+        private func requireSelectedComponent(_ message: ChartInspectorIncomingMessage) throws {
             try requireReady()
+            guard let component = message.component else {
+                throw ChartInspectorProtocolError.missingComponent
+            }
+            guard component == selectedComponent else {
+                throw ChartInspectorProtocolError.unexpectedComponent
+            }
+        }
+
+        private func applyStyleChange(_ message: ChartInspectorIncomingMessage) throws {
+            try requireSelectedComponent(message)
             guard let style = message.values else {
                 throw ChartInspectorProtocolError.missingStyle
+            }
+            guard style.component == selectedComponent else {
+                throw ChartInspectorProtocolError.unexpectedComponent
             }
             guard let incomingRevision = message.revision,
                   ChartInspectorProtocol.styleChangeRevisionRange.contains(incomingRevision)
@@ -142,7 +227,13 @@
         private func canonicalStyleJSON() throws -> String {
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            let data = try encoder.encode(styleStore.style)
+            let data: Data
+            switch styleStore.style(for: selectedComponent) {
+            case let .chart(style):
+                data = try encoder.encode(style)
+            case let .list(style):
+                data = try encoder.encode(style)
+            }
             guard let json = String(data: data, encoding: .utf8) else {
                 throw ChartInspectorProtocolError.invalidBody
             }

@@ -1,6 +1,6 @@
 {
   "protocol": {
-    "version": 6,
+    "version": 7,
     "revisions": {
       "nativeMinimum": 0,
       "styleChangeMinimum": 1,
@@ -58,6 +58,10 @@
         "easeIn",
         "easeOut",
         "easeInOut"
+      ],
+      "fontWeight": [
+        "regular",
+        "medium"
       ]
     },
     "fields": [
@@ -645,6 +649,196 @@
           "key": "cap",
           "control": "select"
         }
+      }
+    ]
+  },
+  "listStyle": {
+    "fields": [
+      {
+        "name": "tabSpacing",
+        "type": "number",
+        "default": 12,
+        "minimum": 4,
+        "maximum": 24,
+        "step": 1,
+        "inspector": { "group": "tabs", "key": "spacing", "control": "range" }
+      },
+      {
+        "name": "tabTextColor",
+        "type": "color",
+        "default": "#262626",
+        "inspector": { "group": "tabs", "key": "textColor", "control": "color", "accentDisplay": "#007AFF" }
+      },
+      {
+        "name": "inactiveTabOpacity",
+        "type": "number",
+        "default": 0.4,
+        "minimum": 0,
+        "maximum": 1,
+        "step": 0.01,
+        "inspector": { "group": "tabs", "key": "inactiveOpacity", "control": "range" }
+      },
+      {
+        "name": "hoveredTabOpacity",
+        "type": "number",
+        "default": 0.6,
+        "minimum": 0,
+        "maximum": 1,
+        "step": 0.01,
+        "inspector": { "group": "tabs", "key": "hoverOpacity", "control": "range" }
+      },
+      {
+        "name": "visibleRowCount",
+        "type": "integer",
+        "default": 5,
+        "minimum": 1,
+        "maximum": 5,
+        "step": 1,
+        "inspector": { "group": "rows", "key": "visibleCount", "control": "range" }
+      },
+      {
+        "name": "headerToRowsSpacing",
+        "type": "number",
+        "default": 16,
+        "minimum": 4,
+        "maximum": 16,
+        "step": 1,
+        "inspector": { "group": "layout", "key": "headerSpacing", "control": "range" }
+      },
+      {
+        "name": "rowHeight",
+        "type": "number",
+        "default": 16,
+        "minimum": 16,
+        "maximum": 20,
+        "step": 1,
+        "inspector": { "group": "layout", "key": "rowHeight", "control": "range" }
+      },
+      {
+        "name": "rowSpacing",
+        "type": "number",
+        "default": 8,
+        "minimum": 0,
+        "maximum": 8,
+        "step": 1,
+        "inspector": { "group": "layout", "key": "rowSpacing", "control": "range" }
+      },
+      {
+        "name": "columnSpacing",
+        "type": "number",
+        "default": 8,
+        "minimum": 0,
+        "maximum": 16,
+        "step": 1,
+        "inspector": { "group": "layout", "key": "columnSpacing", "control": "range" }
+      },
+      {
+        "name": "countColumnWidth",
+        "type": "number",
+        "default": 40,
+        "minimum": 32,
+        "maximum": 64,
+        "step": 1,
+        "inspector": { "group": "layout", "key": "countWidth", "control": "range" }
+      },
+      {
+        "name": "labelColor",
+        "type": "color",
+        "default": "#262626",
+        "inspector": { "group": "label", "key": "color", "control": "color", "accentDisplay": "#007AFF" }
+      },
+      {
+        "name": "labelFontSize",
+        "type": "number",
+        "default": 12,
+        "minimum": 10,
+        "maximum": 14,
+        "step": 1,
+        "inspector": { "group": "label", "key": "fontSize", "control": "range" }
+      },
+      {
+        "name": "labelFontWeight",
+        "type": "enum",
+        "enum": "fontWeight",
+        "default": "regular",
+        "inspector": { "group": "label", "key": "fontWeight", "control": "select" }
+      },
+      {
+        "name": "labelTracking",
+        "type": "number",
+        "default": 0.1,
+        "minimum": 0,
+        "maximum": 1,
+        "step": 0.05,
+        "inspector": { "group": "label", "key": "tracking", "control": "range" }
+      },
+      {
+        "name": "valueColor",
+        "type": "color",
+        "default": "#262626",
+        "inspector": { "group": "value", "key": "color", "control": "color", "accentDisplay": "#007AFF" }
+      },
+      {
+        "name": "valueFontSize",
+        "type": "number",
+        "default": 12,
+        "minimum": 10,
+        "maximum": 14,
+        "step": 1,
+        "inspector": { "group": "value", "key": "fontSize", "control": "range" }
+      },
+      {
+        "name": "valueFontWeight",
+        "type": "enum",
+        "enum": "fontWeight",
+        "default": "medium",
+        "inspector": { "group": "value", "key": "fontWeight", "control": "select" }
+      },
+      {
+        "name": "valueTracking",
+        "type": "number",
+        "default": 0.1,
+        "minimum": 0,
+        "maximum": 1,
+        "step": 0.05,
+        "inspector": { "group": "value", "key": "tracking", "control": "range" }
+      },
+      {
+        "name": "emptyStateColor",
+        "type": "color",
+        "default": "#72777B",
+        "inspector": { "group": "emptyState", "key": "color", "control": "color", "accentDisplay": "#007AFF" }
+      },
+      {
+        "name": "introAnimationEnabled",
+        "type": "boolean",
+        "default": true,
+        "inspector": { "group": "introAnimation", "key": "enabled", "control": "boolean" }
+      },
+      {
+        "name": "introAnimationEasing",
+        "type": "enum",
+        "enum": "animationEasing",
+        "default": "easeOut",
+        "inspector": { "group": "introAnimation", "key": "easing", "control": "select" }
+      },
+      {
+        "name": "rowAnimationDuration",
+        "type": "number",
+        "default": 0.22,
+        "minimum": 0.1,
+        "maximum": 1,
+        "step": 0.01,
+        "inspector": { "group": "introAnimation", "key": "rowDuration", "control": "range" }
+      },
+      {
+        "name": "rowAnimationDelay",
+        "type": "number",
+        "default": 0.04,
+        "minimum": 0,
+        "maximum": 0.25,
+        "step": 0.01,
+        "inspector": { "group": "introAnimation", "key": "rowDelay", "control": "range" }
       }
     ]
   }

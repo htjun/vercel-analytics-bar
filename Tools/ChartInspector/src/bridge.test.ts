@@ -84,9 +84,10 @@ describe("ChartInspectorBridge", () => {
       bridge.receiveState({
         protocolVersion: 7,
         type: "state",
-        source: NATIVE_SOURCE,
-        revision: 0,
-        values: defaultStyle,
+  source: NATIVE_SOURCE,
+  revision: 0,
+  component: "chart",
+  values: defaultStyle,
       }),
     ).toBe(false);
     expect(messages).toEqual([]);
@@ -94,9 +95,9 @@ describe("ChartInspectorBridge", () => {
 
   it("hydrates, revisions, and deduplicates style changes", () => {
     const messages: unknown[] = [];
-    const received: ChartStyle[] = [];
+    const received: unknown[] = [];
     const bridge = new ChartInspectorBridge((message) => messages.push(message));
-    bridge.subscribe((message) => received.push(message.values));
+    bridge.subscribe((message) => received.push(message));
 
     expect(
       bridge.receiveState({
@@ -104,10 +105,20 @@ describe("ChartInspectorBridge", () => {
         type: "state",
         source: NATIVE_SOURCE,
         revision: 7,
+        component: "chart",
         values: defaultStyle,
       }),
     ).toBe(true);
-    expect(received).toEqual([defaultStyle]);
+    expect(received).toEqual([
+      {
+        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        type: "state",
+        source: NATIVE_SOURCE,
+        revision: 7,
+        component: "chart",
+        values: defaultStyle,
+      },
+    ]);
     expect(bridge.postStyleChanged(defaultStyle)).toBe(false);
 
     const changedStyle = { ...defaultStyle, lineWidth: 3.5 };
@@ -119,6 +130,7 @@ describe("ChartInspectorBridge", () => {
         type: "styleChanged",
         source: "chart-inspector",
         revision: 8,
+        component: "chart",
         values: changedStyle,
       },
     ]);
@@ -132,6 +144,7 @@ describe("ChartInspectorBridge", () => {
         type: "state",
         source: NATIVE_SOURCE,
         revision: 8,
+        component: "chart",
         values: defaultStyle,
       }),
     ).toBe(true);
@@ -141,6 +154,7 @@ describe("ChartInspectorBridge", () => {
         type: "state",
         source: NATIVE_SOURCE,
         revision: 7,
+        component: "chart",
         values: defaultStyle,
       }),
     ).toBe(false);
@@ -150,6 +164,7 @@ describe("ChartInspectorBridge", () => {
         type: "state",
         source: NATIVE_SOURCE,
         revision: MAX_INSPECTOR_REVISION + 1,
+        component: "chart",
         values: defaultStyle,
       }),
     ).toBe(false);
@@ -163,6 +178,7 @@ describe("ChartInspectorBridge", () => {
       type: "state",
       source: NATIVE_SOURCE,
       revision: 0,
+      component: "chart",
       values: defaultStyle,
     });
 
@@ -184,6 +200,7 @@ describe("ChartInspectorBridge", () => {
       type: "state",
       source: NATIVE_SOURCE,
       revision: 3,
+      component: "chart",
       values: defaultStyle,
     });
     bridge.postReplayAnimation();
@@ -195,16 +212,19 @@ describe("ChartInspectorBridge", () => {
         protocolVersion: INSPECTOR_PROTOCOL_VERSION,
         type: "replayAnimation",
         source: "chart-inspector",
+        component: "chart",
       },
       {
         protocolVersion: INSPECTOR_PROTOCOL_VERSION,
         type: "reset",
         source: "chart-inspector",
+        component: "chart",
       },
       {
         protocolVersion: INSPECTOR_PROTOCOL_VERSION,
         type: "copyStyle",
         source: "chart-inspector",
+        component: "chart",
       },
     ]);
   });
@@ -270,6 +290,7 @@ describe("ChartInspectorBridge", () => {
           type: "state",
           source: NATIVE_SOURCE,
           revision: 0,
+          component: "chart",
           values: { ...defaultStyle, ...invalidValue },
         }),
       ).toBe(false);

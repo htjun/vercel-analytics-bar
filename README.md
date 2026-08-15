@@ -14,7 +14,7 @@ A native macOS menu bar app for checking Vercel Web Analytics at a glance.
 
 The app connects directly to Vercel. Access tokens are stored in the macOS data-protection Keychain and are never written to preferences or logs. Analytics snapshots remain in Application Support with user-only permissions. Disconnecting removes the credential, preferences, and cache.
 
-Network requests use an ephemeral, cache-free, cookie-free session with bounded timeouts and no redirects. Release builds use the App Sandbox and Hardened Runtime. The Debug-only Chart Inspector is excluded from release builds.
+Network requests use an ephemeral, cache-free, cookie-free session with bounded timeouts and no redirects. Release builds use the App Sandbox and Hardened Runtime. The Debug-only Component Editor is excluded from release builds.
 
 ## Requirements
 
@@ -58,13 +58,13 @@ An `errSecItemNotFound` result means there is no legacy credential to remove. Cu
 
 ```sh
 make run-mock                    # local demo data
-make run-inspector-bundled       # bundled Chart Inspector with local demo data
-make run-inspector               # Chart Inspector with hot reload
-make inspector-dev               # Inspector development server only
+make run-inspector-bundled       # bundled Component Editor with local demo data
+make run-inspector               # Component Editor with hot reload
+make inspector-dev               # Component Editor development server only
 make probe                       # sanitized Vercel API capability probe
 ```
 
-The Inspector accepts only its bundled files or the exact loopback development origin. Demo and Inspector code is omitted from release builds. The API probe does not persist tokens, identifiers, names, or raw responses.
+The Component Editor accepts only its bundled files or the exact loopback development origin. Demo and Component Editor code is omitted from release builds. The API probe does not persist tokens, identifiers, names, or raw responses.
 
 ## API caveat
 

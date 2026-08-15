@@ -99,6 +99,60 @@ struct ChartStyleTests {
         #expect(style.chartBorderDashCap == .round)
     }
 
+    @Test func breakdownListDefaultsPreserveTheAnalyticsCardPresentation() {
+        let style = BreakdownListStyle.default
+
+        #expect(style.tabSpacing == 12)
+        #expect(style.tabTextColor.rawValue == "#262626")
+        #expect(style.inactiveTabOpacity == 0.4)
+        #expect(style.hoveredTabOpacity == 0.6)
+        #expect(style.visibleRowCount == 5)
+        #expect(style.headerToRowsSpacing == 16)
+        #expect(style.rowHeight == 16)
+        #expect(style.rowSpacing == 8)
+        #expect(style.columnSpacing == 8)
+        #expect(style.countColumnWidth == 40)
+        #expect(style.labelFontSize == 12)
+        #expect(style.valueFontWeight == .medium)
+        #expect(style.introAnimationEnabled)
+        #expect(style.introAnimationEasing == .easeOut)
+        #expect(style.rowAnimationDuration == 0.22)
+        #expect(style.rowAnimationDelay == 0.04)
+    }
+
+    @Test func breakdownListValidationKeepsFiveRowsInsideTheCard() throws {
+        let encodedDefault = try JSONEncoder().encode(BreakdownListStyle.default)
+        var object = try #require(JSONSerialization.jsonObject(with: encodedDefault) as? [String: Any])
+        object["rowHeight"] = 20
+        let overflow = try JSONSerialization.data(withJSONObject: object)
+
+        #expect(throws: BreakdownListStyleValidationError.layoutOverflow) {
+            try JSONDecoder().decode(BreakdownListStyle.self, from: overflow)
+        }
+    }
+
+    @MainActor
+    @Test func componentStyleStoreKeepsChartAndListStylesIsolated() throws {
+        let store = ComponentStyleStore()
+        let chart = try makeStyle(lineWidth: 5)
+        let list = try makeBreakdownListStyle { style in
+            style["visibleRowCount"] = 4
+            style["rowHeight"] = 18
+            style["headerToRowsSpacing"] = 12
+            style["rowSpacing"] = 6
+        }
+
+        store.update(.chart(chart))
+        store.update(.list(list))
+
+        #expect(store.chartStyle == chart)
+        #expect(store.listStyle == list)
+
+        store.reset(.list)
+        #expect(store.chartStyle == chart)
+        #expect(store.listStyle == .default)
+    }
+
     @Test func colorAcceptsAccentAndCanonicalizesHexadecimalRGB() throws {
         #expect(ChartColor(rawValue: "accent") == .accent)
         #expect(ChartColor(rawValue: "#0a7fF0")?.rawValue == "#0A7FF0")
@@ -378,5 +432,17 @@ private func makeStyle(
         chartBorderDashGap: chartBorderDashGap,
         chartBorderDashPhase: chartBorderDashPhase,
         chartBorderDashCap: chartBorderDashCap
+    )
+}
+
+private func makeBreakdownListStyle(
+    _ update: (inout [String: Any]) -> Void
+) throws -> BreakdownListStyle {
+    let data = try JSONEncoder().encode(BreakdownListStyle.default)
+    var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+    update(&object)
+    return try JSONDecoder().decode(
+        BreakdownListStyle.self,
+        from: JSONSerialization.data(withJSONObject: object)
     )
 }

@@ -11,6 +11,7 @@ const state = (revision: number, values = CHART_STYLE_DEFAULT) => ({
   type: "state" as const,
   source: NATIVE_SOURCE,
   revision,
+  component: "chart" as const,
   values,
 });
 

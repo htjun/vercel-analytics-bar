@@ -5,14 +5,17 @@ import type { ResolvedValues } from "dialkit";
 import {
   CHART_STYLE_DEFAULT,
   CHART_STYLE_RANGES,
+  BREAKDOWN_LIST_STYLE_DEFAULT,
+  BREAKDOWN_LIST_STYLE_RANGES,
   LINE_CAP_VALUES,
   LINE_JOIN_VALUES,
   INTERPOLATION_VALUES,
   ANIMATION_EASING_VALUES,
   GRID_LINE_STYLE_VALUES,
   BORDER_STYLE_VALUES,
+  FONT_WEIGHT_VALUES,
 } from "./contract";
-import type { ChartStyle, ChartLineCap, ChartLineJoin, ChartInterpolation, ChartAnimationEasing, ChartGridLineStyle, ChartBorderStyle } from "./contract";
+import type { ChartStyle, BreakdownListStyle, ChartLineCap, ChartLineJoin, ChartInterpolation, ChartAnimationEasing, ChartGridLineStyle, ChartBorderStyle, ChartFontWeight } from "./contract";
 
 export const CHART_STYLE_INSPECTOR_FIELDS = [
   { name: "lineColor", path: "line.color", control: "color" },
@@ -140,7 +143,7 @@ export const chartFieldConfig = {
   },
 };
 
-export function dialValuesFromStyle(style: ChartStyle) {
+export function chartDialValuesFromStyle(style: ChartStyle) {
   return {
     line: {
       color: style.lineColor === "accent" ? "#007AFF" : style.lineColor,
@@ -216,7 +219,7 @@ export function dialValuesFromStyle(style: ChartStyle) {
   };
 }
 
-export function styleFromDialValues(values: ResolvedValues<typeof chartFieldConfig>): ChartStyle {
+export function chartStyleFromDialValues(values: ResolvedValues<typeof chartFieldConfig>): ChartStyle {
   return {
     lineColor: values.line.color,
     lineWidth: values.line.width,
@@ -267,6 +270,142 @@ export function styleFromDialValues(values: ResolvedValues<typeof chartFieldConf
     chartBorderDashGap: values.borderDash.gap,
     chartBorderDashPhase: values.borderDash.phase,
     chartBorderDashCap: values.borderDash.cap as ChartLineCap,
+  };
+}
+
+export const LIST_STYLE_INSPECTOR_FIELDS = [
+  { name: "tabSpacing", path: "tabs.spacing", control: "range" },
+  { name: "tabTextColor", path: "tabs.textColor", control: "color" },
+  { name: "inactiveTabOpacity", path: "tabs.inactiveOpacity", control: "range" },
+  { name: "hoveredTabOpacity", path: "tabs.hoverOpacity", control: "range" },
+  { name: "visibleRowCount", path: "rows.visibleCount", control: "range" },
+  { name: "headerToRowsSpacing", path: "layout.headerSpacing", control: "range" },
+  { name: "rowHeight", path: "layout.rowHeight", control: "range" },
+  { name: "rowSpacing", path: "layout.rowSpacing", control: "range" },
+  { name: "columnSpacing", path: "layout.columnSpacing", control: "range" },
+  { name: "countColumnWidth", path: "layout.countWidth", control: "range" },
+  { name: "labelColor", path: "label.color", control: "color" },
+  { name: "labelFontSize", path: "label.fontSize", control: "range" },
+  { name: "labelFontWeight", path: "label.fontWeight", control: "select" },
+  { name: "labelTracking", path: "label.tracking", control: "range" },
+  { name: "valueColor", path: "value.color", control: "color" },
+  { name: "valueFontSize", path: "value.fontSize", control: "range" },
+  { name: "valueFontWeight", path: "value.fontWeight", control: "select" },
+  { name: "valueTracking", path: "value.tracking", control: "range" },
+  { name: "emptyStateColor", path: "emptyState.color", control: "color" },
+  { name: "introAnimationEnabled", path: "introAnimation.enabled", control: "boolean" },
+  { name: "introAnimationEasing", path: "introAnimation.easing", control: "select" },
+  { name: "rowAnimationDuration", path: "introAnimation.rowDuration", control: "range" },
+  { name: "rowAnimationDelay", path: "introAnimation.rowDelay", control: "range" },
+] as const;
+
+export const listFieldConfig = {
+  tabs: {
+    spacing: dialRange(BREAKDOWN_LIST_STYLE_DEFAULT.tabSpacing, BREAKDOWN_LIST_STYLE_RANGES.tabSpacing),
+    textColor: { type: "color" as const, default: BREAKDOWN_LIST_STYLE_DEFAULT.tabTextColor },
+    inactiveOpacity: dialRange(BREAKDOWN_LIST_STYLE_DEFAULT.inactiveTabOpacity, BREAKDOWN_LIST_STYLE_RANGES.inactiveTabOpacity),
+    hoverOpacity: dialRange(BREAKDOWN_LIST_STYLE_DEFAULT.hoveredTabOpacity, BREAKDOWN_LIST_STYLE_RANGES.hoveredTabOpacity),
+  },
+  rows: {
+    visibleCount: dialRange(BREAKDOWN_LIST_STYLE_DEFAULT.visibleRowCount, BREAKDOWN_LIST_STYLE_RANGES.visibleRowCount),
+  },
+  layout: {
+    headerSpacing: dialRange(BREAKDOWN_LIST_STYLE_DEFAULT.headerToRowsSpacing, BREAKDOWN_LIST_STYLE_RANGES.headerToRowsSpacing),
+    rowHeight: dialRange(BREAKDOWN_LIST_STYLE_DEFAULT.rowHeight, BREAKDOWN_LIST_STYLE_RANGES.rowHeight),
+    rowSpacing: dialRange(BREAKDOWN_LIST_STYLE_DEFAULT.rowSpacing, BREAKDOWN_LIST_STYLE_RANGES.rowSpacing),
+    columnSpacing: dialRange(BREAKDOWN_LIST_STYLE_DEFAULT.columnSpacing, BREAKDOWN_LIST_STYLE_RANGES.columnSpacing),
+    countWidth: dialRange(BREAKDOWN_LIST_STYLE_DEFAULT.countColumnWidth, BREAKDOWN_LIST_STYLE_RANGES.countColumnWidth),
+  },
+  label: {
+    color: { type: "color" as const, default: BREAKDOWN_LIST_STYLE_DEFAULT.labelColor },
+    fontSize: dialRange(BREAKDOWN_LIST_STYLE_DEFAULT.labelFontSize, BREAKDOWN_LIST_STYLE_RANGES.labelFontSize),
+    fontWeight: { type: "select" as const, options: [...FONT_WEIGHT_VALUES], default: BREAKDOWN_LIST_STYLE_DEFAULT.labelFontWeight },
+    tracking: dialRange(BREAKDOWN_LIST_STYLE_DEFAULT.labelTracking, BREAKDOWN_LIST_STYLE_RANGES.labelTracking),
+  },
+  value: {
+    color: { type: "color" as const, default: BREAKDOWN_LIST_STYLE_DEFAULT.valueColor },
+    fontSize: dialRange(BREAKDOWN_LIST_STYLE_DEFAULT.valueFontSize, BREAKDOWN_LIST_STYLE_RANGES.valueFontSize),
+    fontWeight: { type: "select" as const, options: [...FONT_WEIGHT_VALUES], default: BREAKDOWN_LIST_STYLE_DEFAULT.valueFontWeight },
+    tracking: dialRange(BREAKDOWN_LIST_STYLE_DEFAULT.valueTracking, BREAKDOWN_LIST_STYLE_RANGES.valueTracking),
+  },
+  emptyState: {
+    color: { type: "color" as const, default: BREAKDOWN_LIST_STYLE_DEFAULT.emptyStateColor },
+  },
+  introAnimation: {
+    enabled: BREAKDOWN_LIST_STYLE_DEFAULT.introAnimationEnabled,
+    easing: { type: "select" as const, options: [...ANIMATION_EASING_VALUES], default: BREAKDOWN_LIST_STYLE_DEFAULT.introAnimationEasing },
+    rowDuration: dialRange(BREAKDOWN_LIST_STYLE_DEFAULT.rowAnimationDuration, BREAKDOWN_LIST_STYLE_RANGES.rowAnimationDuration),
+    rowDelay: dialRange(BREAKDOWN_LIST_STYLE_DEFAULT.rowAnimationDelay, BREAKDOWN_LIST_STYLE_RANGES.rowAnimationDelay),
+  },
+};
+
+export function listDialValuesFromStyle(style: BreakdownListStyle) {
+  return {
+    tabs: {
+      spacing: style.tabSpacing,
+      textColor: style.tabTextColor === "accent" ? "#007AFF" : style.tabTextColor,
+      inactiveOpacity: style.inactiveTabOpacity,
+      hoverOpacity: style.hoveredTabOpacity,
+    },
+    rows: {
+      visibleCount: style.visibleRowCount,
+    },
+    layout: {
+      headerSpacing: style.headerToRowsSpacing,
+      rowHeight: style.rowHeight,
+      rowSpacing: style.rowSpacing,
+      columnSpacing: style.columnSpacing,
+      countWidth: style.countColumnWidth,
+    },
+    label: {
+      color: style.labelColor === "accent" ? "#007AFF" : style.labelColor,
+      fontSize: style.labelFontSize,
+      fontWeight: style.labelFontWeight,
+      tracking: style.labelTracking,
+    },
+    value: {
+      color: style.valueColor === "accent" ? "#007AFF" : style.valueColor,
+      fontSize: style.valueFontSize,
+      fontWeight: style.valueFontWeight,
+      tracking: style.valueTracking,
+    },
+    emptyState: {
+      color: style.emptyStateColor === "accent" ? "#007AFF" : style.emptyStateColor,
+    },
+    introAnimation: {
+      enabled: style.introAnimationEnabled,
+      easing: style.introAnimationEasing,
+      rowDuration: style.rowAnimationDuration,
+      rowDelay: style.rowAnimationDelay,
+    },
+  };
+}
+
+export function listStyleFromDialValues(values: ResolvedValues<typeof listFieldConfig>): BreakdownListStyle {
+  return {
+    tabSpacing: values.tabs.spacing,
+    tabTextColor: values.tabs.textColor,
+    inactiveTabOpacity: values.tabs.inactiveOpacity,
+    hoveredTabOpacity: values.tabs.hoverOpacity,
+    visibleRowCount: values.rows.visibleCount,
+    headerToRowsSpacing: values.layout.headerSpacing,
+    rowHeight: values.layout.rowHeight,
+    rowSpacing: values.layout.rowSpacing,
+    columnSpacing: values.layout.columnSpacing,
+    countColumnWidth: values.layout.countWidth,
+    labelColor: values.label.color,
+    labelFontSize: values.label.fontSize,
+    labelFontWeight: values.label.fontWeight as ChartFontWeight,
+    labelTracking: values.label.tracking,
+    valueColor: values.value.color,
+    valueFontSize: values.value.fontSize,
+    valueFontWeight: values.value.fontWeight as ChartFontWeight,
+    valueTracking: values.value.tracking,
+    emptyStateColor: values.emptyState.color,
+    introAnimationEnabled: values.introAnimation.enabled,
+    introAnimationEasing: values.introAnimation.easing as ChartAnimationEasing,
+    rowAnimationDuration: values.introAnimation.rowDuration,
+    rowAnimationDelay: values.introAnimation.rowDelay,
   };
 }
 

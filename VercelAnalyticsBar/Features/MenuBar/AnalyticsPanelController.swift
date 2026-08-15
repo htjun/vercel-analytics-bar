@@ -63,7 +63,7 @@ final class AnalyticsPanelController {
     }
 
     private let model: AppModel
-    private let chartStyle: ChartStyleStore
+    private let componentStyle: ComponentStyleStore
     private let onOpenSettings: (AdjacentWindowPresentationContext) -> Void
     private let setStatusItemHighlighted: (Bool) -> Void
     private let statusItemWindow: () -> NSWindow?
@@ -81,7 +81,7 @@ final class AnalyticsPanelController {
 
     init(
         model: AppModel,
-        chartStyle: ChartStyleStore,
+        componentStyle: ComponentStyleStore,
         onOpenSettings: @escaping (AdjacentWindowPresentationContext) -> Void = { _ in },
         setStatusItemHighlighted: @escaping (Bool) -> Void,
         statusItemWindow: @escaping () -> NSWindow? = { nil },
@@ -89,7 +89,7 @@ final class AnalyticsPanelController {
         demoMetricTicker: DemoMetricTicker = DemoMetricTicker()
     ) {
         self.model = model
-        self.chartStyle = chartStyle
+        self.componentStyle = componentStyle
         self.onOpenSettings = onOpenSettings
         self.setStatusItemHighlighted = setStatusItemHighlighted
         self.statusItemWindow = statusItemWindow
@@ -216,7 +216,7 @@ final class AnalyticsPanelController {
         #if MOCK_MODE
             let rootView = MenuBarRootView(
                 model: model,
-                chartStyle: chartStyle,
+                componentStyle: componentStyle,
                 chartIntroPlayback: chartIntroPlayback,
                 breakdownListIntroPlayback: breakdownListIntroPlayback,
                 demoMetricTicker: demoMetricTicker,
@@ -231,7 +231,7 @@ final class AnalyticsPanelController {
         #else
             let rootView = MenuBarRootView(
                 model: model,
-                chartStyle: chartStyle,
+                componentStyle: componentStyle,
                 chartIntroPlayback: chartIntroPlayback,
                 breakdownListIntroPlayback: breakdownListIntroPlayback,
                 onOpenSettings: { [weak self] in

@@ -91,8 +91,14 @@ enum ChartAnimationEasing: String, Codable, CaseIterable, Sendable {
     case easeInOut
 }
 
+enum ChartFontWeight: String, Codable, CaseIterable, Sendable {
+    case regular
+    case medium
+}
+
 enum ChartStyleValidationError: Error, Equatable {
     case outOfRange(field: String, range: ClosedRange<Double>)
+
 }
 
 // swiftlint:disable:next type_body_length
@@ -179,7 +185,7 @@ struct ChartStyle: Codable, Equatable, Sendable {
                 chartBorderDashCap: .round
             )
         } catch {
-            preconditionFailure("The contract-defined chart style must be valid: \(error)")
+            preconditionFailure("The contract-defined ChartStyle must be valid: \(error)")
         }
     }()
 
@@ -421,6 +427,7 @@ struct ChartStyle: Codable, Equatable, Sendable {
             range: Self.chartBorderDashPhaseRange
         )
 
+
         self.lineColor = lineColor
         self.lineWidth = lineWidth
         self.lineCap = lineCap
@@ -537,11 +544,283 @@ struct ChartStyle: Codable, Equatable, Sendable {
             throw ChartStyleValidationError.outOfRange(field: field, range: range)
         }
     }
+
+}
+
+enum BreakdownListStyleValidationError: Error, Equatable {
+    case outOfRange(field: String, range: ClosedRange<Double>)
+    case layoutOverflow
+}
+
+// swiftlint:disable:next type_body_length
+struct BreakdownListStyle: Codable, Equatable, Sendable {
+    static let tabSpacingRange = 4.0 ... 24.0
+    static let inactiveTabOpacityRange = 0.0 ... 1.0
+    static let hoveredTabOpacityRange = 0.0 ... 1.0
+    static let visibleRowCountRange = 1.0 ... 5.0
+    static let headerToRowsSpacingRange = 4.0 ... 16.0
+    static let rowHeightRange = 16.0 ... 20.0
+    static let rowSpacingRange = 0.0 ... 8.0
+    static let columnSpacingRange = 0.0 ... 16.0
+    static let countColumnWidthRange = 32.0 ... 64.0
+    static let labelFontSizeRange = 10.0 ... 14.0
+    static let labelTrackingRange = 0.0 ... 1.0
+    static let valueFontSizeRange = 10.0 ... 14.0
+    static let valueTrackingRange = 0.0 ... 1.0
+    static let rowAnimationDurationRange = 0.1 ... 1.0
+    static let rowAnimationDelayRange = 0.0 ... 0.25
+
+    static let `default`: BreakdownListStyle = {
+        do {
+            return try BreakdownListStyle(
+                tabSpacing: 12,
+                tabTextColor: .rgb(red: 38, green: 38, blue: 38),
+                inactiveTabOpacity: 0.4,
+                hoveredTabOpacity: 0.6,
+                visibleRowCount: 5,
+                headerToRowsSpacing: 16,
+                rowHeight: 16,
+                rowSpacing: 8,
+                columnSpacing: 8,
+                countColumnWidth: 40,
+                labelColor: .rgb(red: 38, green: 38, blue: 38),
+                labelFontSize: 12,
+                labelFontWeight: .regular,
+                labelTracking: 0.1,
+                valueColor: .rgb(red: 38, green: 38, blue: 38),
+                valueFontSize: 12,
+                valueFontWeight: .medium,
+                valueTracking: 0.1,
+                emptyStateColor: .rgb(red: 114, green: 119, blue: 123),
+                introAnimationEnabled: true,
+                introAnimationEasing: .easeOut,
+                rowAnimationDuration: 0.22,
+                rowAnimationDelay: 0.04
+            )
+        } catch {
+            preconditionFailure("The contract-defined BreakdownListStyle must be valid: \(error)")
+        }
+    }()
+
+    let tabSpacing: Double
+    let tabTextColor: ChartColor
+    let inactiveTabOpacity: Double
+    let hoveredTabOpacity: Double
+    let visibleRowCount: Int
+    let headerToRowsSpacing: Double
+    let rowHeight: Double
+    let rowSpacing: Double
+    let columnSpacing: Double
+    let countColumnWidth: Double
+    let labelColor: ChartColor
+    let labelFontSize: Double
+    let labelFontWeight: ChartFontWeight
+    let labelTracking: Double
+    let valueColor: ChartColor
+    let valueFontSize: Double
+    let valueFontWeight: ChartFontWeight
+    let valueTracking: Double
+    let emptyStateColor: ChartColor
+    let introAnimationEnabled: Bool
+    let introAnimationEasing: ChartAnimationEasing
+    let rowAnimationDuration: Double
+    let rowAnimationDelay: Double
+
+    // swiftlint:disable:next function_body_length
+    init(
+        tabSpacing: Double,
+        tabTextColor: ChartColor,
+        inactiveTabOpacity: Double,
+        hoveredTabOpacity: Double,
+        visibleRowCount: Int,
+        headerToRowsSpacing: Double,
+        rowHeight: Double,
+        rowSpacing: Double,
+        columnSpacing: Double,
+        countColumnWidth: Double,
+        labelColor: ChartColor,
+        labelFontSize: Double,
+        labelFontWeight: ChartFontWeight,
+        labelTracking: Double,
+        valueColor: ChartColor,
+        valueFontSize: Double,
+        valueFontWeight: ChartFontWeight,
+        valueTracking: Double,
+        emptyStateColor: ChartColor,
+        introAnimationEnabled: Bool,
+        introAnimationEasing: ChartAnimationEasing,
+        rowAnimationDuration: Double,
+        rowAnimationDelay: Double
+    ) throws {
+        try Self.validate(
+            tabSpacing,
+            field: "tabSpacing",
+            range: Self.tabSpacingRange
+        )
+        try Self.validate(
+            inactiveTabOpacity,
+            field: "inactiveTabOpacity",
+            range: Self.inactiveTabOpacityRange
+        )
+        try Self.validate(
+            hoveredTabOpacity,
+            field: "hoveredTabOpacity",
+            range: Self.hoveredTabOpacityRange
+        )
+        try Self.validate(
+            Double(visibleRowCount),
+            field: "visibleRowCount",
+            range: Self.visibleRowCountRange
+        )
+        try Self.validate(
+            headerToRowsSpacing,
+            field: "headerToRowsSpacing",
+            range: Self.headerToRowsSpacingRange
+        )
+        try Self.validate(
+            rowHeight,
+            field: "rowHeight",
+            range: Self.rowHeightRange
+        )
+        try Self.validate(
+            rowSpacing,
+            field: "rowSpacing",
+            range: Self.rowSpacingRange
+        )
+        try Self.validate(
+            columnSpacing,
+            field: "columnSpacing",
+            range: Self.columnSpacingRange
+        )
+        try Self.validate(
+            countColumnWidth,
+            field: "countColumnWidth",
+            range: Self.countColumnWidthRange
+        )
+        try Self.validate(
+            labelFontSize,
+            field: "labelFontSize",
+            range: Self.labelFontSizeRange
+        )
+        try Self.validate(
+            labelTracking,
+            field: "labelTracking",
+            range: Self.labelTrackingRange
+        )
+        try Self.validate(
+            valueFontSize,
+            field: "valueFontSize",
+            range: Self.valueFontSizeRange
+        )
+        try Self.validate(
+            valueTracking,
+            field: "valueTracking",
+            range: Self.valueTrackingRange
+        )
+        try Self.validate(
+            rowAnimationDuration,
+            field: "rowAnimationDuration",
+            range: Self.rowAnimationDurationRange
+        )
+        try Self.validate(
+            rowAnimationDelay,
+            field: "rowAnimationDelay",
+            range: Self.rowAnimationDelayRange
+        )
+        try Self.validateLayout(
+            visibleRowCount: visibleRowCount,
+            headerToRowsSpacing: headerToRowsSpacing,
+            rowHeight: rowHeight,
+            rowSpacing: rowSpacing
+        )
+
+        self.tabSpacing = tabSpacing
+        self.tabTextColor = tabTextColor
+        self.inactiveTabOpacity = inactiveTabOpacity
+        self.hoveredTabOpacity = hoveredTabOpacity
+        self.visibleRowCount = visibleRowCount
+        self.headerToRowsSpacing = headerToRowsSpacing
+        self.rowHeight = rowHeight
+        self.rowSpacing = rowSpacing
+        self.columnSpacing = columnSpacing
+        self.countColumnWidth = countColumnWidth
+        self.labelColor = labelColor
+        self.labelFontSize = labelFontSize
+        self.labelFontWeight = labelFontWeight
+        self.labelTracking = labelTracking
+        self.valueColor = valueColor
+        self.valueFontSize = valueFontSize
+        self.valueFontWeight = valueFontWeight
+        self.valueTracking = valueTracking
+        self.emptyStateColor = emptyStateColor
+        self.introAnimationEnabled = introAnimationEnabled
+        self.introAnimationEasing = introAnimationEasing
+        self.rowAnimationDuration = rowAnimationDuration
+        self.rowAnimationDelay = rowAnimationDelay
+    }
+
+    // swiftlint:disable:next function_body_length
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        try self.init(
+            tabSpacing: container.decode(Double.self, forKey: .tabSpacing),
+            tabTextColor: container.decode(ChartColor.self, forKey: .tabTextColor),
+            inactiveTabOpacity: container.decode(Double.self, forKey: .inactiveTabOpacity),
+            hoveredTabOpacity: container.decode(Double.self, forKey: .hoveredTabOpacity),
+            visibleRowCount: container.decode(Int.self, forKey: .visibleRowCount),
+            headerToRowsSpacing: container.decode(Double.self, forKey: .headerToRowsSpacing),
+            rowHeight: container.decode(Double.self, forKey: .rowHeight),
+            rowSpacing: container.decode(Double.self, forKey: .rowSpacing),
+            columnSpacing: container.decode(Double.self, forKey: .columnSpacing),
+            countColumnWidth: container.decode(Double.self, forKey: .countColumnWidth),
+            labelColor: container.decode(ChartColor.self, forKey: .labelColor),
+            labelFontSize: container.decode(Double.self, forKey: .labelFontSize),
+            labelFontWeight: container.decode(ChartFontWeight.self, forKey: .labelFontWeight),
+            labelTracking: container.decode(Double.self, forKey: .labelTracking),
+            valueColor: container.decode(ChartColor.self, forKey: .valueColor),
+            valueFontSize: container.decode(Double.self, forKey: .valueFontSize),
+            valueFontWeight: container.decode(ChartFontWeight.self, forKey: .valueFontWeight),
+            valueTracking: container.decode(Double.self, forKey: .valueTracking),
+            emptyStateColor: container.decode(ChartColor.self, forKey: .emptyStateColor),
+            introAnimationEnabled: container.decode(Bool.self, forKey: .introAnimationEnabled),
+            introAnimationEasing: container.decode(ChartAnimationEasing.self, forKey: .introAnimationEasing),
+            rowAnimationDuration: container.decode(Double.self, forKey: .rowAnimationDuration),
+            rowAnimationDelay: container.decode(Double.self, forKey: .rowAnimationDelay)
+        )
+    }
+
+    private static func validate(
+        _ value: Double,
+        field: String,
+        range: ClosedRange<Double>
+    ) throws {
+        guard value.isFinite, range.contains(value) else {
+            throw BreakdownListStyleValidationError.outOfRange(field: field, range: range)
+        }
+    }
+
+    private static func validateLayout(
+        visibleRowCount: Int,
+        headerToRowsSpacing: Double,
+        rowHeight: Double,
+        rowSpacing: Double
+    ) throws {
+        let rows = Double(visibleRowCount)
+        let totalHeight = 16 + headerToRowsSpacing + rows * rowHeight + max(rows - 1, 0) * rowSpacing
+        guard totalHeight <= 144 else {
+            throw BreakdownListStyleValidationError.layoutOverflow
+        }
+    }
+}
+
+enum EditableComponent: String, Codable, CaseIterable, Sendable {
+    case chart
+    case list
 }
 
 #if CHART_INSPECTOR
     enum ChartInspectorProtocol {
-        static let version = 6
+        static let version = 7
         static let minimumRevision = 0
         static let firstStyleChangeRevision = 1
         static let maximumRevision = 1_000_000_000

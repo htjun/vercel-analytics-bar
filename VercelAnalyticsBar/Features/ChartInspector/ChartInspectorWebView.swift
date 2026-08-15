@@ -4,14 +4,16 @@
     import WebKit
 
     struct ChartInspectorWebView: NSViewRepresentable {
-        let styleStore: ChartStyleStore
+        let styleStore: ComponentStyleStore
         let pageState: ChartInspectorPageState
+        let selectedComponent: EditableComponent
         let reloadToken: Int
 
         func makeCoordinator() -> Coordinator {
             Coordinator(
                 styleStore: styleStore,
                 pageState: pageState,
+                selectedComponent: selectedComponent,
                 source: Result { try ChartInspectorSource.resolve() }
             )
         }
@@ -34,6 +36,7 @@
 
         func updateNSView(_ webView: WKWebView, context: Context) {
             context.coordinator.load(webView, reloadToken: reloadToken)
+            context.coordinator.select(selectedComponent)
         }
 
         static func dismantleNSView(_ webView: WKWebView, coordinator: Coordinator) {
@@ -57,11 +60,13 @@
             private var loadedReloadToken: Int?
 
             init(
-                styleStore: ChartStyleStore,
+                styleStore: ComponentStyleStore,
                 pageState: ChartInspectorPageState,
+                selectedComponent: EditableComponent,
                 source: Result<ChartInspectorSource, any Error>
             ) {
                 session = ChartInspectorSession(styleStore: styleStore)
+                session.select(selectedComponent)
                 self.pageState = pageState
                 self.source = source
             }
@@ -81,8 +86,15 @@
                         webView.loadFileURL(source.entryURL, allowingReadAccessTo: rootURL)
                     }
                 case .failure:
-                    pageState.fail("The bundled Inspector resources are missing. Rebuild the web assets and try again.")
+                    pageState.fail("The bundled Component Editor resources are missing. Rebuild the web assets and try again.")
                 }
+            }
+
+            func select(_ component: EditableComponent) {
+                guard session.selectedComponent != component else { return }
+                session.select(component)
+                guard session.isReady else { return }
+                send(session.stateMessage)
             }
 
             func userContentController(
@@ -102,8 +114,8 @@
                 if let copiedStyleJSON = response.copiedStyleJSON {
                     copyToPasteboard(copiedStyleJSON)
                 }
-                if response.replaysAnimation {
-                    pageState.replayAnimation()
+                if let component = response.replayedComponent {
+                    pageState.replayAnimation(for: component)
                 }
                 send(response.state)
             }
@@ -118,19 +130,19 @@
             }
 
             func webView(_: WKWebView, didFail _: WKNavigation?, withError _: any Error) {
-                pageState.fail("The Inspector page failed to load. Check the selected mode and try again.")
+                pageState.fail("The Component Editor page failed to load. Check the selected mode and try again.")
             }
 
             func webView(_: WKWebView, didFailProvisionalNavigation _: WKNavigation?, withError _: any Error) {
                 pageState
                     .fail(
-                        "The Inspector could not connect or load its resources. Check the selected mode and try again."
+                        "The Component Editor could not connect or load its resources. Check the selected mode and try again."
                     )
             }
 
             func webViewWebContentProcessDidTerminate(_: WKWebView) {
                 session.pageWillLoad()
-                pageState.fail("The Inspector web process stopped unexpectedly. Try reloading it.")
+                pageState.fail("The Component Editor web process stopped unexpectedly. Try reloading it.")
             }
 
             func webView(

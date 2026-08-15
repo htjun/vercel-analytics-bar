@@ -203,6 +203,7 @@ private func renderAnalyticsCardFixture(
     let renderer = ImageRenderer(content: AnalyticsCardView(
         presentation: presentation,
         chartStyle: .default,
+        breakdownListStyle: .default,
         isProjectSelectorPresented: .constant(false),
         selectedBreakdown: .constant(selection),
         projectSelectorContent: { EmptyView() },

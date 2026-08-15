@@ -135,6 +135,7 @@ struct AnalyticsCardPresentation: Equatable {
 struct AnalyticsCardView<SelectorContent: View>: View {
     let presentation: AnalyticsCardPresentation
     let chartStyle: ChartStyle
+    let breakdownListStyle: BreakdownListStyle
     var chartIntroPlayback: ChartIntroPlayback?
     var breakdownListIntroPlayback: BreakdownListIntroPlayback?
     @Binding var isProjectSelectorPresented: Bool
@@ -144,7 +145,9 @@ struct AnalyticsCardView<SelectorContent: View>: View {
     let onSelectRange: (VercelAnalyticsRange) -> Void
     let onOpenSettings: () -> Void
     let onOpenDashboard: (URL) -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isRangeSelectorPresented = false
+    @State private var hoveredBreakdown: AnalyticsBreakdownSelection?
 
     var body: some View {
         AnalyticsCardShell {
@@ -290,8 +293,8 @@ struct AnalyticsCardView<SelectorContent: View>: View {
     private var breakdown: some View {
         let rows = presentation.breakdownRows(for: selectedBreakdown)
 
-        return VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 12) {
+        return VStack(alignment: .leading, spacing: breakdownListStyle.headerToRowsSpacing) {
+            HStack(spacing: breakdownListStyle.tabSpacing) {
                 breakdownTab("Pages", selection: .pages)
                 breakdownTab("Referrals", selection: .referrals)
             }
@@ -300,35 +303,43 @@ struct AnalyticsCardView<SelectorContent: View>: View {
             if rows.isEmpty {
                 Text(presentation.emptyBreakdownText(for: selectedBreakdown))
                     .font(AppTypography.geistRegular12)
-                    .foregroundStyle(AnalyticsCardColors.secondaryText)
+                    .foregroundStyle(Color(breakdownListStyle.emptyStateColor))
                     .frame(width: AnalyticsCardLayout.breakdownRowWidth, height: 16, alignment: .leading)
             } else {
                 StaggeredBreakdownRows(
                     rows: rows,
                     selection: selectedBreakdown,
+                    style: breakdownListStyle,
                     playback: breakdownListIntroPlayback
                 ) { row in
-                    HStack(spacing: AnalyticsCardLayout.breakdownColumnSpacing) {
+                    HStack(spacing: breakdownListStyle.columnSpacing) {
                         Text(row.label)
-                            .font(AppTypography.geistRegular12)
-                            .tracking(AppTypography.breakdownTracking)
+                            .font(breakdownFont(
+                                weight: breakdownListStyle.labelFontWeight,
+                                size: breakdownListStyle.labelFontSize
+                            ))
+                            .tracking(breakdownListStyle.labelTracking)
+                            .foregroundStyle(Color(breakdownListStyle.labelColor))
                             .lineLimit(1)
                             .truncationMode(.tail)
-                            .frame(width: AnalyticsCardLayout.breakdownLabelWidth, alignment: .leading)
+                            .frame(width: breakdownLabelWidth, alignment: .leading)
 
                         Text(AnalyticsCountFormatter.compact(row.visitors))
-                            .font(AppTypography.geistMedium12)
-                            .tracking(AppTypography.breakdownTracking)
+                            .font(breakdownFont(
+                                weight: breakdownListStyle.valueFontWeight,
+                                size: breakdownListStyle.valueFontSize
+                            ))
+                            .tracking(breakdownListStyle.valueTracking)
+                            .foregroundStyle(Color(breakdownListStyle.valueColor))
                             .lineLimit(1)
-                            .frame(width: AnalyticsCardLayout.breakdownCountWidth, alignment: .trailing)
+                            .frame(width: breakdownListStyle.countColumnWidth, alignment: .trailing)
                             .accessibilityLabel(
                                 row.visitors.formatted(
                                     .number.grouping(.automatic).locale(Locale(identifier: "en_US"))
                                 )
                             )
                     }
-                    .foregroundStyle(AnalyticsCardColors.primaryText)
-                    .frame(width: AnalyticsCardLayout.breakdownRowWidth, height: 16)
+                    .frame(width: AnalyticsCardLayout.breakdownRowWidth, height: breakdownListStyle.rowHeight)
                 }
                 .id(selectedBreakdown)
             }
@@ -341,14 +352,43 @@ struct AnalyticsCardView<SelectorContent: View>: View {
         selection: AnalyticsBreakdownSelection
     ) -> some View {
         let isSelected = selectedBreakdown == selection
+        let textOpacity: Double = if isSelected {
+            1
+        } else if hoveredBreakdown == selection {
+            breakdownListStyle.hoveredTabOpacity
+        } else {
+            breakdownListStyle.inactiveTabOpacity
+        }
+
         return Button(title) {
             selectedBreakdown = selection
         }
         .buttonStyle(.plain)
-        .font(AppTypography.geistMedium12)
-        .foregroundStyle(AnalyticsCardColors.primaryText.opacity(isSelected ? 1 : 0.4))
+        .font(breakdownFont(weight: .medium, size: 12))
+        .foregroundStyle(Color(breakdownListStyle.tabTextColor).opacity(textOpacity))
+        .animation(
+            .easeInOut(duration: reduceMotion ? 0 : AnalyticsInteraction.hoverDuration),
+            value: textOpacity
+        )
+        .onHover { isHovering in
+            hoveredBreakdown = isHovering ? selection : nil
+        }
         .accessibilityValue(isSelected ? "Selected" : "Not selected")
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private var breakdownLabelWidth: CGFloat {
+        AnalyticsCardLayout.breakdownRowWidth
+            - breakdownListStyle.countColumnWidth
+            - breakdownListStyle.columnSpacing
+    }
+
+    private func breakdownFont(weight: ChartFontWeight, size: Double) -> Font {
+        AppFontRegistry.font(
+            postScriptName: "Geist-Regular",
+            size: size,
+            variations: [.weight: weight == .regular ? 400 : 450]
+        )
     }
 
     private var updatedLabel: some View {

@@ -296,7 +296,7 @@ struct VisitorsChart: View {
     }
 }
 
-private extension Color {
+extension Color {
     init(_ chartColor: ChartColor) {
         switch chartColor {
         case .accent:
