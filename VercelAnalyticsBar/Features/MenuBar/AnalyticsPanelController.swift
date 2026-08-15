@@ -71,6 +71,9 @@ final class AnalyticsPanelController {
     private let hostingView: NSHostingView<AnyView>
     private let chartIntroPlaybackGate = ChartIntroPlaybackGate()
     private let demoMetricTicker: DemoMetricTicker
+    #if MOCK_MODE
+        private var openedAt = Date()
+    #endif
     private var presentationTask: Task<Void, Never>?
     private var localEventMonitor: Any?
     private var globalEventMonitor: Any?
@@ -102,6 +105,7 @@ final class AnalyticsPanelController {
         sessionID = UUID()
         isPresented = true
         #if MOCK_MODE
+            openedAt = Date()
             demoMetricTicker.start()
         #endif
         updateHostedContent()
@@ -199,6 +203,7 @@ final class AnalyticsPanelController {
                 chartStyle: chartStyle,
                 chartIntroPlayback: chartIntroPlayback,
                 demoMetricTicker: demoMetricTicker,
+                openedAt: openedAt,
                 onOpenSettings: { [weak self] in
                     self?.openSettings()
                 },

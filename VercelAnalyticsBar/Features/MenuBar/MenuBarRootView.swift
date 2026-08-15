@@ -42,6 +42,7 @@ struct MenuBarRootView: View {
     var chartIntroPlayback: ChartIntroPlayback?
     #if MOCK_MODE
         let demoMetricTicker: DemoMetricTicker
+        let openedAt: Date
     #endif
     let onOpenSettings: () -> Void
     let onDismissPanel: () -> Void
@@ -181,8 +182,12 @@ struct MenuBarRootView: View {
     }
 
     private func updatedText(for snapshot: AnalyticsSnapshot) -> String {
-        let timestamp = snapshot.refreshedAt.formatted(date: .omitted, time: .shortened)
-        return model.snapshotFreshness == .stale ? "Stale · Updated \(timestamp)" : "Updated \(timestamp)"
+        #if MOCK_MODE
+            return "Opened \(openedAt.formatted(date: .omitted, time: .shortened))"
+        #else
+            let timestamp = snapshot.refreshedAt.formatted(date: .omitted, time: .shortened)
+            return model.snapshotFreshness == .stale ? "Stale · Updated \(timestamp)" : "Updated \(timestamp)"
+        #endif
     }
 
     private func statusContent(
