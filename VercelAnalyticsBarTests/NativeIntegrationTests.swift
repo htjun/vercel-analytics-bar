@@ -236,18 +236,21 @@ private func expectPanelFrames(_ controller: AnalyticsPanelController, equalTo g
 
 @MainActor
 @Test func hostedWindowControllerSupportsResizableInspectorWindows() throws {
+    let contentSize = CGSize(width: 1000, height: 700)
     let controller = HostedWindowController(
-        title: "Chart Inspector",
-        contentSize: CGSize(width: 820, height: 640),
+        title: "Component Editor",
+        contentSize: contentSize,
         minimumContentSize: CGSize(width: 740, height: 560),
         isResizable: true,
         rootView: EmptyView()
+            .frame(minWidth: 740, minHeight: 560)
     )
     let window = try #require(controller.window)
 
     #expect(window.styleMask.contains(.resizable))
     #expect(window.styleMask.contains(.miniaturizable))
     #expect(window.contentMinSize == CGSize(width: 740, height: 560))
+    #expect(window.contentView?.bounds.size == contentSize)
 }
 
 @MainActor

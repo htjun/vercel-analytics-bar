@@ -94,6 +94,9 @@ final class HostedWindowController: NSWindowController {
         if !isResizable {
             window.contentMaxSize = contentSize
         }
+        // NSHostingController applies its view's fitting size when it is attached.
+        // Restore the caller's requested default after that attachment.
+        window.setContentSize(contentSize)
         window.center()
 
         super.init(window: window)

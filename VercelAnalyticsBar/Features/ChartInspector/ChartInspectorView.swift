@@ -106,7 +106,7 @@
             )
             .padding(16)
             .frame(width: 380, alignment: .leading)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         }
     }
 
@@ -164,7 +164,7 @@
                 ))
             }
             .padding(24)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         }
 
         private var labelWidth: CGFloat {
