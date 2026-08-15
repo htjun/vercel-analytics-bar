@@ -90,8 +90,8 @@ export const CHART_STYLE_DEFAULT: ChartStyle = {
   chartIntroAnimationEnabled: true,
   lineRevealDuration: 1,
   lineRevealEasing: "easeOut",
-  areaFadeDuration: 1,
-  areaFadeDelay: 0,
+  areaFadeDuration: 1.25,
+  areaFadeDelay: -0.5,
   chartHeight: 150,
   chartSidePadding: 12,
   chartVerticalPadding: 5,
@@ -137,7 +137,7 @@ export const CHART_STYLE_RANGES = {
   areaBottomOpacity: { minimum: 0, maximum: 1, step: 0.01, integer: false },
   lineRevealDuration: { minimum: 0.1, maximum: 3, step: 0.05, integer: false },
   areaFadeDuration: { minimum: 0.1, maximum: 2, step: 0.05, integer: false },
-  areaFadeDelay: { minimum: 0, maximum: 1, step: 0.05, integer: false },
+  areaFadeDelay: { minimum: -1, maximum: 1, step: 0.05, integer: false },
   chartHeight: { minimum: 80, maximum: 360, step: 1, integer: false },
   chartSidePadding: { minimum: 0, maximum: 64, step: 1, integer: false },
   chartVerticalPadding: { minimum: 0, maximum: 64, step: 1, integer: false },
@@ -207,7 +207,7 @@ export function isChartStyle(value: unknown): value is ChartStyle {
     isNumberInRange(value.lineRevealDuration, 0.1, 3) &&
     isOneOf(value.lineRevealEasing, ANIMATION_EASING_VALUES) &&
     isNumberInRange(value.areaFadeDuration, 0.1, 2) &&
-    isNumberInRange(value.areaFadeDelay, 0, 1) &&
+    isNumberInRange(value.areaFadeDelay, -1, 1) &&
     isNumberInRange(value.chartHeight, 80, 360) &&
     isNumberInRange(value.chartSidePadding, 0, 64) &&
     isNumberInRange(value.chartVerticalPadding, 0, 64) &&

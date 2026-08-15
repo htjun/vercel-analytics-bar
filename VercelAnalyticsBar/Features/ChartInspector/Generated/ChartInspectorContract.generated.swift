@@ -102,7 +102,7 @@ struct ChartStyle: Codable, Equatable, Sendable {
     static let areaBottomOpacityRange = 0.0 ... 1.0
     static let lineRevealDurationRange = 0.1 ... 3.0
     static let areaFadeDurationRange = 0.1 ... 2.0
-    static let areaFadeDelayRange = 0.0 ... 1.0
+    static let areaFadeDelayRange = -1.0 ... 1.0
     static let chartHeightRange = 80.0 ... 360.0
     static let chartSidePaddingRange = 0.0 ... 64.0
     static let chartVerticalPaddingRange = 0.0 ... 64.0
@@ -138,8 +138,8 @@ struct ChartStyle: Codable, Equatable, Sendable {
                 chartIntroAnimationEnabled: true,
                 lineRevealDuration: 1,
                 lineRevealEasing: .easeOut,
-                areaFadeDuration: 1,
-                areaFadeDelay: 0,
+                areaFadeDuration: 1.25,
+                areaFadeDelay: -0.5,
                 chartHeight: 150,
                 chartSidePadding: 12,
                 chartVerticalPadding: 5,

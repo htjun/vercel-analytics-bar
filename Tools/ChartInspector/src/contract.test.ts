@@ -58,8 +58,8 @@ describe("generated Chart Inspector contract", () => {
       chartIntroAnimationEnabled: true,
       lineRevealDuration: 1,
       lineRevealEasing: "easeOut",
-      areaFadeDuration: 1,
-      areaFadeDelay: 0,
+      areaFadeDuration: 1.25,
+      areaFadeDelay: -0.5,
       chartHeight: 150,
       chartSidePadding: 12,
       chartVerticalPadding: 5,
@@ -110,7 +110,7 @@ describe("generated Chart Inspector contract", () => {
       areaBottomOpacity: { minimum: 0, maximum: 1, step: 0.01, integer: false },
       lineRevealDuration: { minimum: 0.1, maximum: 3, step: 0.05, integer: false },
       areaFadeDuration: { minimum: 0.1, maximum: 2, step: 0.05, integer: false },
-      areaFadeDelay: { minimum: 0, maximum: 1, step: 0.05, integer: false },
+      areaFadeDelay: { minimum: -1, maximum: 1, step: 0.05, integer: false },
       chartHeight: { minimum: 80, maximum: 360, step: 1, integer: false },
       chartSidePadding: { minimum: 0, maximum: 64, step: 1, integer: false },
       chartVerticalPadding: { minimum: 0, maximum: 64, step: 1, integer: false },
@@ -134,6 +134,7 @@ describe("generated Chart Inspector contract", () => {
       chartBorderDashPhase: { minimum: 0, maximum: 64, step: 1, integer: false },
     });
     expect(isChartStyle(CHART_STYLE_DEFAULT)).toBe(true);
+    expect(isChartStyle({ ...CHART_STYLE_DEFAULT, areaFadeDelay: -1 })).toBe(true);
   });
 
   it("generates one DialKit control for every chart field", () => {
@@ -212,8 +213,8 @@ describe("generated Chart Inspector contract", () => {
           options: ["linear", "easeIn", "easeOut", "easeInOut"],
           default: "easeOut",
         },
-        fillDuration: [1, 0.1, 2, 0.05],
-        fillDelay: [0, 0, 1, 0.05],
+        fillDuration: [1.25, 0.1, 2, 0.05],
+        fillDelay: [-0.5, -1, 1, 0.05],
       },
       layout: {
         height: [150, 80, 360, 1],
@@ -284,7 +285,7 @@ describe("generated Chart Inspector contract", () => {
       lineRevealDuration: 1.25,
       lineRevealEasing: "easeInOut",
       areaFadeDuration: 0.6,
-      areaFadeDelay: 0.2,
+      areaFadeDelay: -0.2,
       chartHeight: 220,
       chartSidePadding: 24,
       chartVerticalPadding: 12,

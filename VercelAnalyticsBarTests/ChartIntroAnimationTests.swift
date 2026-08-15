@@ -50,8 +50,8 @@ struct ChartIntroAnimationTests {
         #expect(style.chartIntroAnimationEnabled)
         #expect(style.lineRevealDuration == 1)
         #expect(style.lineRevealEasing == .easeOut)
-        #expect(style.areaFadeDuration == 1)
-        #expect(style.areaFadeDelay == 0)
+        #expect(style.areaFadeDuration == 1.25)
+        #expect(style.areaFadeDelay == -0.5)
     }
 
     @Test func timelineStartsHiddenAndFinishesComplete() {
@@ -85,12 +85,24 @@ struct ChartIntroAnimationTests {
         #expect(fillMidpoint.areaProgress < 1)
     }
 
+    @Test func negativeFillDelayStartsAreaBeforeLineCompletes() throws {
+        var object = try encodedDefaultObject()
+        object["areaFadeDelay"] = -0.5
+        let data = try JSONSerialization.data(withJSONObject: object)
+        let style = try JSONDecoder().decode(ChartStyle.self, from: data)
+        let timeline = ChartIntroTimeline(style: style)
+        let overlappingValues = timeline.values(at: 0.75)
+
+        #expect(overlappingValues.lineProgress < 1)
+        #expect(overlappingValues.areaProgress > 0)
+    }
+
     @Test func decodingRejectsInvalidAnimationValues() throws {
         let invalidValues: [String: Any] = [
             "lineRevealDuration": 3.01,
             "lineRevealEasing": "spring",
             "areaFadeDuration": 2.01,
-            "areaFadeDelay": -0.01,
+            "areaFadeDelay": -1.01,
         ]
 
         for (field, value) in invalidValues {

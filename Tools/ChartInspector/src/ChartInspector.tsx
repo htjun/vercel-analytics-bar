@@ -10,9 +10,20 @@ import {
 } from "./generated/inspector-adapter";
 
 const bridge = createBrowserBridge();
-const chartConfig = {
-  ...chartFieldConfig,
+export const chartConfig = {
+  line: { ...chartFieldConfig.line, _collapsed: true },
+  area: { ...chartFieldConfig.area, _collapsed: true },
+  layout: { ...chartFieldConfig.layout, _collapsed: true },
+  axes: { ...chartFieldConfig.axes, _collapsed: true },
+  verticalGridLines: { ...chartFieldConfig.verticalGridLines, _collapsed: true },
+  horizontalGridLines: { ...chartFieldConfig.horizontalGridLines, _collapsed: true },
+  verticalAxisTicks: { ...chartFieldConfig.verticalAxisTicks, _collapsed: true },
+  horizontalAxisTicks: { ...chartFieldConfig.horizontalAxisTicks, _collapsed: true },
+  chartContainer: { ...chartFieldConfig.chartContainer, _collapsed: true },
+  borderDash: { ...chartFieldConfig.borderDash, _collapsed: true },
+  introAnimation: { ...chartFieldConfig.introAnimation, _collapsed: true },
   actions: {
+    _collapsed: false,
     replayAnimation: { type: "action" as const, label: "Replay animation" },
     reset: { type: "action" as const, label: "Reset to defaults" },
     copyStyle: { type: "action" as const, label: "Copy canonical JSON" },

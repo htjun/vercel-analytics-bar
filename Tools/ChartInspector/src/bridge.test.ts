@@ -222,7 +222,7 @@ describe("ChartInspectorBridge", () => {
       { lineRevealDuration: 3.1 },
       { lineRevealEasing: "spring" as ChartStyle["lineRevealEasing"] },
       { areaFadeDuration: 2.1 },
-      { areaFadeDelay: -0.1 },
+      { areaFadeDelay: -1.1 },
       { chartHeight: 79 },
       { chartSidePadding: 65 },
       { chartVerticalPadding: -1 },
