@@ -38,9 +38,9 @@ final class DemoMetricTicker {
     func start() {
         stop()
         task = Task { [weak self, sleep] in
-            while !Task.isCancelled {
+            for delay in [Duration.seconds(1), .seconds(5)] {
                 do {
-                    try await sleep(.seconds(1))
+                    try await sleep(delay)
                 } catch {
                     return
                 }
@@ -48,6 +48,8 @@ final class DemoMetricTicker {
                 guard !Task.isCancelled, let self else { return }
                 offsets = offsets.advanced()
             }
+
+            self?.task = nil
         }
     }
 
