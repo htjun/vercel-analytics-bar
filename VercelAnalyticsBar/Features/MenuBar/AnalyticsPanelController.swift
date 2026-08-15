@@ -116,7 +116,11 @@ final class AnalyticsPanelController {
             guard let self else { return }
             await model.restoreConnection()
             guard !Task.isCancelled else { return }
-            await model.load()
+            #if MOCK_MODE
+                await model.loadDemoSnapshotIfNeeded()
+            #else
+                await model.load()
+            #endif
         }
     }
 

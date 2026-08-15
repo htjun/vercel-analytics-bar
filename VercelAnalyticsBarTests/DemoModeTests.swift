@@ -85,6 +85,28 @@ struct DemoModeTests {
         #expect(model.state == .failed("The demo fixture contains invalid analytics data."))
     }
 
+    @MainActor
+    @Test func loadedDemoSnapshotIsReusedWhenThePanelReopens() async throws {
+        let fixture = try DemoFixtureLoader.decode(Self.fixtureData)
+        let provider = ControlledSnapshotProvider()
+        let model = DemoAppModelFactory.makeModel(
+            provider: provider,
+            initialRange: fixture.range
+        )
+
+        let initialLoad = Task {
+            await model.loadDemoSnapshotIfNeeded()
+        }
+        await provider.waitUntilRequested()
+        await provider.succeed(with: fixture)
+        await initialLoad.value
+
+        await model.loadDemoSnapshotIfNeeded()
+
+        #expect(await provider.requestedRanges == [fixture.range])
+        #expect(model.state == .loaded(fixture))
+    }
+
     @Test(arguments: ["ideal", "long-values", "empty-breakdowns"])
     func committedFixtureDecodes(_ fixtureName: String) throws {
         let snapshot = try DemoFixtureLoader.load(

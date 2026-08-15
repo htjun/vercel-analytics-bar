@@ -2,6 +2,15 @@ import Foundation
 import Observation
 import VercelAnalyticsCore
 
+extension AppModel {
+    func loadDemoSnapshotIfNeeded() async {
+        guard case .loaded = state else {
+            await load()
+            return
+        }
+    }
+}
+
 struct DemoMetricOffsets: Equatable, Sendable {
     static let zero = DemoMetricOffsets(visitors: 0, pageViews: 0)
 
