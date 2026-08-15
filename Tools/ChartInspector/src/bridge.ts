@@ -20,7 +20,7 @@ type StateListener = (message: NativeStateMessage) => void;
 
 export class ChartInspectorBridge {
   private currentState: NativeStateMessage | undefined;
-  private lastPostedStyle: string | undefined;
+  private readonly pendingStyles = new Map<number, ChartStyle>();
   private nextRevision = FIRST_STYLE_CHANGE_REVISION;
   private readonly listeners = new Set<StateListener>();
 
@@ -42,10 +42,20 @@ export class ChartInspectorBridge {
       return false;
     }
 
+    const pendingStyle = this.pendingStyles.get(value.revision);
+    const isEquivalentAcknowledgement =
+      pendingStyle !== undefined && chartStylesAreEquivalent(pendingStyle, value.values);
+
     this.currentState = value;
-    this.lastPostedStyle = undefined;
-    this.nextRevision = value.revision + 1;
-    this.listeners.forEach((listener) => listener(value));
+    this.nextRevision = Math.max(this.nextRevision, value.revision + 1);
+    for (const revision of this.pendingStyles.keys()) {
+      if (revision <= value.revision) {
+        this.pendingStyles.delete(revision);
+      }
+    }
+    if (!isEquivalentAcknowledgement) {
+      this.listeners.forEach((listener) => listener(value));
+    }
     return true;
   }
 
@@ -57,23 +67,25 @@ export class ChartInspectorBridge {
       return false;
     }
 
-    const serializedStyle = serializeStyle(style);
     if (
       chartStylesAreEquivalent(style, this.currentState.values) ||
-      serializedStyle === this.lastPostedStyle
+      Array.from(this.pendingStyles.values()).some((pendingStyle) =>
+        chartStylesAreEquivalent(style, pendingStyle),
+      )
     ) {
       return false;
     }
 
+    const revision = this.nextRevision;
     this.send({
       protocolVersion: INSPECTOR_PROTOCOL_VERSION,
       type: "styleChanged",
       source: INSPECTOR_SOURCE,
-      revision: this.nextRevision,
+      revision,
       values: style,
     });
     this.nextRevision += 1;
-    this.lastPostedStyle = serializedStyle;
+    this.pendingStyles.set(revision, { ...style });
     return true;
   }
 
