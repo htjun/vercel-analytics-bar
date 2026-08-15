@@ -65,37 +65,71 @@ struct ChartIntroPlayback {
     }
 }
 
-@MainActor
-@Observable
-final class ChartIntroAnimator {
-    private var lineRevealProgress = 1.0
-    private var areaRevealProgress = 1.0
-    private var hasResolvedPlayback = false
+struct ChartIntroAnimationValues: Equatable {
+    static let hidden = ChartIntroAnimationValues(lineProgress: 0, areaProgress: 0)
+    static let complete = ChartIntroAnimationValues(lineProgress: 1, areaProgress: 1)
 
-    func effectiveLineProgress(
-        style: ChartStyle,
-        reduceMotion: Bool,
-        playback: ChartIntroPlayback?
-    ) -> Double {
-        effectiveProgress(
-            lineRevealProgress,
-            style: style,
-            reduceMotion: reduceMotion,
-            playback: playback
+    let lineProgress: Double
+    let areaProgress: Double
+}
+
+struct ChartIntroTimeline {
+    let lineDuration: TimeInterval
+    let lineEasing: ChartAnimationEasing
+    let fillDuration: TimeInterval
+    let fillDelay: TimeInterval
+
+    init(style: ChartStyle) {
+        lineDuration = style.lineRevealDuration
+        lineEasing = style.lineRevealEasing
+        fillDuration = style.areaFadeDuration
+        fillDelay = style.areaFadeDelay
+    }
+
+    var duration: TimeInterval {
+        lineDuration + fillDelay + fillDuration
+    }
+
+    func values(at elapsedTime: TimeInterval) -> ChartIntroAnimationValues {
+        let lineFraction = normalized(elapsedTime / lineDuration)
+        let fillStart = lineDuration + fillDelay
+        let fillFraction = normalized((elapsedTime - fillStart) / fillDuration)
+
+        return ChartIntroAnimationValues(
+            lineProgress: lineEasing.unitCurve.value(at: lineFraction),
+            areaProgress: UnitCurve.easeOut.value(at: fillFraction)
         )
     }
 
-    func effectiveAreaProgress(
+    private func normalized(_ value: Double) -> Double {
+        min(max(value, 0), 1)
+    }
+}
+
+@MainActor
+@Observable
+final class ChartIntroAnimator {
+    enum State {
+        case pending
+        case running(timeline: ChartIntroTimeline, startUptime: TimeInterval)
+        case complete
+    }
+
+    private(set) var state = State.pending
+
+    func initialValues(
         style: ChartStyle,
         reduceMotion: Bool,
         playback: ChartIntroPlayback?
-    ) -> Double {
-        effectiveProgress(
-            areaRevealProgress,
-            style: style,
-            reduceMotion: reduceMotion,
-            playback: playback
-        )
+    ) -> ChartIntroAnimationValues {
+        guard style.chartIntroAnimationEnabled,
+              !reduceMotion,
+              let playback,
+              playback.isEligible()
+        else {
+            return .complete
+        }
+        return .hidden
     }
 
     func run(
@@ -113,58 +147,80 @@ final class ChartIntroAnimator {
             return
         }
 
-        updateWithoutAnimation(lineProgress: 0, areaProgress: 0)
-        await Task.yield()
-        guard !Task.isCancelled else { return }
-
-        withAnimation(style.lineRevealEasing.animation(duration: style.lineRevealDuration)) {
-            lineRevealProgress = 1
-        }
+        let timeline = ChartIntroTimeline(style: style)
+        let startUptime = ProcessInfo.processInfo.systemUptime
+        state = .running(timeline: timeline, startUptime: startUptime)
 
         do {
-            try await Task.sleep(for: .seconds(style.lineRevealDuration + style.areaFadeDelay))
+            try await Task.sleep(for: .seconds(timeline.duration))
         } catch {
             return
         }
         guard !Task.isCancelled else { return }
-
-        withAnimation(.easeOut(duration: style.areaFadeDuration)) {
-            areaRevealProgress = 1
-        }
+        finish()
     }
 
     func finish() {
-        updateWithoutAnimation(lineProgress: 1, areaProgress: 1)
-    }
-
-    private func effectiveProgress(
-        _ progress: Double,
-        style: ChartStyle,
-        reduceMotion: Bool,
-        playback: ChartIntroPlayback?
-    ) -> Double {
-        guard style.chartIntroAnimationEnabled, !reduceMotion, let playback else { return 1 }
-        return hasResolvedPlayback || !playback.isEligible() ? progress : 0
-    }
-
-    private func updateWithoutAnimation(lineProgress: Double, areaProgress: Double) {
         var transaction = Transaction()
         transaction.disablesAnimations = true
         withTransaction(transaction) {
-            lineRevealProgress = lineProgress
-            areaRevealProgress = areaProgress
-            hasResolvedPlayback = true
+            state = .complete
+        }
+    }
+}
+
+struct ChartIntroAnimationContainer<Content: View>: View {
+    let style: ChartStyle
+    let playback: ChartIntroPlayback?
+    @ViewBuilder let content: (ChartIntroAnimationValues) -> Content
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var animator = ChartIntroAnimator()
+
+    var body: some View {
+        animatedContent
+            .task {
+                await animator.run(
+                    style: style,
+                    reduceMotion: reduceMotion,
+                    playback: playback
+                )
+            }
+            .onChange(of: reduceMotion) { _, isEnabled in
+                if isEnabled {
+                    animator.finish()
+                }
+            }
+    }
+
+    @ViewBuilder
+    private var animatedContent: some View {
+        switch animator.state {
+        case .pending:
+            content(animator.initialValues(
+                style: style,
+                reduceMotion: reduceMotion,
+                playback: playback
+            ))
+        case let .running(timeline, startUptime):
+            TimelineView(.animation) { _ in
+                content(timeline.values(
+                    at: ProcessInfo.processInfo.systemUptime - startUptime
+                ))
+            }
+        case .complete:
+            content(.complete)
         }
     }
 }
 
 private extension ChartAnimationEasing {
-    func animation(duration: TimeInterval) -> Animation {
+    var unitCurve: UnitCurve {
         switch self {
-        case .linear: .linear(duration: duration)
-        case .easeIn: .easeIn(duration: duration)
-        case .easeOut: .easeOut(duration: duration)
-        case .easeInOut: .easeInOut(duration: duration)
+        case .linear: .linear
+        case .easeIn: .easeIn
+        case .easeOut: .easeOut
+        case .easeInOut: .easeInOut
         }
     }
 }

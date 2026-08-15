@@ -8,9 +8,6 @@ struct VisitorsChart: View {
     let style: ChartStyle
     var introPlayback: ChartIntroPlayback?
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var introAnimator = ChartIntroAnimator()
-
     init(
         points: [VercelAnalyticsPoint],
         style: ChartStyle,
@@ -22,136 +19,31 @@ struct VisitorsChart: View {
     }
 
     var body: some View {
+        ChartIntroAnimationContainer(
+            style: style,
+            playback: introPlayback
+        ) { values in
+            chart(values: values)
+        }
+        .id(introPlayback?.id)
+    }
+
+    private func chart(values: ChartIntroAnimationValues) -> some View {
         let lineColor = Color(style.lineColor)
         let containerShape = RoundedRectangle(
             cornerRadius: style.chartBorderRadius,
             style: .continuous
         )
 
-        Chart {
-            Plot {
-                ForEach(points, id: \.timestamp) { point in
-                    AreaMark(
-                        x: .value("Time", point.timestamp),
-                        y: .value("Visitors", point.visitors)
-                    )
-                    .interpolationMethod(style.interpolation.chartInterpolationMethod)
-                    .foregroundStyle(
-                        .linearGradient(
-                            colors: [
-                                lineColor.opacity(style.areaTopOpacity),
-                                lineColor.opacity(style.areaBottomOpacity),
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                }
-            }
-            .opacity(introAnimator.effectiveAreaProgress(
-                style: style,
-                reduceMotion: reduceMotion,
-                playback: introPlayback
-            ))
-
-            Plot {
-                ForEach(points, id: \.timestamp) { point in
-                    LineMark(
-                        x: .value("Time", point.timestamp),
-                        y: .value("Visitors", point.visitors)
-                    )
-                    .interpolationMethod(style.interpolation.chartInterpolationMethod)
-                    .foregroundStyle(lineColor)
-                    .lineStyle(
-                        StrokeStyle(
-                            lineWidth: style.lineWidth,
-                            lineCap: style.lineCap.cgLineCap,
-                            lineJoin: style.lineJoin.cgLineJoin
-                        )
-                    )
-                }
-            }
-            .compositingLayer { content in
-                content.mask(alignment: .leading) {
-                    Rectangle()
-                        .scaleEffect(
-                            x: introAnimator.effectiveLineProgress(
-                                style: style,
-                                reduceMotion: reduceMotion,
-                                playback: introPlayback
-                            ),
-                            anchor: .leading
-                        )
-                }
-            }
+        return Chart {
+            chartContent(lineColor: lineColor, values: values)
         }
         .chartLegend(.hidden)
         .chartXAxis {
-            AxisMarks(values: xAxisValues) { value in
-                if style.showsVerticalGridLines {
-                    AxisGridLine(
-                        stroke: style.verticalGridLineStyle.strokeStyle(
-                            lineWidth: style.verticalGridLineWidth
-                        )
-                    )
-                    .foregroundStyle(
-                        Color(style.verticalGridLineColor)
-                            .opacity(style.verticalGridLineOpacity)
-                    )
-                }
-                if style.showsVerticalAxisTicks {
-                    AxisTick(
-                        length: style.verticalAxisTickLength,
-                        stroke: StrokeStyle(lineWidth: style.verticalAxisTickWidth)
-                    )
-                    .foregroundStyle(
-                        Color(style.verticalAxisTickColor)
-                            .opacity(style.verticalAxisTickOpacity)
-                    )
-                }
-                if style.showsXAxisLabels, let date = value.as(Date.self) {
-                    AxisValueLabel(collisionResolution: .disabled) {
-                        if usesHourlyXAxisLabels {
-                            Text(date, format: .dateTime.hour())
-                                .font(AppTypography.geistMonoRegular11)
-                                .textCase(.uppercase)
-                        } else {
-                            Text(date, format: .dateTime.day().month(.abbreviated))
-                                .font(AppTypography.geistMonoRegular11)
-                                .textCase(.uppercase)
-                        }
-                    }
-                }
-            }
+            xAxisContent
         }
         .chartYAxis {
-            AxisMarks(position: .leading, values: yAxisValues) { _ in
-                if style.showsHorizontalGridLines {
-                    AxisGridLine(
-                        stroke: style.horizontalGridLineStyle.strokeStyle(
-                            lineWidth: style.horizontalGridLineWidth
-                        )
-                    )
-                    .foregroundStyle(
-                        Color(style.horizontalGridLineColor)
-                            .opacity(style.horizontalGridLineOpacity)
-                    )
-                }
-                if style.showsHorizontalAxisTicks {
-                    AxisTick(
-                        length: style.horizontalAxisTickLength,
-                        stroke: StrokeStyle(lineWidth: style.horizontalAxisTickWidth)
-                    )
-                    .foregroundStyle(
-                        Color(style.horizontalAxisTickColor)
-                            .opacity(style.horizontalAxisTickOpacity)
-                    )
-                }
-                if style.showsYAxisLabels {
-                    AxisValueLabel()
-                        .font(AppTypography.geistMonoRegular11)
-                }
-            }
+            yAxisContent
         }
         .chartXScale(range: .plotDimension(startPadding: 0, endPadding: 0))
         .chartYScale(domain: 0 ... chartMaximum)
@@ -176,16 +68,129 @@ struct VisitorsChart: View {
             }
         }
         .accessibilityLabel("Visitors over time")
-        .task(id: introPlayback?.id) {
-            await introAnimator.run(
-                style: style,
-                reduceMotion: reduceMotion,
-                playback: introPlayback
-            )
+    }
+
+    @ChartContentBuilder
+    private func chartContent(
+        lineColor: Color,
+        values: ChartIntroAnimationValues
+    ) -> some ChartContent {
+        Plot {
+            ForEach(points, id: \.timestamp) { point in
+                AreaMark(
+                    x: .value("Time", point.timestamp),
+                    y: .value("Visitors", point.visitors)
+                )
+                .interpolationMethod(style.interpolation.chartInterpolationMethod)
+                .foregroundStyle(
+                    .linearGradient(
+                        colors: [
+                            lineColor.opacity(style.areaTopOpacity),
+                            lineColor.opacity(style.areaBottomOpacity),
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+            }
         }
-        .onChange(of: reduceMotion) { _, isEnabled in
-            if isEnabled {
-                introAnimator.finish()
+        .opacity(values.areaProgress)
+
+        Plot {
+            ForEach(points, id: \.timestamp) { point in
+                LineMark(
+                    x: .value("Time", point.timestamp),
+                    y: .value("Visitors", point.visitors)
+                )
+                .interpolationMethod(style.interpolation.chartInterpolationMethod)
+                .foregroundStyle(lineColor)
+                .lineStyle(
+                    StrokeStyle(
+                        lineWidth: style.lineWidth,
+                        lineCap: style.lineCap.cgLineCap,
+                        lineJoin: style.lineJoin.cgLineJoin
+                    )
+                )
+            }
+        }
+        .compositingLayer { content in
+            content.mask(alignment: .leading) {
+                Rectangle()
+                    .scaleEffect(
+                        x: values.lineProgress,
+                        anchor: .leading
+                    )
+            }
+        }
+    }
+
+    @AxisContentBuilder
+    private var xAxisContent: some AxisContent {
+        AxisMarks(values: xAxisValues) { value in
+            if style.showsVerticalGridLines {
+                AxisGridLine(
+                    stroke: style.verticalGridLineStyle.strokeStyle(
+                        lineWidth: style.verticalGridLineWidth
+                    )
+                )
+                .foregroundStyle(
+                    Color(style.verticalGridLineColor)
+                        .opacity(style.verticalGridLineOpacity)
+                )
+            }
+            if style.showsVerticalAxisTicks {
+                AxisTick(
+                    length: style.verticalAxisTickLength,
+                    stroke: StrokeStyle(lineWidth: style.verticalAxisTickWidth)
+                )
+                .foregroundStyle(
+                    Color(style.verticalAxisTickColor)
+                        .opacity(style.verticalAxisTickOpacity)
+                )
+            }
+            if style.showsXAxisLabels, let date = value.as(Date.self) {
+                AxisValueLabel(collisionResolution: .disabled) {
+                    if usesHourlyXAxisLabels {
+                        Text(date, format: .dateTime.hour())
+                            .font(AppTypography.geistMonoRegular11)
+                            .textCase(.uppercase)
+                    } else {
+                        Text(date, format: .dateTime.day().month(.abbreviated))
+                            .font(AppTypography.geistMonoRegular11)
+                            .textCase(.uppercase)
+                    }
+                }
+            }
+        }
+    }
+
+    @AxisContentBuilder
+    private var yAxisContent: some AxisContent {
+        AxisMarks(position: .leading, values: yAxisValues) { _ in
+            if style.showsHorizontalGridLines {
+                AxisGridLine(
+                    stroke: style.horizontalGridLineStyle.strokeStyle(
+                        lineWidth: style.horizontalGridLineWidth
+                    )
+                )
+                .foregroundStyle(
+                    Color(style.horizontalGridLineColor)
+                        .opacity(style.horizontalGridLineOpacity)
+                )
+            }
+            if style.showsHorizontalAxisTicks {
+                AxisTick(
+                    length: style.horizontalAxisTickLength,
+                    stroke: StrokeStyle(lineWidth: style.horizontalAxisTickWidth)
+                )
+                .foregroundStyle(
+                    Color(style.horizontalAxisTickColor)
+                        .opacity(style.horizontalAxisTickOpacity)
+                )
+            }
+            if style.showsYAxisLabels {
+                AxisValueLabel()
+                    .font(AppTypography.geistMonoRegular11)
             }
         }
     }

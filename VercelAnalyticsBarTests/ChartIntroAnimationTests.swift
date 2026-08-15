@@ -35,6 +35,37 @@ struct ChartIntroAnimationTests {
         #expect(style.areaFadeDelay == 0.05)
     }
 
+    @Test func timelineStartsHiddenAndFinishesComplete() {
+        let timeline = ChartIntroTimeline(style: .default)
+
+        #expect(timeline.values(at: -0.1) == .hidden)
+        #expect(timeline.values(at: 0) == .hidden)
+        #expect(timeline.values(at: timeline.duration) == .complete)
+        #expect(timeline.values(at: timeline.duration + 1) == .complete)
+    }
+
+    @Test func timelineRevealsLineBeforeArea() {
+        let timeline = ChartIntroTimeline(style: .default)
+        let lineMidpoint = timeline.values(at: timeline.lineDuration / 2)
+        let fillStart = timeline.lineDuration + timeline.fillDelay
+
+        #expect(lineMidpoint.lineProgress > 0.5)
+        #expect(lineMidpoint.lineProgress < 1)
+        #expect(lineMidpoint.areaProgress == 0)
+        #expect(timeline.values(at: timeline.lineDuration).lineProgress == 1)
+        #expect(timeline.values(at: fillStart).areaProgress == 0)
+    }
+
+    @Test func timelineFadesAreaAfterConfiguredDelay() {
+        let timeline = ChartIntroTimeline(style: .default)
+        let fillStart = timeline.lineDuration + timeline.fillDelay
+        let fillMidpoint = timeline.values(at: fillStart + timeline.fillDuration / 2)
+
+        #expect(fillMidpoint.lineProgress == 1)
+        #expect(fillMidpoint.areaProgress > 0.5)
+        #expect(fillMidpoint.areaProgress < 1)
+    }
+
     @Test func decodingRejectsInvalidAnimationValues() throws {
         let invalidValues: [String: Any] = [
             "lineRevealDuration": 3.01,
