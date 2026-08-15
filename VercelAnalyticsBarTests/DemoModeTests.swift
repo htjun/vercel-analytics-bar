@@ -145,7 +145,7 @@ struct DemoModeTests {
     }
 
     @MainActor
-    @Test func metricTickerAdvancesOnceAfterOneSecondAndAgainFiveSecondsLater() async throws {
+    @Test func metricTickerUpdatesAfterTwoSixAndTenSeconds() async throws {
         let sleeper = DemoTickerTestSleeper()
         let ticker = DemoMetricTicker(sleep: { duration in
             try await sleeper.sleep(for: duration)
@@ -153,17 +153,24 @@ struct DemoModeTests {
 
         ticker.start()
         let firstDuration = try await sleeper.waitForPendingSleep(after: 0)
-        #expect(firstDuration == .seconds(1))
+        #expect(firstDuration == .seconds(2))
         #expect(ticker.offsets == .zero)
 
         await sleeper.resumeNext()
         try await waitUntil { ticker.offsets == DemoMetricOffsets(visitors: 7, pageViews: 13) }
         let secondDuration = try await sleeper.waitForPendingSleep(after: 1)
-        #expect(secondDuration == .seconds(5))
+        #expect(secondDuration == .seconds(4))
 
         await sleeper.resumeNext()
         try await waitUntil {
-            ticker.offsets == DemoMetricOffsets(visitors: 14, pageViews: 26) &&
+            ticker.offsets == DemoMetricOffsets(visitors: 14, pageViews: 26)
+        }
+        let thirdDuration = try await sleeper.waitForPendingSleep(after: 2)
+        #expect(thirdDuration == .seconds(4))
+
+        await sleeper.resumeNext()
+        try await waitUntil {
+            ticker.offsets == DemoMetricOffsets(visitors: 14, pageViews: 29) &&
                 !ticker.isRunning
         }
         let pendingCount = await sleeper.pendingCount
@@ -195,10 +202,13 @@ struct DemoModeTests {
         ticker.stop()
     }
 
-    @Test func metricOffsetsSaturateInsteadOfOverflowing() {
+    @Test func metricOffsetIncrementsSaturateInsteadOfOverflowing() {
         let offsets = DemoMetricOffsets(visitors: Int.max - 3, pageViews: Int.max - 2)
 
-        #expect(offsets.advanced() == DemoMetricOffsets(visitors: .max, pageViews: .max))
+        #expect(
+            offsets.adding(visitors: 7, pageViews: 13) ==
+                DemoMetricOffsets(visitors: .max, pageViews: .max)
+        )
     }
 
     @Test func metricOffsetsOnlyChangeHeadlineValues() {

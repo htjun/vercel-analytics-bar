@@ -24,10 +24,10 @@ struct DemoMetricOffsets: Equatable, Sendable {
     let visitors: Int
     let pageViews: Int
 
-    func advanced() -> DemoMetricOffsets {
+    func adding(visitors: Int, pageViews: Int) -> DemoMetricOffsets {
         DemoMetricOffsets(
-            visitors: visitors.saturatingAdding(7),
-            pageViews: pageViews.saturatingAdding(13)
+            visitors: self.visitors.saturatingAdding(visitors),
+            pageViews: self.pageViews.saturatingAdding(pageViews)
         )
     }
 }
@@ -54,7 +54,11 @@ final class DemoMetricTicker {
     func start() {
         stop()
         task = Task { [weak self, sleep] in
-            for delay in [Duration.seconds(1), .seconds(5)] {
+            for (delay, visitorIncrement, pageViewIncrement) in [
+                (Duration.seconds(2), 7, 13),
+                (Duration.seconds(4), 7, 13),
+                (Duration.seconds(4), 0, 3),
+            ] {
                 do {
                     try await sleep(delay)
                 } catch {
@@ -62,7 +66,10 @@ final class DemoMetricTicker {
                 }
 
                 guard !Task.isCancelled, let self else { return }
-                offsets = offsets.advanced()
+                offsets = offsets.adding(
+                    visitors: visitorIncrement,
+                    pageViews: pageViewIncrement
+                )
             }
 
             self?.task = nil
