@@ -1,6 +1,6 @@
-# Vercel Analytics Bar
+# Analytics Menu Bar
 
-A native macOS menu bar app for checking Vercel Web Analytics at a glance.
+A macOS menu bar app for Vercel Analytics.
 
 ## Features
 
@@ -72,7 +72,9 @@ Dashboard totals use Vercel's undocumented `/web-analytics/v2/overview` endpoint
 
 ## Independence
 
-Vercel Analytics Bar is an independent project and is not affiliated with, endorsed by, or operated by Vercel. Vercel is a trademark of Vercel Inc.
+Analytics Menu Bar is an independent project and is not affiliated with, endorsed by, or operated by Vercel.
+Vercel, the Vercel design, Next.js and related marks, designs and logos are trademarks or registered
+trademarks of Vercel, Inc. or its affiliates in the US and other countries.
 
 ## License
 

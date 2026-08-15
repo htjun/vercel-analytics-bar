@@ -38,5 +38,5 @@ for _ in {1..30}; do
     sleep 0.1
 done
 
-echo "Vercel Analytics Bar did not quit normally; force-stopping PID(s): ${PIDS[*]}" >&2
+echo "Analytics Menu Bar did not quit normally; force-stopping PID(s): ${PIDS[*]}" >&2
 kill -KILL "${PIDS[@]}" 2>/dev/null || true

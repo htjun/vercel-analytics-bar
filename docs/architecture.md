@@ -1,6 +1,6 @@
 # Architecture
 
-Vercel Analytics Bar concentrates domain rules in six deep modules. Composition code supplies
+Analytics Menu Bar concentrates domain rules in six deep modules. Composition code supplies
 dependencies and translates module output into presentation state; it does not reproduce their
 invariants.
 

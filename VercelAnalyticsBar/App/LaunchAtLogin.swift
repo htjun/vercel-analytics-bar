@@ -32,9 +32,9 @@ enum LaunchAtLoginError: Error, Equatable, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .registrationFailed:
-            "Vercel Analytics Bar could not be added to Login Items."
+            "Analytics Menu Bar could not be added to Login Items."
         case .unregistrationFailed:
-            "Vercel Analytics Bar could not be removed from Login Items."
+            "Analytics Menu Bar could not be removed from Login Items."
         }
     }
 }

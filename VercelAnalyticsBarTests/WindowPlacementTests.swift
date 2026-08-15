@@ -92,14 +92,14 @@ import Testing
 @MainActor
 @Test func settingsWindowHidesItsTitleTextButKeepsNativeFixedWindowChrome() throws {
     let controller = HostedWindowController(
-        title: "Vercel Analytics Bar Settings",
+        title: "Analytics Menu Bar Settings",
         contentSize: CGSize(width: SettingsLayout.contentWidth, height: SettingsLayout.productionHeight),
         titleVisibility: .hidden,
         rootView: EmptyView()
     )
     let window = try #require(controller.window)
 
-    #expect(window.title == "Vercel Analytics Bar Settings")
+    #expect(window.title == "Analytics Menu Bar Settings")
     #expect(window.titleVisibility == .hidden)
     #expect(window.styleMask.contains(.titled))
     #expect(window.styleMask.contains(.closable))

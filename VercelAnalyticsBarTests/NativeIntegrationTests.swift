@@ -51,12 +51,12 @@ import VercelAnalyticsCore
     let unavailable = StatusItemPresentation(abbreviatedVisitors: nil)
     #expect(unavailable.title.isEmpty)
     #expect(unavailable.accessibilityValue == "Visitor data unavailable")
-    #expect(unavailable.toolTip == "Vercel Analytics Bar")
+    #expect(unavailable.toolTip == "Analytics Menu Bar")
 
     let loaded = StatusItemPresentation(abbreviatedVisitors: "1.8K")
     #expect(loaded.title == "1.8K")
     #expect(loaded.accessibilityValue == "1.8K visitors in the last 24 hours")
-    #expect(loaded.toolTip == "Vercel Analytics Bar — 1.8K visitors")
+    #expect(loaded.toolTip == "Analytics Menu Bar — 1.8K visitors")
 }
 
 @MainActor
