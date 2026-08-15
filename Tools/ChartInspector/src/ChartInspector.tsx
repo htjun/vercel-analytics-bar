@@ -13,6 +13,7 @@ const bridge = createBrowserBridge();
 const chartConfig = {
   ...chartFieldConfig,
   actions: {
+    replayAnimation: { type: "action" as const, label: "Replay animation" },
     reset: { type: "action" as const, label: "Reset to defaults" },
     copyStyle: { type: "action" as const, label: "Copy canonical JSON" },
   },
@@ -24,7 +25,9 @@ export function ChartInspector() {
   const dial = useDialKitController("Visitors Chart", chartConfig, {
     id: "vercel-analytics-visitors-chart",
     onAction: (action) => {
-      if (action === "actions.reset") {
+      if (action === "actions.replayAnimation") {
+        bridge.postReplayAnimation();
+      } else if (action === "actions.reset") {
         bridge.postReset();
       } else if (action === "actions.copyStyle") {
         bridge.postCopyStyle();

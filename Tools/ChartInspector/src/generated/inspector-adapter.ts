@@ -8,10 +8,11 @@ import {
   LINE_CAP_VALUES,
   LINE_JOIN_VALUES,
   INTERPOLATION_VALUES,
+  ANIMATION_EASING_VALUES,
   GRID_LINE_STYLE_VALUES,
   BORDER_STYLE_VALUES,
 } from "./contract";
-import type { ChartStyle, ChartLineCap, ChartLineJoin, ChartInterpolation, ChartGridLineStyle, ChartBorderStyle } from "./contract";
+import type { ChartStyle, ChartLineCap, ChartLineJoin, ChartInterpolation, ChartAnimationEasing, ChartGridLineStyle, ChartBorderStyle } from "./contract";
 
 export const CHART_STYLE_INSPECTOR_FIELDS = [
   { name: "lineColor", path: "line.color", control: "color" },
@@ -21,6 +22,11 @@ export const CHART_STYLE_INSPECTOR_FIELDS = [
   { name: "interpolation", path: "line.interpolation", control: "select" },
   { name: "areaTopOpacity", path: "area.topOpacity", control: "range" },
   { name: "areaBottomOpacity", path: "area.bottomOpacity", control: "range" },
+  { name: "chartIntroAnimationEnabled", path: "introAnimation.enabled", control: "boolean" },
+  { name: "lineRevealDuration", path: "introAnimation.lineDuration", control: "range" },
+  { name: "lineRevealEasing", path: "introAnimation.lineEasing", control: "select" },
+  { name: "areaFadeDuration", path: "introAnimation.fillDuration", control: "range" },
+  { name: "areaFadeDelay", path: "introAnimation.fillDelay", control: "range" },
   { name: "chartHeight", path: "layout.height", control: "range" },
   { name: "chartSidePadding", path: "layout.sidePadding", control: "range" },
   { name: "chartVerticalPadding", path: "layout.topBottomPadding", control: "range" },
@@ -71,6 +77,13 @@ export const chartFieldConfig = {
   area: {
     topOpacity: dialRange(CHART_STYLE_DEFAULT.areaTopOpacity, CHART_STYLE_RANGES.areaTopOpacity),
     bottomOpacity: dialRange(CHART_STYLE_DEFAULT.areaBottomOpacity, CHART_STYLE_RANGES.areaBottomOpacity),
+  },
+  introAnimation: {
+    enabled: CHART_STYLE_DEFAULT.chartIntroAnimationEnabled,
+    lineDuration: dialRange(CHART_STYLE_DEFAULT.lineRevealDuration, CHART_STYLE_RANGES.lineRevealDuration),
+    lineEasing: { type: "select" as const, options: [...ANIMATION_EASING_VALUES], default: CHART_STYLE_DEFAULT.lineRevealEasing },
+    fillDuration: dialRange(CHART_STYLE_DEFAULT.areaFadeDuration, CHART_STYLE_RANGES.areaFadeDuration),
+    fillDelay: dialRange(CHART_STYLE_DEFAULT.areaFadeDelay, CHART_STYLE_RANGES.areaFadeDelay),
   },
   layout: {
     height: dialRange(CHART_STYLE_DEFAULT.chartHeight, CHART_STYLE_RANGES.chartHeight),
@@ -140,6 +153,13 @@ export function dialValuesFromStyle(style: ChartStyle) {
       topOpacity: style.areaTopOpacity,
       bottomOpacity: style.areaBottomOpacity,
     },
+    introAnimation: {
+      enabled: style.chartIntroAnimationEnabled,
+      lineDuration: style.lineRevealDuration,
+      lineEasing: style.lineRevealEasing,
+      fillDuration: style.areaFadeDuration,
+      fillDelay: style.areaFadeDelay,
+    },
     layout: {
       height: style.chartHeight,
       sidePadding: style.chartSidePadding,
@@ -205,6 +225,11 @@ export function styleFromDialValues(values: ResolvedValues<typeof chartFieldConf
     interpolation: values.line.interpolation as ChartInterpolation,
     areaTopOpacity: values.area.topOpacity,
     areaBottomOpacity: values.area.bottomOpacity,
+    chartIntroAnimationEnabled: values.introAnimation.enabled,
+    lineRevealDuration: values.introAnimation.lineDuration,
+    lineRevealEasing: values.introAnimation.lineEasing as ChartAnimationEasing,
+    areaFadeDuration: values.introAnimation.fillDuration,
+    areaFadeDelay: values.introAnimation.fillDelay,
     chartHeight: values.layout.height,
     chartSidePadding: values.layout.sidePadding,
     chartVerticalPadding: values.layout.topBottomPadding,

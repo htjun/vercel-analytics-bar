@@ -2,9 +2,89 @@ import Charts
 import SwiftUI
 import VercelAnalyticsCore
 
+enum ChartIntroPlaybackScope: Hashable {
+    case application
+    case session(UUID)
+}
+
+@MainActor
+final class ChartIntroPlaybackGate {
+    private var hasPlayedForApplication = false
+    private var playedSessions = Set<UUID>()
+
+    func isEligible(for scope: ChartIntroPlaybackScope) -> Bool {
+        switch scope {
+        case .application:
+            !hasPlayedForApplication
+        case let .session(sessionID):
+            !playedSessions.contains(sessionID)
+        }
+    }
+
+    func claim(_ scope: ChartIntroPlaybackScope) -> Bool {
+        guard isEligible(for: scope) else { return false }
+
+        switch scope {
+        case .application:
+            hasPlayedForApplication = true
+        case let .session(sessionID):
+            playedSessions.insert(sessionID)
+        }
+        return true
+    }
+}
+
+struct ChartIntroPlayback {
+    enum ID: Hashable {
+        case panel(UUID)
+        case inspector(Int)
+    }
+
+    let id: ID
+    let isEligible: @MainActor () -> Bool
+    let claim: @MainActor () -> Bool
+
+    @MainActor
+    static func panel(
+        sessionID: UUID,
+        scope: ChartIntroPlaybackScope,
+        gate: ChartIntroPlaybackGate
+    ) -> ChartIntroPlayback {
+        ChartIntroPlayback(
+            id: .panel(sessionID),
+            isEligible: { gate.isEligible(for: scope) },
+            claim: { gate.claim(scope) }
+        )
+    }
+
+    static func inspector(replayToken: Int) -> ChartIntroPlayback {
+        ChartIntroPlayback(
+            id: .inspector(replayToken),
+            isEligible: { true },
+            claim: { true }
+        )
+    }
+}
+
 struct VisitorsChart: View {
     let points: [VercelAnalyticsPoint]
     let style: ChartStyle
+    var introPlayback: ChartIntroPlayback?
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var lineRevealProgress = 1.0
+    @State private var areaRevealProgress = 1.0
+    @State private var hasResolvedIntroPlayback = false
+
+    init(
+        points: [VercelAnalyticsPoint],
+        style: ChartStyle,
+        introPlayback: ChartIntroPlayback? = nil
+    ) {
+        self.points = points
+        self.style = style
+        self.introPlayback = introPlayback
+    }
 
     var body: some View {
         let lineColor = Color(style.lineColor)
@@ -13,36 +93,51 @@ struct VisitorsChart: View {
             style: .continuous
         )
 
-        Chart(points, id: \.timestamp) { point in
-            AreaMark(
-                x: .value("Time", point.timestamp),
-                y: .value("Visitors", point.visitors)
-            )
-            .interpolationMethod(style.interpolation.chartInterpolationMethod)
-            .foregroundStyle(
-                .linearGradient(
-                    colors: [
-                        lineColor.opacity(style.areaTopOpacity),
-                        lineColor.opacity(style.areaBottomOpacity),
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
+        Chart {
+            Plot {
+                ForEach(points, id: \.timestamp) { point in
+                    AreaMark(
+                        x: .value("Time", point.timestamp),
+                        y: .value("Visitors", point.visitors)
+                    )
+                    .interpolationMethod(style.interpolation.chartInterpolationMethod)
+                    .foregroundStyle(
+                        .linearGradient(
+                            colors: [
+                                lineColor.opacity(style.areaTopOpacity),
+                                lineColor.opacity(style.areaBottomOpacity),
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                }
+            }
+            .opacity(effectiveAreaRevealProgress)
 
-            LineMark(
-                x: .value("Time", point.timestamp),
-                y: .value("Visitors", point.visitors)
-            )
-            .interpolationMethod(style.interpolation.chartInterpolationMethod)
-            .foregroundStyle(lineColor)
-            .lineStyle(
-                StrokeStyle(
-                    lineWidth: style.lineWidth,
-                    lineCap: style.lineCap.cgLineCap,
-                    lineJoin: style.lineJoin.cgLineJoin
-                )
-            )
+            Plot {
+                ForEach(points, id: \.timestamp) { point in
+                    LineMark(
+                        x: .value("Time", point.timestamp),
+                        y: .value("Visitors", point.visitors)
+                    )
+                    .interpolationMethod(style.interpolation.chartInterpolationMethod)
+                    .foregroundStyle(lineColor)
+                    .lineStyle(
+                        StrokeStyle(
+                            lineWidth: style.lineWidth,
+                            lineCap: style.lineCap.cgLineCap,
+                            lineJoin: style.lineJoin.cgLineJoin
+                        )
+                    )
+                }
+            }
+            .compositingLayer { content in
+                content.mask(alignment: .leading) {
+                    Rectangle()
+                        .scaleEffect(x: effectiveLineRevealProgress, anchor: .leading)
+                }
+            }
         }
         .chartLegend(.hidden)
         .chartXAxis {
@@ -135,6 +230,73 @@ struct VisitorsChart: View {
             }
         }
         .accessibilityLabel("Visitors over time")
+        .task(id: introPlayback?.id) {
+            await runIntroAnimation()
+        }
+        .onChange(of: reduceMotion) { _, isEnabled in
+            if isEnabled {
+                finishIntroAnimation()
+            }
+        }
+    }
+
+    private var effectiveLineRevealProgress: Double {
+        guard style.chartIntroAnimationEnabled, !reduceMotion, let introPlayback else { return 1 }
+        return hasResolvedIntroPlayback || !introPlayback.isEligible() ? lineRevealProgress : 0
+    }
+
+    private var effectiveAreaRevealProgress: Double {
+        guard style.chartIntroAnimationEnabled, !reduceMotion, let introPlayback else { return 1 }
+        return hasResolvedIntroPlayback || !introPlayback.isEligible() ? areaRevealProgress : 0
+    }
+
+    @MainActor
+    private func runIntroAnimation() async {
+        guard style.chartIntroAnimationEnabled,
+              !reduceMotion,
+              let introPlayback,
+              introPlayback.claim()
+        else {
+            finishIntroAnimation()
+            return
+        }
+
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            lineRevealProgress = 0
+            areaRevealProgress = 0
+            hasResolvedIntroPlayback = true
+        }
+
+        await Task.yield()
+        guard !Task.isCancelled else { return }
+
+        withAnimation(style.lineRevealEasing.animation(duration: style.lineRevealDuration)) {
+            lineRevealProgress = 1
+        }
+
+        do {
+            try await Task.sleep(for: .seconds(style.lineRevealDuration + style.areaFadeDelay))
+        } catch {
+            return
+        }
+        guard !Task.isCancelled else { return }
+
+        withAnimation(.easeOut(duration: style.areaFadeDuration)) {
+            areaRevealProgress = 1
+        }
+    }
+
+    @MainActor
+    private func finishIntroAnimation() {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            lineRevealProgress = 1
+            areaRevealProgress = 1
+            hasResolvedIntroPlayback = true
+        }
     }
 
     private var chartMaximum: Int {
@@ -234,6 +396,17 @@ struct VisitorsChart: View {
         let interval = end.timeIntervalSince(start) / Double(count)
         return (0 ..< count).map { index in
             start.addingTimeInterval((Double(index) + 0.5) * interval)
+        }
+    }
+}
+
+private extension ChartAnimationEasing {
+    func animation(duration: TimeInterval) -> Animation {
+        switch self {
+        case .linear: .linear(duration: duration)
+        case .easeIn: .easeIn(duration: duration)
+        case .easeOut: .easeOut(duration: duration)
+        case .easeInOut: .easeInOut(duration: duration)
         }
     }
 }

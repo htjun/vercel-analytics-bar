@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   CHART_STYLE_DEFAULT,
   CHART_STYLE_RANGES,
+  ANIMATION_EASING_VALUES,
   BORDER_STYLE_VALUES,
   FIRST_STYLE_CHANGE_REVISION,
   INSPECTOR_PROTOCOL_VERSION,
@@ -35,7 +36,7 @@ describe("generated Chart Inspector contract", () => {
       nativeSource: NATIVE_SOURCE,
       nativeStateMessage: NATIVE_STATE_MESSAGE,
     }).toEqual({
-      version: 5,
+      version: 6,
       minimumRevision: 0,
       firstStyleChangeRevision: 1,
       maximumRevision: 1_000_000_000,
@@ -54,6 +55,11 @@ describe("generated Chart Inspector contract", () => {
       interpolation: "monotone",
       areaTopOpacity: 0.2,
       areaBottomOpacity: 0,
+      chartIntroAnimationEnabled: true,
+      lineRevealDuration: 0.8,
+      lineRevealEasing: "easeOut",
+      areaFadeDuration: 0.3,
+      areaFadeDelay: 0.05,
       chartHeight: 150,
       chartSidePadding: 12,
       chartVerticalPadding: 5,
@@ -97,10 +103,14 @@ describe("generated Chart Inspector contract", () => {
     expect(INTERPOLATION_VALUES).toEqual(["linear", "monotone", "cardinal", "catmullRom"]);
     expect(GRID_LINE_STYLE_VALUES).toEqual(["solid", "dashed", "dotted"]);
     expect(BORDER_STYLE_VALUES).toEqual(["solid", "dashed"]);
+    expect(ANIMATION_EASING_VALUES).toEqual(["linear", "easeIn", "easeOut", "easeInOut"]);
     expect(CHART_STYLE_RANGES).toEqual({
       lineWidth: { minimum: 0.5, maximum: 12, step: 0.5, integer: false },
       areaTopOpacity: { minimum: 0, maximum: 1, step: 0.01, integer: false },
       areaBottomOpacity: { minimum: 0, maximum: 1, step: 0.01, integer: false },
+      lineRevealDuration: { minimum: 0.1, maximum: 3, step: 0.05, integer: false },
+      areaFadeDuration: { minimum: 0.1, maximum: 2, step: 0.05, integer: false },
+      areaFadeDelay: { minimum: 0, maximum: 1, step: 0.05, integer: false },
       chartHeight: { minimum: 80, maximum: 360, step: 1, integer: false },
       chartSidePadding: { minimum: 0, maximum: 64, step: 1, integer: false },
       chartVerticalPadding: { minimum: 0, maximum: 64, step: 1, integer: false },
@@ -135,6 +145,11 @@ describe("generated Chart Inspector contract", () => {
       { name: "interpolation", path: "line.interpolation", control: "select" },
       { name: "areaTopOpacity", path: "area.topOpacity", control: "range" },
       { name: "areaBottomOpacity", path: "area.bottomOpacity", control: "range" },
+      { name: "chartIntroAnimationEnabled", path: "introAnimation.enabled", control: "boolean" },
+      { name: "lineRevealDuration", path: "introAnimation.lineDuration", control: "range" },
+      { name: "lineRevealEasing", path: "introAnimation.lineEasing", control: "select" },
+      { name: "areaFadeDuration", path: "introAnimation.fillDuration", control: "range" },
+      { name: "areaFadeDelay", path: "introAnimation.fillDelay", control: "range" },
       { name: "chartHeight", path: "layout.height", control: "range" },
       { name: "chartSidePadding", path: "layout.sidePadding", control: "range" },
       { name: "chartVerticalPadding", path: "layout.topBottomPadding", control: "range" },
@@ -188,6 +203,17 @@ describe("generated Chart Inspector contract", () => {
       area: {
         topOpacity: [0.2, 0, 1, 0.01],
         bottomOpacity: [0, 0, 1, 0.01],
+      },
+      introAnimation: {
+        enabled: true,
+        lineDuration: [0.8, 0.1, 3, 0.05],
+        lineEasing: {
+          type: "select",
+          options: ["linear", "easeIn", "easeOut", "easeInOut"],
+          default: "easeOut",
+        },
+        fillDuration: [0.3, 0.1, 2, 0.05],
+        fillDelay: [0.05, 0, 1, 0.05],
       },
       layout: {
         height: [150, 80, 360, 1],
@@ -254,6 +280,11 @@ describe("generated Chart Inspector contract", () => {
       interpolation: "catmullRom",
       areaTopOpacity: 0.45,
       areaBottomOpacity: 0.15,
+      chartIntroAnimationEnabled: false,
+      lineRevealDuration: 1.25,
+      lineRevealEasing: "easeInOut",
+      areaFadeDuration: 0.6,
+      areaFadeDelay: 0.2,
       chartHeight: 220,
       chartSidePadding: 24,
       chartVerticalPadding: 12,

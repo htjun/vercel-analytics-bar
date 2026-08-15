@@ -18,3 +18,23 @@ final class ChartStyleStore {
         update(.default)
     }
 }
+
+struct ChartIntroAnimation: Equatable {
+    let isEnabled: Bool
+    let lineDuration: Double
+    let lineEasing: ChartAnimationEasing
+    let fillDuration: Double
+    let fillDelay: Double
+}
+
+extension ChartStyle {
+    var introAnimation: ChartIntroAnimation {
+        ChartIntroAnimation(
+            isEnabled: chartIntroAnimationEnabled,
+            lineDuration: lineRevealDuration,
+            lineEasing: lineRevealEasing,
+            fillDuration: areaFadeDuration,
+            fillDelay: areaFadeDelay
+        )
+    }
+}

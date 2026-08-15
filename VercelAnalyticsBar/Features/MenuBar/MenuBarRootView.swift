@@ -39,6 +39,7 @@ enum MenuBarContentMode: Equatable {
 struct MenuBarRootView: View {
     let model: AppModel
     let chartStyle: ChartStyleStore
+    var chartIntroPlayback: ChartIntroPlayback?
     #if MOCK_MODE
         let demoMetricTicker: DemoMetricTicker
     #endif
@@ -132,6 +133,7 @@ struct MenuBarRootView: View {
         AnalyticsCardView(
             presentation: presentation(for: snapshot),
             chartStyle: chartStyle.style,
+            chartIntroPlayback: chartIntroPlayback,
             isProjectSelectorPresented: $isProjectSelectorPresented,
             selectedBreakdown: $selectedBreakdown,
             projectSelectorContent: {

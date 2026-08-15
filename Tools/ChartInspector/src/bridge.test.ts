@@ -15,6 +15,11 @@ const defaultStyle: ChartStyle = {
   interpolation: "linear",
   areaTopOpacity: 0.24,
   areaBottomOpacity: 0.03,
+  chartIntroAnimationEnabled: true,
+  lineRevealDuration: 0.8,
+  lineRevealEasing: "easeOut",
+  areaFadeDuration: 0.3,
+  areaFadeDelay: 0.05,
   chartHeight: 140,
   chartSidePadding: 14,
   chartVerticalPadding: 0,
@@ -77,7 +82,7 @@ describe("ChartInspectorBridge", () => {
     expect(bridge.postStyleChanged({ ...defaultStyle, lineWidth: 3 })).toBe(false);
     expect(
       bridge.receiveState({
-        protocolVersion: 6,
+        protocolVersion: 7,
         type: "state",
         source: NATIVE_SOURCE,
         revision: 0,
@@ -165,10 +170,11 @@ describe("ChartInspectorBridge", () => {
     expect(bridge.postStyleChanged({ ...defaultStyle, lineColor: "#FF3B30" })).toBe(true);
   });
 
-  it("posts reset and copy only after hydration", () => {
+  it("posts replay, reset, and copy only after hydration", () => {
     const messages: unknown[] = [];
     const bridge = new ChartInspectorBridge((message) => messages.push(message));
 
+    bridge.postReplayAnimation();
     bridge.postReset();
     bridge.postCopyStyle();
     expect(messages).toEqual([]);
@@ -180,10 +186,16 @@ describe("ChartInspectorBridge", () => {
       revision: 3,
       values: defaultStyle,
     });
+    bridge.postReplayAnimation();
     bridge.postReset();
     bridge.postCopyStyle();
 
     expect(messages).toEqual([
+      {
+        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        type: "replayAnimation",
+        source: "chart-inspector",
+      },
       {
         protocolVersion: INSPECTOR_PROTOCOL_VERSION,
         type: "reset",
@@ -206,6 +218,11 @@ describe("ChartInspectorBridge", () => {
       { interpolation: "smooth" as ChartStyle["interpolation"] },
       { areaTopOpacity: 1.1 },
       { areaBottomOpacity: -0.1 },
+      { chartIntroAnimationEnabled: 1 as unknown as boolean },
+      { lineRevealDuration: 3.1 },
+      { lineRevealEasing: "spring" as ChartStyle["lineRevealEasing"] },
+      { areaFadeDuration: 2.1 },
+      { areaFadeDelay: -0.1 },
       { chartHeight: 79 },
       { chartSidePadding: 65 },
       { chartVerticalPadding: -1 },

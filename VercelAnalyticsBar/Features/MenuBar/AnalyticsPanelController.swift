@@ -69,6 +69,7 @@ final class AnalyticsPanelController {
     private let statusItemWindow: () -> NSWindow?
     private let companionWindows: () -> [NSWindow]
     private let hostingView: NSHostingView<AnyView>
+    private let chartIntroPlaybackGate = ChartIntroPlaybackGate()
     #if MOCK_MODE
         private let demoMetricTicker = DemoMetricTicker()
     #endif
@@ -171,10 +172,28 @@ final class AnalyticsPanelController {
 
     private func updateHostedContent() {
         let sessionID = sessionID
+        let chartIntroPlayback: ChartIntroPlayback? = if isPresented {
+            #if MOCK_MODE
+                ChartIntroPlayback.panel(
+                    sessionID: sessionID,
+                    scope: .session(sessionID),
+                    gate: chartIntroPlaybackGate
+                )
+            #else
+                ChartIntroPlayback.panel(
+                    sessionID: sessionID,
+                    scope: .application,
+                    gate: chartIntroPlaybackGate
+                )
+            #endif
+        } else {
+            nil
+        }
         #if MOCK_MODE
             let rootView = MenuBarRootView(
                 model: model,
                 chartStyle: chartStyle,
+                chartIntroPlayback: chartIntroPlayback,
                 demoMetricTicker: demoMetricTicker,
                 onOpenSettings: { [weak self] in
                     self?.openSettings()
@@ -187,6 +206,7 @@ final class AnalyticsPanelController {
             let rootView = MenuBarRootView(
                 model: model,
                 chartStyle: chartStyle,
+                chartIntroPlayback: chartIntroPlayback,
                 onOpenSettings: { [weak self] in
                     self?.openSettings()
                 },

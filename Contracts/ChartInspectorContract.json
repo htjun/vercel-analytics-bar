@@ -1,6 +1,6 @@
 {
   "protocol": {
-    "version": 5,
+    "version": 6,
     "revisions": {
       "nativeMinimum": 0,
       "styleChangeMinimum": 1,
@@ -15,6 +15,7 @@
       "webIncoming": [
         "copyStyle",
         "ready",
+        "replayAnimation",
         "reset",
         "styleChanged"
       ]
@@ -51,6 +52,12 @@
       "borderStyle": [
         "solid",
         "dashed"
+      ],
+      "animationEasing": [
+        "linear",
+        "easeIn",
+        "easeOut",
+        "easeInOut"
       ]
     },
     "fields": [
@@ -134,6 +141,66 @@
         "inspector": {
           "group": "area",
           "key": "bottomOpacity",
+          "control": "range"
+        }
+      },
+      {
+        "name": "chartIntroAnimationEnabled",
+        "type": "boolean",
+        "default": true,
+        "inspector": {
+          "group": "introAnimation",
+          "key": "enabled",
+          "control": "boolean"
+        }
+      },
+      {
+        "name": "lineRevealDuration",
+        "type": "number",
+        "default": 0.8,
+        "minimum": 0.1,
+        "maximum": 3,
+        "step": 0.05,
+        "inspector": {
+          "group": "introAnimation",
+          "key": "lineDuration",
+          "control": "range"
+        }
+      },
+      {
+        "name": "lineRevealEasing",
+        "type": "enum",
+        "enum": "animationEasing",
+        "default": "easeOut",
+        "inspector": {
+          "group": "introAnimation",
+          "key": "lineEasing",
+          "control": "select"
+        }
+      },
+      {
+        "name": "areaFadeDuration",
+        "type": "number",
+        "default": 0.3,
+        "minimum": 0.1,
+        "maximum": 2,
+        "step": 0.05,
+        "inspector": {
+          "group": "introAnimation",
+          "key": "fillDuration",
+          "control": "range"
+        }
+      },
+      {
+        "name": "areaFadeDelay",
+        "type": "number",
+        "default": 0.05,
+        "minimum": 0,
+        "maximum": 1,
+        "step": 0.05,
+        "inspector": {
+          "group": "introAnimation",
+          "key": "fillDelay",
           "control": "range"
         }
       },

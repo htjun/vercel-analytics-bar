@@ -102,6 +102,9 @@
                 if let copiedStyleJSON = response.copiedStyleJSON {
                     copyToPasteboard(copiedStyleJSON)
                 }
+                if response.replaysAnimation {
+                    pageState.replayAnimation()
+                }
                 send(response.state)
             }
 

@@ -14,7 +14,7 @@
             let response = try session.receive(readyMessage)
 
             #expect(session.isReady)
-            #expect(response.state.protocolVersion == 5)
+            #expect(response.state.protocolVersion == 6)
             #expect(response.state.revision == 0)
             #expect(response.state.values == .default)
         }
@@ -24,7 +24,7 @@
             let session = ChartInspectorSession(styleStore: store)
             let changedStyle = try makeInspectorStyle(lineWidth: 4)
             let styleChange = ChartInspectorIncomingMessage(
-                protocolVersion: 5,
+                protocolVersion: 6,
                 type: .styleChanged,
                 source: "chart-inspector",
                 revision: 1,
@@ -45,7 +45,7 @@
             }
 
             let invalidRevision = ChartInspectorIncomingMessage(
-                protocolVersion: 5,
+                protocolVersion: 6,
                 type: .styleChanged,
                 source: "chart-inspector",
                 revision: ChartInspectorProtocol.maximumRevision + 1,
@@ -62,7 +62,7 @@
             _ = try session.receive(readyMessage)
             _ = try session.receive(
                 ChartInspectorIncomingMessage(
-                    protocolVersion: 5,
+                    protocolVersion: 6,
                     type: .styleChanged,
                     source: "chart-inspector",
                     revision: ChartInspectorProtocol.maximumRevision,
@@ -95,13 +95,47 @@
             #expect(reopenedState.values == .default)
         }
 
+        @Test func animationCommandsAndTimingChangesRequestPreviewReplay() throws {
+            let store = ChartStyleStore()
+            let session = ChartInspectorSession(styleStore: store)
+            _ = try session.receive(readyMessage)
+
+            let lineWidthResponse = try session.receive(
+                ChartInspectorIncomingMessage(
+                    protocolVersion: 6,
+                    type: .styleChanged,
+                    source: "chart-inspector",
+                    revision: 1,
+                    values: makeInspectorStyle(lineWidth: 4)
+                )
+            )
+            #expect(!lineWidthResponse.replaysAnimation)
+
+            let timingResponse = try session.receive(
+                ChartInspectorIncomingMessage(
+                    protocolVersion: 6,
+                    type: .styleChanged,
+                    source: "chart-inspector",
+                    revision: 2,
+                    values: makeInspectorStyle(lineWidth: 4, lineRevealDuration: 1.4)
+                )
+            )
+            #expect(timingResponse.replaysAnimation)
+
+            let revisionBeforeReplay = session.revision
+            let replayResponse = try session.receive(commandMessage(.replayAnimation))
+            #expect(replayResponse.replaysAnimation)
+            #expect(replayResponse.state.revision == revisionBeforeReplay)
+            #expect(session.revision == revisionBeforeReplay)
+        }
+
         @Test func protocolIdentityAndBodyValidationRejectUnexpectedMessages() throws {
             let session = ChartInspectorSession(styleStore: ChartStyleStore())
 
             #expect(throws: ChartInspectorProtocolError.unexpectedProtocolVersion) {
                 try session.receive(
                     ChartInspectorIncomingMessage(
-                        protocolVersion: 6,
+                        protocolVersion: 7,
                         type: .ready,
                         source: "chart-inspector",
                         revision: nil,
@@ -112,7 +146,7 @@
             #expect(throws: ChartInspectorProtocolError.unexpectedSource) {
                 try session.receive(
                     ChartInspectorIncomingMessage(
-                        protocolVersion: 5,
+                        protocolVersion: 6,
                         type: .ready,
                         source: "unexpected",
                         revision: nil,
@@ -121,7 +155,7 @@
                 )
             }
             #expect(throws: (any Error).self) {
-                try session.receive(body: ["protocolVersion": 5, "type": "unknown"])
+                try session.receive(body: ["protocolVersion": 6, "type": "unknown"])
             }
         }
 
@@ -215,11 +249,14 @@
             state.retry()
             #expect(state.phase == .loading)
             #expect(state.reloadToken == 1)
+
+            state.replayAnimation()
+            #expect(state.animationReplayToken == 1)
         }
 
         private var readyMessage: ChartInspectorIncomingMessage {
             ChartInspectorIncomingMessage(
-                protocolVersion: 5,
+                protocolVersion: 6,
                 type: .ready,
                 source: "chart-inspector",
                 revision: nil,
@@ -229,7 +266,7 @@
 
         private func commandMessage(_ type: ChartInspectorIncomingMessageType) -> ChartInspectorIncomingMessage {
             ChartInspectorIncomingMessage(
-                protocolVersion: 5,
+                protocolVersion: 6,
                 type: type,
                 source: "chart-inspector",
                 revision: nil,
@@ -245,7 +282,7 @@
             let session = ChartInspectorSession(styleStore: store)
             _ = try session.receive(readyMessage)
             let response = try session.receive(body: [
-                "protocolVersion": 5,
+                "protocolVersion": 6,
                 "type": "styleChanged",
                 "source": "chart-inspector",
                 "revision": 4,
@@ -257,6 +294,11 @@
                     "interpolation": "catmullRom",
                     "areaTopOpacity": 0.6,
                     "areaBottomOpacity": 0.12,
+                    "chartIntroAnimationEnabled": true,
+                    "lineRevealDuration": 1.2,
+                    "lineRevealEasing": "easeInOut",
+                    "areaFadeDuration": 0.55,
+                    "areaFadeDelay": 0.15,
                     "chartHeight": 220,
                     "chartSidePadding": 24,
                     "chartVerticalPadding": 12,
@@ -341,6 +383,11 @@
         #expect(style.interpolation == .catmullRom)
         #expect(style.areaTopOpacity == 0.6)
         #expect(style.areaBottomOpacity == 0.12)
+        #expect(style.chartIntroAnimationEnabled)
+        #expect(style.lineRevealDuration == 1.2)
+        #expect(style.lineRevealEasing == .easeInOut)
+        #expect(style.areaFadeDuration == 0.55)
+        #expect(style.areaFadeDelay == 0.15)
         #expect(style.chartHeight == 220)
         #expect(style.chartSidePadding == 24)
         #expect(style.chartVerticalPadding == 12)
@@ -380,7 +427,10 @@
         #expect(style.chartBorderDashCap == .square)
     }
 
-    private func makeInspectorStyle(lineWidth: Double) throws -> ChartStyle {
+    private func makeInspectorStyle(
+        lineWidth: Double,
+        lineRevealDuration: Double = ChartStyle.default.lineRevealDuration
+    ) throws -> ChartStyle {
         let style = ChartStyle.default
         return try ChartStyle(
             lineColor: style.lineColor,
@@ -390,6 +440,11 @@
             interpolation: style.interpolation,
             areaTopOpacity: style.areaTopOpacity,
             areaBottomOpacity: style.areaBottomOpacity,
+            chartIntroAnimationEnabled: style.chartIntroAnimationEnabled,
+            lineRevealDuration: lineRevealDuration,
+            lineRevealEasing: style.lineRevealEasing,
+            areaFadeDuration: style.areaFadeDuration,
+            areaFadeDelay: style.areaFadeDelay,
             chartHeight: style.chartHeight,
             chartSidePadding: style.chartSidePadding,
             chartVerticalPadding: style.chartVerticalPadding,

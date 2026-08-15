@@ -8,22 +8,22 @@ struct ChartStyleTests {
     @MainActor
     @Test func xAxisDatesAreEvenlySpacedAcrossTheSeriesRange() {
         let start = Date(timeIntervalSince1970: 1_000_000)
-        let end = start.addingTimeInterval(9 * 86_400)
+        let end = start.addingTimeInterval(9 * 86400)
         let dates = VisitorsChart.evenlySpacedDates(from: start, through: end, count: 4)
 
         #expect(dates.count == 4)
-        #expect(dates[0].timeIntervalSince(start) == 1.125 * 86_400)
-        #expect(dates[1].timeIntervalSince(dates[0]) == 2.25 * 86_400)
-        #expect(dates[2].timeIntervalSince(dates[1]) == 2.25 * 86_400)
-        #expect(dates[3].timeIntervalSince(dates[2]) == 2.25 * 86_400)
-        #expect(end.timeIntervalSince(dates[3]) == 1.125 * 86_400)
+        #expect(dates[0].timeIntervalSince(start) == 1.125 * 86400)
+        #expect(dates[1].timeIntervalSince(dates[0]) == 2.25 * 86400)
+        #expect(dates[2].timeIntervalSince(dates[1]) == 2.25 * 86400)
+        #expect(dates[3].timeIntervalSince(dates[2]) == 2.25 * 86400)
+        #expect(end.timeIntervalSince(dates[3]) == 1.125 * 86400)
     }
 
     @MainActor
     @Test func hourlyXAxisDatesUseEvenlySpacedObservedBuckets() {
         let start = Date(timeIntervalSince1970: 1_000_000)
         let dates = (0 ..< 24).map { index in
-            start.addingTimeInterval(Double(index) * 3_600)
+            start.addingTimeInterval(Double(index) * 3600)
         }
 
         let marks = VisitorsChart.xAxisDates(for: dates, count: 4)
@@ -50,6 +50,27 @@ struct ChartStyleTests {
         #expect(VisitorsChart.yAxisValues(for: [1], desiredCount: 4, headroom: 0.1) == [0, 1, 2])
     }
 
+    @MainActor
+    @Test func chartIntroPlaybackRunsOnceForTheApplication() {
+        let gate = ChartIntroPlaybackGate()
+
+        #expect(gate.isEligible(for: .application))
+        #expect(gate.claim(.application))
+        #expect(!gate.isEligible(for: .application))
+        #expect(!gate.claim(.application))
+    }
+
+    @MainActor
+    @Test func chartIntroPlaybackRunsOnceForEachPanelSession() {
+        let gate = ChartIntroPlaybackGate()
+        let firstSession = UUID()
+        let secondSession = UUID()
+
+        #expect(gate.claim(.session(firstSession)))
+        #expect(!gate.claim(.session(firstSession)))
+        #expect(gate.claim(.session(secondSession)))
+    }
+
     @Test func defaultsMatchTheCanonicalChartPresentation() {
         let style = ChartStyle.default
 
@@ -60,6 +81,11 @@ struct ChartStyleTests {
         #expect(style.interpolation == .monotone)
         #expect(style.areaTopOpacity == 0.2)
         #expect(style.areaBottomOpacity == 0)
+        #expect(style.chartIntroAnimationEnabled)
+        #expect(style.lineRevealDuration == 0.8)
+        #expect(style.lineRevealEasing == .easeOut)
+        #expect(style.areaFadeDuration == 0.3)
+        #expect(style.areaFadeDelay == 0.05)
         #expect(style.chartHeight == 150)
         #expect(style.chartSidePadding == 12)
         #expect(style.chartVerticalPadding == 5)
@@ -170,6 +196,13 @@ struct ChartStyleTests {
         #expect(throws: DecodingError.self) {
             try JSONDecoder().decode(ChartStyle.self, from: invalidBorderStyle)
         }
+
+        object = try #require(JSONSerialization.jsonObject(with: encodedDefault) as? [String: Any])
+        object["lineRevealEasing"] = "spring"
+        let invalidAnimationEasing = try JSONSerialization.data(withJSONObject: object)
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(ChartStyle.self, from: invalidAnimationEasing)
+        }
     }
 
     @Test func borderStrokeStyleUsesDashDetailsOnlyForDashedBorders() {
@@ -235,6 +268,12 @@ struct ChartStyleTests {
             { try makeStyle(lineWidth: 12.01) },
             { try makeStyle(areaTopOpacity: -0.01) },
             { try makeStyle(areaBottomOpacity: 1.01) },
+            { try makeStyle(lineRevealDuration: 0.09) },
+            { try makeStyle(lineRevealDuration: 3.01) },
+            { try makeStyle(areaFadeDuration: 0.09) },
+            { try makeStyle(areaFadeDuration: 2.01) },
+            { try makeStyle(areaFadeDelay: -0.01) },
+            { try makeStyle(areaFadeDelay: 1.01) },
             { try makeStyle(chartHeight: 79) },
             { try makeStyle(chartHeight: 361) },
             { try makeStyle(chartSidePadding: -0.01) },
@@ -289,6 +328,11 @@ private func makeStyle(
     interpolation: ChartInterpolation = .linear,
     areaTopOpacity: Double = 0.24,
     areaBottomOpacity: Double = 0.03,
+    chartIntroAnimationEnabled: Bool = true,
+    lineRevealDuration: Double = 0.8,
+    lineRevealEasing: ChartAnimationEasing = .easeOut,
+    areaFadeDuration: Double = 0.3,
+    areaFadeDelay: Double = 0.05,
     chartHeight: Double = 140,
     chartSidePadding: Double = 14,
     chartVerticalPadding: Double = 0,
@@ -335,6 +379,11 @@ private func makeStyle(
         interpolation: interpolation,
         areaTopOpacity: areaTopOpacity,
         areaBottomOpacity: areaBottomOpacity,
+        chartIntroAnimationEnabled: chartIntroAnimationEnabled,
+        lineRevealDuration: lineRevealDuration,
+        lineRevealEasing: lineRevealEasing,
+        areaFadeDuration: areaFadeDuration,
+        areaFadeDelay: areaFadeDelay,
         chartHeight: chartHeight,
         chartSidePadding: chartSidePadding,
         chartVerticalPadding: chartVerticalPadding,

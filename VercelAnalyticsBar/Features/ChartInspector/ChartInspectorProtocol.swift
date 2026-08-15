@@ -36,6 +36,7 @@
     struct ChartInspectorSessionResponse: Equatable {
         let state: ChartInspectorStateMessage
         let copiedStyleJSON: String?
+        let replaysAnimation: Bool
     }
 
     enum ChartInspectorProtocolError: Error, Equatable {
@@ -75,10 +76,13 @@
             }
 
             let copiedStyleJSON: String?
+            let previousStyle = styleStore.style
+            let replaysAnimation: Bool
             switch message.type {
             case .ready:
                 isReady = true
                 copiedStyleJSON = nil
+                replaysAnimation = false
             case .styleChanged:
                 try requireReady()
                 guard let style = message.values else {
@@ -95,6 +99,7 @@
                 styleStore.update(style)
                 revision = incomingRevision
                 copiedStyleJSON = nil
+                replaysAnimation = previousStyle.introAnimation != style.introAnimation
             case .reset:
                 try requireReady()
                 guard revision < ChartInspectorProtocol.maximumRevision else {
@@ -103,14 +108,21 @@
                 styleStore.reset()
                 revision += 1
                 copiedStyleJSON = nil
+                replaysAnimation = previousStyle.introAnimation != styleStore.style.introAnimation
             case .copyStyle:
                 try requireReady()
                 copiedStyleJSON = try canonicalStyleJSON()
+                replaysAnimation = false
+            case .replayAnimation:
+                try requireReady()
+                copiedStyleJSON = nil
+                replaysAnimation = true
             }
 
             return ChartInspectorSessionResponse(
                 state: stateMessage,
-                copiedStyleJSON: copiedStyleJSON
+                copiedStyleJSON: copiedStyleJSON,
+                replaysAnimation: replaysAnimation
             )
         }
 

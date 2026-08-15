@@ -84,6 +84,13 @@ enum ChartBorderStyle: String, Codable, CaseIterable, Sendable {
     case dashed
 }
 
+enum ChartAnimationEasing: String, Codable, CaseIterable, Sendable {
+    case linear
+    case easeIn
+    case easeOut
+    case easeInOut
+}
+
 enum ChartStyleValidationError: Error, Equatable {
     case outOfRange(field: String, range: ClosedRange<Double>)
 }
@@ -93,6 +100,9 @@ struct ChartStyle: Codable, Equatable, Sendable {
     static let lineWidthRange = 0.5 ... 12.0
     static let areaTopOpacityRange = 0.0 ... 1.0
     static let areaBottomOpacityRange = 0.0 ... 1.0
+    static let lineRevealDurationRange = 0.1 ... 3.0
+    static let areaFadeDurationRange = 0.1 ... 2.0
+    static let areaFadeDelayRange = 0.0 ... 1.0
     static let chartHeightRange = 80.0 ... 360.0
     static let chartSidePaddingRange = 0.0 ... 64.0
     static let chartVerticalPaddingRange = 0.0 ... 64.0
@@ -125,6 +135,11 @@ struct ChartStyle: Codable, Equatable, Sendable {
                 interpolation: .monotone,
                 areaTopOpacity: 0.2,
                 areaBottomOpacity: 0,
+                chartIntroAnimationEnabled: true,
+                lineRevealDuration: 0.8,
+                lineRevealEasing: .easeOut,
+                areaFadeDuration: 0.3,
+                areaFadeDelay: 0.05,
                 chartHeight: 150,
                 chartSidePadding: 12,
                 chartVerticalPadding: 5,
@@ -175,6 +190,11 @@ struct ChartStyle: Codable, Equatable, Sendable {
     let interpolation: ChartInterpolation
     let areaTopOpacity: Double
     let areaBottomOpacity: Double
+    let chartIntroAnimationEnabled: Bool
+    let lineRevealDuration: Double
+    let lineRevealEasing: ChartAnimationEasing
+    let areaFadeDuration: Double
+    let areaFadeDelay: Double
     let chartHeight: Double
     let chartSidePadding: Double
     let chartVerticalPadding: Double
@@ -222,6 +242,11 @@ struct ChartStyle: Codable, Equatable, Sendable {
         interpolation: ChartInterpolation,
         areaTopOpacity: Double,
         areaBottomOpacity: Double,
+        chartIntroAnimationEnabled: Bool,
+        lineRevealDuration: Double,
+        lineRevealEasing: ChartAnimationEasing,
+        areaFadeDuration: Double,
+        areaFadeDelay: Double,
         chartHeight: Double,
         chartSidePadding: Double,
         chartVerticalPadding: Double,
@@ -274,6 +299,21 @@ struct ChartStyle: Codable, Equatable, Sendable {
             areaBottomOpacity,
             field: "areaBottomOpacity",
             range: Self.areaBottomOpacityRange
+        )
+        try Self.validate(
+            lineRevealDuration,
+            field: "lineRevealDuration",
+            range: Self.lineRevealDurationRange
+        )
+        try Self.validate(
+            areaFadeDuration,
+            field: "areaFadeDuration",
+            range: Self.areaFadeDurationRange
+        )
+        try Self.validate(
+            areaFadeDelay,
+            field: "areaFadeDelay",
+            range: Self.areaFadeDelayRange
         )
         try Self.validate(
             chartHeight,
@@ -388,6 +428,11 @@ struct ChartStyle: Codable, Equatable, Sendable {
         self.interpolation = interpolation
         self.areaTopOpacity = areaTopOpacity
         self.areaBottomOpacity = areaBottomOpacity
+        self.chartIntroAnimationEnabled = chartIntroAnimationEnabled
+        self.lineRevealDuration = lineRevealDuration
+        self.lineRevealEasing = lineRevealEasing
+        self.areaFadeDuration = areaFadeDuration
+        self.areaFadeDelay = areaFadeDelay
         self.chartHeight = chartHeight
         self.chartSidePadding = chartSidePadding
         self.chartVerticalPadding = chartVerticalPadding
@@ -437,6 +482,11 @@ struct ChartStyle: Codable, Equatable, Sendable {
             interpolation: container.decode(ChartInterpolation.self, forKey: .interpolation),
             areaTopOpacity: container.decode(Double.self, forKey: .areaTopOpacity),
             areaBottomOpacity: container.decode(Double.self, forKey: .areaBottomOpacity),
+            chartIntroAnimationEnabled: container.decode(Bool.self, forKey: .chartIntroAnimationEnabled),
+            lineRevealDuration: container.decode(Double.self, forKey: .lineRevealDuration),
+            lineRevealEasing: container.decode(ChartAnimationEasing.self, forKey: .lineRevealEasing),
+            areaFadeDuration: container.decode(Double.self, forKey: .areaFadeDuration),
+            areaFadeDelay: container.decode(Double.self, forKey: .areaFadeDelay),
             chartHeight: container.decode(Double.self, forKey: .chartHeight),
             chartSidePadding: container.decode(Double.self, forKey: .chartSidePadding),
             chartVerticalPadding: container.decode(Double.self, forKey: .chartVerticalPadding),
@@ -490,7 +540,7 @@ struct ChartStyle: Codable, Equatable, Sendable {
 
 #if CHART_INSPECTOR
     enum ChartInspectorProtocol {
-        static let version = 5
+        static let version = 6
         static let minimumRevision = 0
         static let firstStyleChangeRevision = 1
         static let maximumRevision = 1_000_000_000
@@ -503,6 +553,7 @@ struct ChartStyle: Codable, Equatable, Sendable {
     enum ChartInspectorIncomingMessageType: String, Codable {
         case copyStyle
         case ready
+        case replayAnimation
         case reset
         case styleChanged
     }

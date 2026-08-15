@@ -13,8 +13,12 @@
             let preview = ChartInspectorPreview(analyticsState: model.state)
 
             HSplitView {
-                ChartInspectorPreviewView(preview: preview, style: styleStore.style)
-                    .frame(minWidth: 380, idealWidth: 380)
+                ChartInspectorPreviewView(
+                    preview: preview,
+                    style: styleStore.style,
+                    animationReplayToken: pageState.animationReplayToken
+                )
+                .frame(minWidth: 380, idealWidth: 380)
 
                 inspectorPanel
                     .frame(minWidth: 340, maxWidth: .infinity, maxHeight: .infinity)
@@ -57,12 +61,17 @@
     struct ChartInspectorPreviewView: View {
         let preview: ChartInspectorPreview
         let style: ChartStyle
+        let animationReplayToken: Int
 
         var body: some View {
-            VisitorsChart(points: preview.points, style: style)
-                .padding(16)
-                .frame(width: 380, alignment: .leading)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            VisitorsChart(
+                points: preview.points,
+                style: style,
+                introPlayback: .inspector(replayToken: animationReplayToken)
+            )
+            .padding(16)
+            .frame(width: 380, alignment: .leading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
     }
 
@@ -111,6 +120,7 @@
 
         private(set) var phase: Phase = .loading
         private(set) var reloadToken = 0
+        private(set) var animationReplayToken = 0
 
         func startLoading() {
             phase = .loading
@@ -127,6 +137,10 @@
         func retry() {
             reloadToken += 1
             startLoading()
+        }
+
+        func replayAnimation() {
+            animationReplayToken += 1
         }
     }
 #endif

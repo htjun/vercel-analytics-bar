@@ -134,6 +134,7 @@ struct AnalyticsCardPresentation: Equatable {
 struct AnalyticsCardView<SelectorContent: View>: View {
     let presentation: AnalyticsCardPresentation
     let chartStyle: ChartStyle
+    var chartIntroPlayback: ChartIntroPlayback?
     @Binding var isProjectSelectorPresented: Bool
     @Binding var selectedBreakdown: AnalyticsBreakdownSelection
     @ViewBuilder let projectSelectorContent: () -> SelectorContent
@@ -155,9 +156,13 @@ struct AnalyticsCardView<SelectorContent: View>: View {
                 metric(presentation.pageViews)
                     .offset(x: 208, y: 62)
 
-                VisitorsChart(points: presentation.series, style: chartStyle)
-                    .frame(width: 368)
-                    .offset(x: AnalyticsCardLayout.chartFrame.minX, y: AnalyticsCardLayout.chartFrame.minY)
+                VisitorsChart(
+                    points: presentation.series,
+                    style: chartStyle,
+                    introPlayback: chartIntroPlayback
+                )
+                .frame(width: 368)
+                .offset(x: AnalyticsCardLayout.chartFrame.minX, y: AnalyticsCardLayout.chartFrame.minY)
 
                 breakdown
                     .offset(x: 20, y: 340)
@@ -420,7 +425,7 @@ private struct AnalyticsHoverBackground<HoverShape: Shape>: ViewModifier {
 }
 
 private extension View {
-    func analyticsHoverBackground<HoverShape: Shape>(in shape: HoverShape) -> some View {
+    func analyticsHoverBackground(in shape: some Shape) -> some View {
         modifier(AnalyticsHoverBackground(shape: shape))
     }
 }

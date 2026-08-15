@@ -85,6 +85,10 @@ export class ChartInspectorBridge {
     this.postCommand("copyStyle");
   }
 
+  postReplayAnimation(): void {
+    this.postCommand("replayAnimation");
+  }
+
   subscribe(listener: StateListener): () => void {
     this.listeners.add(listener);
     if (this.currentState !== undefined) {
