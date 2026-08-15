@@ -41,6 +41,8 @@ make verify
 
 `make test` and `make verify` remain unsigned so they do not require an Apple signing identity or Vercel account. Mock builds are also unsigned and never access account credentials.
 
+For the manual Developer ID, notarization, and GitHub Release workflow, see [Direct macOS releases](docs/direct-release.md).
+
 ### One-time Keychain transition
 
 Development builds created before data-protection-only storage may have a legacy credential in the login Keychain. Delete only that legacy item, then reconnect the account once from a development-signed build:
