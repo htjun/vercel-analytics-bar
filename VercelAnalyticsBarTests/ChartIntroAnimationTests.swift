@@ -25,6 +25,25 @@ struct ChartIntroAnimationTests {
         #expect(gate.claim(.session(secondSession)))
     }
 
+    @MainActor
+    @Test func animatorClaimsEachPlaybackOnlyOnce() async {
+        var claimCount = 0
+        let playback = ChartIntroPlayback(
+            id: .inspector(0),
+            isEligible: { true },
+            claim: {
+                claimCount += 1
+                return true
+            }
+        )
+        let animator = ChartIntroAnimator()
+
+        await animator.run(style: .default, reduceMotion: true, playback: playback)
+        await animator.run(style: .default, reduceMotion: true, playback: playback)
+
+        #expect(claimCount == 1)
+    }
+
     @Test func defaultsMatchThePlannedSequence() {
         let style = ChartStyle.default
 

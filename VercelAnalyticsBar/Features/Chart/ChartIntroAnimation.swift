@@ -137,6 +137,8 @@ final class ChartIntroAnimator {
         reduceMotion: Bool,
         playback: ChartIntroPlayback?
     ) async {
+        guard case .pending = state else { return }
+
         guard let playback else {
             finish()
             return
@@ -178,19 +180,21 @@ struct ChartIntroAnimationContainer<Content: View>: View {
     @State private var animator = ChartIntroAnimator()
 
     var body: some View {
-        animatedContent
-            .task {
-                await animator.run(
-                    style: style,
-                    reduceMotion: reduceMotion,
-                    playback: playback
-                )
+        ZStack {
+            animatedContent
+        }
+        .task {
+            await animator.run(
+                style: style,
+                reduceMotion: reduceMotion,
+                playback: playback
+            )
+        }
+        .onChange(of: reduceMotion) { _, isEnabled in
+            if isEnabled {
+                animator.finish()
             }
-            .onChange(of: reduceMotion) { _, isEnabled in
-                if isEnabled {
-                    animator.finish()
-                }
-            }
+        }
     }
 
     @ViewBuilder
