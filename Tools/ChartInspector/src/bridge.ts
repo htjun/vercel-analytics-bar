@@ -67,11 +67,10 @@ export class ChartInspectorBridge {
       return false;
     }
 
+    const latestPendingStyle = this.pendingStyles.get(this.nextRevision - 1);
     if (
       chartStylesAreEquivalent(style, this.currentState.values) ||
-      Array.from(this.pendingStyles.values()).some((pendingStyle) =>
-        chartStylesAreEquivalent(style, pendingStyle),
-      )
+      (latestPendingStyle !== undefined && chartStylesAreEquivalent(style, latestPendingStyle))
     ) {
       return false;
     }

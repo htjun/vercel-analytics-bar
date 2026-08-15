@@ -60,4 +60,22 @@ describe("ChartInspectorBridge acknowledgements", () => {
 
     expect(sentRevisions).toEqual([1, 2, 3]);
   });
+
+  it("allows a rapid change to return to an earlier pending value", () => {
+    const sentRevisions: number[] = [];
+    const bridge = new ChartInspectorBridge((message) => {
+      if ("revision" in message) {
+        sentRevisions.push(message.revision);
+      }
+    });
+    bridge.receiveState(state(0));
+
+    const firstStyle = { ...CHART_STYLE_DEFAULT, lineWidth: 2 };
+    const secondStyle = { ...CHART_STYLE_DEFAULT, lineWidth: 3 };
+    bridge.postStyleChanged(firstStyle);
+    bridge.postStyleChanged(secondStyle);
+    bridge.postStyleChanged(firstStyle);
+
+    expect(sentRevisions).toEqual([1, 2, 3]);
+  });
 });
