@@ -77,7 +77,11 @@ import Testing
     let initiallyPlacedFrame = window.frame
     #expect(initiallyPlacedFrame.maxX == firstContext.anchorFrame.minX - AdjacentWindowPlacement.gap)
 
-    let movedOrigin = CGPoint(x: 120, y: 140)
+    let screen = try #require(window.screen)
+    let movedOrigin = CGPoint(
+        x: screen.visibleFrame.minX + AdjacentWindowPlacement.screenMargin,
+        y: screen.visibleFrame.minY + AdjacentWindowPlacement.screenMargin
+    )
     window.setFrameOrigin(movedOrigin)
     window.orderOut(nil)
     controller.present(adjacentTo: AdjacentWindowPresentationContext(
