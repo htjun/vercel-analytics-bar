@@ -472,6 +472,7 @@ struct ChartStyle: Codable, Equatable, Sendable {
         self.chartBorderDashCap = chartBorderDashCap
     }
 
+    // swiftlint:disable:next function_body_length
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         try self.init(

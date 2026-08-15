@@ -84,22 +84,9 @@
                 copiedStyleJSON = nil
                 replaysAnimation = false
             case .styleChanged:
-                try requireReady()
-                guard let style = message.values else {
-                    throw ChartInspectorProtocolError.missingStyle
-                }
-                guard let incomingRevision = message.revision,
-                      ChartInspectorProtocol.styleChangeRevisionRange.contains(incomingRevision)
-                else {
-                    throw ChartInspectorProtocolError.invalidRevision
-                }
-                guard incomingRevision > revision else {
-                    throw ChartInspectorProtocolError.staleRevision
-                }
-                styleStore.update(style)
-                revision = incomingRevision
+                try applyStyleChange(message)
                 copiedStyleJSON = nil
-                replaysAnimation = previousStyle.introAnimation != style.introAnimation
+                replaysAnimation = previousStyle.introAnimation != styleStore.style.introAnimation
             case .reset:
                 try requireReady()
                 guard revision < ChartInspectorProtocol.maximumRevision else {
@@ -134,6 +121,23 @@
             guard isReady else {
                 throw ChartInspectorProtocolError.notReady
             }
+        }
+
+        private func applyStyleChange(_ message: ChartInspectorIncomingMessage) throws {
+            try requireReady()
+            guard let style = message.values else {
+                throw ChartInspectorProtocolError.missingStyle
+            }
+            guard let incomingRevision = message.revision,
+                  ChartInspectorProtocol.styleChangeRevisionRange.contains(incomingRevision)
+            else {
+                throw ChartInspectorProtocolError.invalidRevision
+            }
+            guard incomingRevision > revision else {
+                throw ChartInspectorProtocolError.staleRevision
+            }
+            styleStore.update(style)
+            revision = incomingRevision
         }
 
         private func canonicalStyleJSON() throws -> String {

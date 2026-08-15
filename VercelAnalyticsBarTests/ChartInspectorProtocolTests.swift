@@ -431,57 +431,13 @@
         lineWidth: Double,
         lineRevealDuration: Double = ChartStyle.default.lineRevealDuration
     ) throws -> ChartStyle {
-        let style = ChartStyle.default
-        return try ChartStyle(
-            lineColor: style.lineColor,
-            lineWidth: lineWidth,
-            lineCap: style.lineCap,
-            lineJoin: style.lineJoin,
-            interpolation: style.interpolation,
-            areaTopOpacity: style.areaTopOpacity,
-            areaBottomOpacity: style.areaBottomOpacity,
-            chartIntroAnimationEnabled: style.chartIntroAnimationEnabled,
-            lineRevealDuration: lineRevealDuration,
-            lineRevealEasing: style.lineRevealEasing,
-            areaFadeDuration: style.areaFadeDuration,
-            areaFadeDelay: style.areaFadeDelay,
-            chartHeight: style.chartHeight,
-            chartSidePadding: style.chartSidePadding,
-            chartVerticalPadding: style.chartVerticalPadding,
-            axisMarkCount: style.axisMarkCount,
-            yScaleHeadroom: style.yScaleHeadroom,
-            showsXAxisLabels: style.showsXAxisLabels,
-            showsYAxisLabels: style.showsYAxisLabels,
-            showsVerticalGridLines: style.showsVerticalGridLines,
-            verticalGridLineColor: style.verticalGridLineColor,
-            verticalGridLineOpacity: style.verticalGridLineOpacity,
-            verticalGridLineWidth: style.verticalGridLineWidth,
-            verticalGridLineStyle: style.verticalGridLineStyle,
-            showsHorizontalGridLines: style.showsHorizontalGridLines,
-            horizontalGridLineColor: style.horizontalGridLineColor,
-            horizontalGridLineOpacity: style.horizontalGridLineOpacity,
-            horizontalGridLineWidth: style.horizontalGridLineWidth,
-            horizontalGridLineStyle: style.horizontalGridLineStyle,
-            showsVerticalAxisTicks: style.showsVerticalAxisTicks,
-            verticalAxisTickColor: style.verticalAxisTickColor,
-            verticalAxisTickOpacity: style.verticalAxisTickOpacity,
-            verticalAxisTickWidth: style.verticalAxisTickWidth,
-            verticalAxisTickLength: style.verticalAxisTickLength,
-            showsHorizontalAxisTicks: style.showsHorizontalAxisTicks,
-            horizontalAxisTickColor: style.horizontalAxisTickColor,
-            horizontalAxisTickOpacity: style.horizontalAxisTickOpacity,
-            horizontalAxisTickWidth: style.horizontalAxisTickWidth,
-            horizontalAxisTickLength: style.horizontalAxisTickLength,
-            showsChartBorder: style.showsChartBorder,
-            chartBorderColor: style.chartBorderColor,
-            chartBorderOpacity: style.chartBorderOpacity,
-            chartBorderWidth: style.chartBorderWidth,
-            chartBorderStyle: style.chartBorderStyle,
-            chartBorderRadius: style.chartBorderRadius,
-            chartBorderDashLength: style.chartBorderDashLength,
-            chartBorderDashGap: style.chartBorderDashGap,
-            chartBorderDashPhase: style.chartBorderDashPhase,
-            chartBorderDashCap: style.chartBorderDashCap
+        let data = try JSONEncoder().encode(ChartStyle.default)
+        var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object["lineWidth"] = lineWidth
+        object["lineRevealDuration"] = lineRevealDuration
+        return try JSONDecoder().decode(
+            ChartStyle.self,
+            from: JSONSerialization.data(withJSONObject: object)
         )
     }
 #endif

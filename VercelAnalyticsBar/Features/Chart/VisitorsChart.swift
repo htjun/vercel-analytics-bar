@@ -2,79 +2,14 @@ import Charts
 import SwiftUI
 import VercelAnalyticsCore
 
-enum ChartIntroPlaybackScope: Hashable {
-    case application
-    case session(UUID)
-}
-
-@MainActor
-final class ChartIntroPlaybackGate {
-    private var hasPlayedForApplication = false
-    private var playedSession: UUID?
-
-    func isEligible(for scope: ChartIntroPlaybackScope) -> Bool {
-        switch scope {
-        case .application:
-            !hasPlayedForApplication
-        case let .session(sessionID):
-            playedSession != sessionID
-        }
-    }
-
-    func claim(_ scope: ChartIntroPlaybackScope) -> Bool {
-        guard isEligible(for: scope) else { return false }
-
-        switch scope {
-        case .application:
-            hasPlayedForApplication = true
-        case let .session(sessionID):
-            playedSession = sessionID
-        }
-        return true
-    }
-}
-
-struct ChartIntroPlayback {
-    enum ID: Hashable {
-        case panel(UUID)
-        case inspector(Int)
-    }
-
-    let id: ID
-    let isEligible: @MainActor () -> Bool
-    let claim: @MainActor () -> Bool
-
-    @MainActor
-    static func panel(
-        sessionID: UUID,
-        scope: ChartIntroPlaybackScope,
-        gate: ChartIntroPlaybackGate
-    ) -> ChartIntroPlayback {
-        ChartIntroPlayback(
-            id: .panel(sessionID),
-            isEligible: { gate.isEligible(for: scope) },
-            claim: { gate.claim(scope) }
-        )
-    }
-
-    static func inspector(replayToken: Int) -> ChartIntroPlayback {
-        ChartIntroPlayback(
-            id: .inspector(replayToken),
-            isEligible: { true },
-            claim: { true }
-        )
-    }
-}
-
+// swiftlint:disable:next type_body_length
 struct VisitorsChart: View {
     let points: [VercelAnalyticsPoint]
     let style: ChartStyle
     var introPlayback: ChartIntroPlayback?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var lineRevealProgress = 1.0
-    @State private var areaRevealProgress = 1.0
-    @State private var hasResolvedIntroPlayback = false
+    @State private var introAnimator = ChartIntroAnimator()
 
     init(
         points: [VercelAnalyticsPoint],
@@ -113,7 +48,11 @@ struct VisitorsChart: View {
                     )
                 }
             }
-            .opacity(effectiveAreaRevealProgress)
+            .opacity(introAnimator.effectiveAreaProgress(
+                style: style,
+                reduceMotion: reduceMotion,
+                playback: introPlayback
+            ))
 
             Plot {
                 ForEach(points, id: \.timestamp) { point in
@@ -135,7 +74,14 @@ struct VisitorsChart: View {
             .compositingLayer { content in
                 content.mask(alignment: .leading) {
                     Rectangle()
-                        .scaleEffect(x: effectiveLineRevealProgress, anchor: .leading)
+                        .scaleEffect(
+                            x: introAnimator.effectiveLineProgress(
+                                style: style,
+                                reduceMotion: reduceMotion,
+                                playback: introPlayback
+                            ),
+                            anchor: .leading
+                        )
                 }
             }
         }
@@ -231,72 +177,16 @@ struct VisitorsChart: View {
         }
         .accessibilityLabel("Visitors over time")
         .task(id: introPlayback?.id) {
-            await runIntroAnimation()
+            await introAnimator.run(
+                style: style,
+                reduceMotion: reduceMotion,
+                playback: introPlayback
+            )
         }
         .onChange(of: reduceMotion) { _, isEnabled in
             if isEnabled {
-                finishIntroAnimation()
+                introAnimator.finish()
             }
-        }
-    }
-
-    private var effectiveLineRevealProgress: Double {
-        guard style.chartIntroAnimationEnabled, !reduceMotion, let introPlayback else { return 1 }
-        return hasResolvedIntroPlayback || !introPlayback.isEligible() ? lineRevealProgress : 0
-    }
-
-    private var effectiveAreaRevealProgress: Double {
-        guard style.chartIntroAnimationEnabled, !reduceMotion, let introPlayback else { return 1 }
-        return hasResolvedIntroPlayback || !introPlayback.isEligible() ? areaRevealProgress : 0
-    }
-
-    @MainActor
-    private func runIntroAnimation() async {
-        guard let introPlayback else {
-            finishIntroAnimation()
-            return
-        }
-        let shouldAnimate = introPlayback.claim()
-        guard style.chartIntroAnimationEnabled, !reduceMotion, shouldAnimate else {
-            finishIntroAnimation()
-            return
-        }
-
-        var transaction = Transaction()
-        transaction.disablesAnimations = true
-        withTransaction(transaction) {
-            lineRevealProgress = 0
-            areaRevealProgress = 0
-            hasResolvedIntroPlayback = true
-        }
-
-        await Task.yield()
-        guard !Task.isCancelled else { return }
-
-        withAnimation(style.lineRevealEasing.animation(duration: style.lineRevealDuration)) {
-            lineRevealProgress = 1
-        }
-
-        do {
-            try await Task.sleep(for: .seconds(style.lineRevealDuration + style.areaFadeDelay))
-        } catch {
-            return
-        }
-        guard !Task.isCancelled else { return }
-
-        withAnimation(.easeOut(duration: style.areaFadeDuration)) {
-            areaRevealProgress = 1
-        }
-    }
-
-    @MainActor
-    private func finishIntroAnimation() {
-        var transaction = Transaction()
-        transaction.disablesAnimations = true
-        withTransaction(transaction) {
-            lineRevealProgress = 1
-            areaRevealProgress = 1
-            hasResolvedIntroPlayback = true
         }
     }
 
@@ -333,7 +223,7 @@ struct VisitorsChart: View {
         let sortedDates = dates.sorted()
         guard let start = sortedDates.first,
               let end = sortedDates.last,
-              count > 0
+              count >= 1
         else {
             return []
         }
@@ -397,17 +287,6 @@ struct VisitorsChart: View {
         let interval = end.timeIntervalSince(start) / Double(count)
         return (0 ..< count).map { index in
             start.addingTimeInterval((Double(index) + 0.5) * interval)
-        }
-    }
-}
-
-private extension ChartAnimationEasing {
-    func animation(duration: TimeInterval) -> Animation {
-        switch self {
-        case .linear: .linear(duration: duration)
-        case .easeIn: .easeIn(duration: duration)
-        case .easeOut: .easeOut(duration: duration)
-        case .easeInOut: .easeInOut(duration: duration)
         }
     }
 }

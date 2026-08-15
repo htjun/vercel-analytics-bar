@@ -60,6 +60,8 @@
 		A10000000000000000000037 /* SettingsTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000037 /* SettingsTestSupport.swift */; };
 		A10000000000000000000038 /* ProportionalMetricText.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000038 /* ProportionalMetricText.swift */; };
 		A10000000000000000000039 /* ProportionalMetricTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000039 /* ProportionalMetricTextTests.swift */; };
+		A1000000000000000000003A /* ChartIntroAnimation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000003A /* ChartIntroAnimation.swift */; };
+		A1000000000000000000003B /* ChartIntroAnimationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3000000000000000000003B /* ChartIntroAnimationTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -132,6 +134,8 @@
 		A30000000000000000000037 /* SettingsTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsTestSupport.swift; sourceTree = "<group>"; };
 		A30000000000000000000038 /* ProportionalMetricText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProportionalMetricText.swift; sourceTree = "<group>"; };
 		A30000000000000000000039 /* ProportionalMetricTextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProportionalMetricTextTests.swift; sourceTree = "<group>"; };
+		A3000000000000000000003A /* ChartIntroAnimation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartIntroAnimation.swift; sourceTree = "<group>"; };
+		A3000000000000000000003B /* ChartIntroAnimationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartIntroAnimationTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -226,6 +230,7 @@
 				A30000000000000000000015 /* NativeIntegrationTests.swift */,
 				A30000000000000000000034 /* WindowPlacementTests.swift */,
 				A30000000000000000000018 /* ChartStyleTests.swift */,
+				A3000000000000000000003B /* ChartIntroAnimationTests.swift */,
 				A3000000000000000000001D /* ChartInspectorProtocolTests.swift */,
 			);
 			path = VercelAnalyticsBarTests;
@@ -299,6 +304,7 @@
 			isa = PBXGroup;
 			children = (
 				A30000000000000000000017 /* ChartStyle.swift */,
+				A3000000000000000000003A /* ChartIntroAnimation.swift */,
 				A30000000000000000000019 /* VisitorsChart.swift */,
 			);
 			path = Chart;
@@ -442,6 +448,7 @@
 				A10000000000000000000010 /* AppModelRefresh.swift in Sources */,
 				A10000000000000000000014 /* LaunchAtLogin.swift in Sources */,
 				A10000000000000000000017 /* ChartStyle.swift in Sources */,
+				A1000000000000000000003A /* ChartIntroAnimation.swift in Sources */,
 				A10000000000000000000019 /* VisitorsChart.swift in Sources */,
 				A1000000000000000000002B /* ChartInspectorContract.generated.swift in Sources */,
 				A1000000000000000000001A /* ChartInspectorProtocol.swift in Sources */,
@@ -484,6 +491,7 @@
 				A10000000000000000000015 /* NativeIntegrationTests.swift in Sources */,
 				A10000000000000000000034 /* WindowPlacementTests.swift in Sources */,
 				A10000000000000000000018 /* ChartStyleTests.swift in Sources */,
+				A1000000000000000000003B /* ChartIntroAnimationTests.swift in Sources */,
 				A1000000000000000000001D /* ChartInspectorProtocolTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

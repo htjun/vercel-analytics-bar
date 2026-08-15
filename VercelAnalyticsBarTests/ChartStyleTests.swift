@@ -50,27 +50,6 @@ struct ChartStyleTests {
         #expect(VisitorsChart.yAxisValues(for: [1], desiredCount: 4, headroom: 0.1) == [0, 1, 2])
     }
 
-    @MainActor
-    @Test func chartIntroPlaybackRunsOnceForTheApplication() {
-        let gate = ChartIntroPlaybackGate()
-
-        #expect(gate.isEligible(for: .application))
-        #expect(gate.claim(.application))
-        #expect(!gate.isEligible(for: .application))
-        #expect(!gate.claim(.application))
-    }
-
-    @MainActor
-    @Test func chartIntroPlaybackRunsOnceForEachPanelSession() {
-        let gate = ChartIntroPlaybackGate()
-        let firstSession = UUID()
-        let secondSession = UUID()
-
-        #expect(gate.claim(.session(firstSession)))
-        #expect(!gate.claim(.session(firstSession)))
-        #expect(gate.claim(.session(secondSession)))
-    }
-
     @Test func defaultsMatchTheCanonicalChartPresentation() {
         let style = ChartStyle.default
 
@@ -81,11 +60,6 @@ struct ChartStyleTests {
         #expect(style.interpolation == .monotone)
         #expect(style.areaTopOpacity == 0.2)
         #expect(style.areaBottomOpacity == 0)
-        #expect(style.chartIntroAnimationEnabled)
-        #expect(style.lineRevealDuration == 0.8)
-        #expect(style.lineRevealEasing == .easeOut)
-        #expect(style.areaFadeDuration == 0.3)
-        #expect(style.areaFadeDelay == 0.05)
         #expect(style.chartHeight == 150)
         #expect(style.chartSidePadding == 12)
         #expect(style.chartVerticalPadding == 5)
@@ -196,13 +170,6 @@ struct ChartStyleTests {
         #expect(throws: DecodingError.self) {
             try JSONDecoder().decode(ChartStyle.self, from: invalidBorderStyle)
         }
-
-        object = try #require(JSONSerialization.jsonObject(with: encodedDefault) as? [String: Any])
-        object["lineRevealEasing"] = "spring"
-        let invalidAnimationEasing = try JSONSerialization.data(withJSONObject: object)
-        #expect(throws: DecodingError.self) {
-            try JSONDecoder().decode(ChartStyle.self, from: invalidAnimationEasing)
-        }
     }
 
     @Test func borderStrokeStyleUsesDashDetailsOnlyForDashedBorders() {
@@ -268,12 +235,6 @@ struct ChartStyleTests {
             { try makeStyle(lineWidth: 12.01) },
             { try makeStyle(areaTopOpacity: -0.01) },
             { try makeStyle(areaBottomOpacity: 1.01) },
-            { try makeStyle(lineRevealDuration: 0.09) },
-            { try makeStyle(lineRevealDuration: 3.01) },
-            { try makeStyle(areaFadeDuration: 0.09) },
-            { try makeStyle(areaFadeDuration: 2.01) },
-            { try makeStyle(areaFadeDelay: -0.01) },
-            { try makeStyle(areaFadeDelay: 1.01) },
             { try makeStyle(chartHeight: 79) },
             { try makeStyle(chartHeight: 361) },
             { try makeStyle(chartSidePadding: -0.01) },
@@ -320,6 +281,7 @@ struct ChartStyleTests {
     }
 }
 
+// swiftlint:disable:next function_body_length
 private func makeStyle(
     lineColor: ChartColor = .accent,
     lineWidth: Double = 2,
@@ -328,11 +290,6 @@ private func makeStyle(
     interpolation: ChartInterpolation = .linear,
     areaTopOpacity: Double = 0.24,
     areaBottomOpacity: Double = 0.03,
-    chartIntroAnimationEnabled: Bool = true,
-    lineRevealDuration: Double = 0.8,
-    lineRevealEasing: ChartAnimationEasing = .easeOut,
-    areaFadeDuration: Double = 0.3,
-    areaFadeDelay: Double = 0.05,
     chartHeight: Double = 140,
     chartSidePadding: Double = 14,
     chartVerticalPadding: Double = 0,
@@ -379,11 +336,11 @@ private func makeStyle(
         interpolation: interpolation,
         areaTopOpacity: areaTopOpacity,
         areaBottomOpacity: areaBottomOpacity,
-        chartIntroAnimationEnabled: chartIntroAnimationEnabled,
-        lineRevealDuration: lineRevealDuration,
-        lineRevealEasing: lineRevealEasing,
-        areaFadeDuration: areaFadeDuration,
-        areaFadeDelay: areaFadeDelay,
+        chartIntroAnimationEnabled: true,
+        lineRevealDuration: 0.8,
+        lineRevealEasing: .easeOut,
+        areaFadeDuration: 0.3,
+        areaFadeDelay: 0.05,
         chartHeight: chartHeight,
         chartSidePadding: chartSidePadding,
         chartVerticalPadding: chartVerticalPadding,
