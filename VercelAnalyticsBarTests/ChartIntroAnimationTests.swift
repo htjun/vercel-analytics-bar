@@ -48,10 +48,10 @@ struct ChartIntroAnimationTests {
         let style = ChartStyle.default
 
         #expect(style.chartIntroAnimationEnabled)
-        #expect(style.lineRevealDuration == 0.8)
+        #expect(style.lineRevealDuration == 1)
         #expect(style.lineRevealEasing == .easeOut)
-        #expect(style.areaFadeDuration == 0.3)
-        #expect(style.areaFadeDelay == 0.05)
+        #expect(style.areaFadeDuration == 1)
+        #expect(style.areaFadeDelay == 0)
     }
 
     @Test func timelineStartsHiddenAndFinishesComplete() {

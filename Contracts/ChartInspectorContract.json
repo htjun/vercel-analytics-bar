@@ -157,7 +157,7 @@
       {
         "name": "lineRevealDuration",
         "type": "number",
-        "default": 0.8,
+        "default": 1,
         "minimum": 0.1,
         "maximum": 3,
         "step": 0.05,
@@ -181,7 +181,7 @@
       {
         "name": "areaFadeDuration",
         "type": "number",
-        "default": 0.3,
+        "default": 1,
         "minimum": 0.1,
         "maximum": 2,
         "step": 0.05,
@@ -194,7 +194,7 @@
       {
         "name": "areaFadeDelay",
         "type": "number",
-        "default": 0.05,
+        "default": 0,
         "minimum": 0,
         "maximum": 1,
         "step": 0.05,
