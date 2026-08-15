@@ -18,6 +18,15 @@ struct StatusItemPresentation: Equatable {
     }
 }
 
+private enum StatusItemLayout {
+    static let iconSize = CGSize(width: 14, height: 14)
+    static let trailingIconPadding: CGFloat = 2
+    static let imageCanvasSize = CGSize(
+        width: iconSize.width + trailingIconPadding,
+        height: iconSize.height
+    )
+}
+
 @MainActor
 final class StatusBarController: NSObject {
     private let model: AppModel
@@ -96,15 +105,31 @@ final class StatusBarController: NSObject {
         statusItem.isVisible = true
 
         guard let button = statusItem.button else { return }
-        let image = NSImage(named: "AnalyticsBarLogo")
-        image?.isTemplate = true
-        image?.size = CGSize(width: 16, height: 16)
-        button.image = image
+        button.image = statusItemImage()
         button.imagePosition = .imageLeading
         button.target = self
         button.action = #selector(togglePanel)
         button.sendAction(on: [.leftMouseUp])
         button.setAccessibilityLabel("Analytics Menu Bar")
+    }
+
+    private func statusItemImage() -> NSImage? {
+        guard let logo = NSImage(named: "AnalyticsBarLogo") else { return nil }
+
+        let paddedImage = NSImage(
+            size: StatusItemLayout.imageCanvasSize,
+            flipped: false
+        ) { _ in
+            logo.draw(
+                in: CGRect(origin: .zero, size: StatusItemLayout.iconSize),
+                from: CGRect(origin: .zero, size: logo.size),
+                operation: .sourceOver,
+                fraction: 1
+            )
+            return true
+        }
+        paddedImage.isTemplate = true
+        return paddedImage
     }
 
     private func observeStatusItemPresentation() {
