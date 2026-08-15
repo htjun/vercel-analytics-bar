@@ -295,7 +295,6 @@ xcrun notarytool log \
     "$NOTARY_LOG_PATH" \
     --keychain-profile "$NOTARYTOOL_PROFILE" \
     --no-progress
-/usr/bin/plutil -lint "$NOTARY_LOG_PATH" >/dev/null
 
 xcrun stapler staple "$DMG_PATH"
 xcrun stapler validate "$DMG_PATH"
