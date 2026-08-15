@@ -10,14 +10,14 @@ enum ChartIntroPlaybackScope: Hashable {
 @MainActor
 final class ChartIntroPlaybackGate {
     private var hasPlayedForApplication = false
-    private var playedSessions = Set<UUID>()
+    private var playedSession: UUID?
 
     func isEligible(for scope: ChartIntroPlaybackScope) -> Bool {
         switch scope {
         case .application:
             !hasPlayedForApplication
         case let .session(sessionID):
-            !playedSessions.contains(sessionID)
+            playedSession != sessionID
         }
     }
 
@@ -28,7 +28,7 @@ final class ChartIntroPlaybackGate {
         case .application:
             hasPlayedForApplication = true
         case let .session(sessionID):
-            playedSessions.insert(sessionID)
+            playedSession = sessionID
         }
         return true
     }
