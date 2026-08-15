@@ -5,7 +5,7 @@ DERIVED_DATA_PATH := .build/DerivedData
 DEBUG_APP_PATH := $(DERIVED_DATA_PATH)/Build/Products/Debug/VercelAnalyticsBar.app
 UNSIGNED_XCODEBUILD := xcodebuild -project $(PROJECT) -scheme $(SCHEME) -destination 'platform=macOS,arch=$(HOST_ARCHITECTURE)' CODE_SIGNING_ALLOWED=NO
 
-.PHONY: bootstrap format inspector-build inspector-dev open probe run run-inspector run-inspector-bundled run-mock test verify
+.PHONY: bootstrap format inspector-build inspector-dev open probe release-direct run run-inspector run-inspector-bundled run-mock test verify
 
 FIXTURE ?= ideal
 
@@ -26,6 +26,9 @@ open:
 
 probe:
 	ruby Scripts/probe_vercel_analytics_api.rb
+
+release-direct:
+	Scripts/release_direct.sh
 
 run:
 	Scripts/run_debug.sh
