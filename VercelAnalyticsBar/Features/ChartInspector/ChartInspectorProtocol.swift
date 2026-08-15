@@ -76,7 +76,6 @@
             }
 
             let copiedStyleJSON: String?
-            let previousStyle = styleStore.style
             let replaysAnimation: Bool
             switch message.type {
             case .ready:
@@ -86,7 +85,7 @@
             case .styleChanged:
                 try applyStyleChange(message)
                 copiedStyleJSON = nil
-                replaysAnimation = previousStyle.introAnimation != styleStore.style.introAnimation
+                replaysAnimation = false
             case .reset:
                 try requireReady()
                 guard revision < ChartInspectorProtocol.maximumRevision else {
@@ -95,7 +94,7 @@
                 styleStore.reset()
                 revision += 1
                 copiedStyleJSON = nil
-                replaysAnimation = previousStyle.introAnimation != styleStore.style.introAnimation
+                replaysAnimation = false
             case .copyStyle:
                 try requireReady()
                 copiedStyleJSON = try canonicalStyleJSON()

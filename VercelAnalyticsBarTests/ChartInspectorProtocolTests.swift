@@ -95,7 +95,7 @@
             #expect(reopenedState.values == .default)
         }
 
-        @Test func animationCommandsAndTimingChangesRequestPreviewReplay() throws {
+        @Test func onlyAnimationCommandRequestsPreviewReplay() throws {
             let store = ChartStyleStore()
             let session = ChartInspectorSession(styleStore: store)
             _ = try session.receive(readyMessage)
@@ -120,7 +120,10 @@
                     values: makeInspectorStyle(lineWidth: 4, lineRevealDuration: 1.4)
                 )
             )
-            #expect(timingResponse.replaysAnimation)
+            #expect(!timingResponse.replaysAnimation)
+
+            let resetResponse = try session.receive(commandMessage(.reset))
+            #expect(!resetResponse.replaysAnimation)
 
             let revisionBeforeReplay = session.revision
             let replayResponse = try session.receive(commandMessage(.replayAnimation))
