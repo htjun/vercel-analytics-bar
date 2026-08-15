@@ -39,6 +39,9 @@ enum MenuBarContentMode: Equatable {
 struct MenuBarRootView: View {
     let model: AppModel
     let chartStyle: ChartStyleStore
+    #if MOCK_MODE
+        let demoMetricTicker: DemoMetricTicker
+    #endif
     let onOpenSettings: () -> Void
     let onDismissPanel: () -> Void
     @State private var isProjectSelectorPresented = false
@@ -156,7 +159,7 @@ struct MenuBarRootView: View {
     }
 
     private func presentation(for snapshot: AnalyticsSnapshot) -> AnalyticsCardPresentation {
-        AnalyticsCardPresentation(
+        let presentation = AnalyticsCardPresentation(
             projectName: model.currentProject?.name ?? snapshot.projectName,
             selectedRange: snapshot.range,
             visitors: AnalyticsCardMetric(metric: snapshot.visitors),
@@ -167,6 +170,12 @@ struct MenuBarRootView: View {
             updatedText: updatedText(for: snapshot),
             dashboardURL: model.currentProject?.analyticsDashboardURL(for: snapshot.range)
         )
+
+        #if MOCK_MODE
+            return presentation.applyingDemoOffsets(demoMetricTicker.offsets)
+        #else
+            return presentation
+        #endif
     }
 
     private func updatedText(for snapshot: AnalyticsSnapshot) -> String {

@@ -185,7 +185,11 @@ enum AppTypography {
     }
 
     static var interDisplay48: Font {
-        AppFontRegistry.font(
+        Font(interDisplay48NSFont)
+    }
+
+    static var interDisplay48NSFont: NSFont {
+        AppFontRegistry.nsFont(
             postScriptName: "InterVariable",
             size: 48,
             variations: [.opticalSize: 32, .weight: 250],

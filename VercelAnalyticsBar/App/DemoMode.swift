@@ -1,5 +1,97 @@
 import Foundation
+import Observation
 import VercelAnalyticsCore
+
+struct DemoMetricOffsets: Equatable, Sendable {
+    static let zero = DemoMetricOffsets(visitors: 0, pageViews: 0)
+
+    let visitors: Int
+    let pageViews: Int
+
+    func advanced() -> DemoMetricOffsets {
+        DemoMetricOffsets(
+            visitors: visitors.saturatingAdding(7),
+            pageViews: pageViews.saturatingAdding(13)
+        )
+    }
+}
+
+@MainActor
+@Observable
+final class DemoMetricTicker {
+    typealias Sleep = @Sendable (Duration) async throws -> Void
+
+    private(set) var offsets = DemoMetricOffsets.zero
+    @ObservationIgnored private let sleep: Sleep
+    @ObservationIgnored private var task: Task<Void, Never>?
+
+    var isRunning: Bool {
+        task != nil
+    }
+
+    init(sleep: @escaping Sleep = { duration in
+        try await Task.sleep(for: duration)
+    }) {
+        self.sleep = sleep
+    }
+
+    func start() {
+        stop()
+        task = Task { [weak self, sleep] in
+            while !Task.isCancelled {
+                do {
+                    try await sleep(.seconds(1))
+                } catch {
+                    return
+                }
+
+                guard !Task.isCancelled, let self else { return }
+                offsets = offsets.advanced()
+            }
+        }
+    }
+
+    func stop() {
+        task?.cancel()
+        task = nil
+        offsets = .zero
+    }
+}
+
+extension AnalyticsCardPresentation {
+    func applyingDemoOffsets(_ offsets: DemoMetricOffsets) -> AnalyticsCardPresentation {
+        AnalyticsCardPresentation(
+            projectName: projectName,
+            selectedRange: selectedRange,
+            visitors: visitors.applyingDemoOffset(offsets.visitors),
+            pageViews: pageViews.applyingDemoOffset(offsets.pageViews),
+            series: series,
+            topPages: topPages,
+            topReferrers: topReferrers,
+            updatedText: updatedText,
+            dashboardURL: dashboardURL
+        )
+    }
+}
+
+private extension AnalyticsCardMetric {
+    func applyingDemoOffset(_ offset: Int) -> AnalyticsCardMetric {
+        AnalyticsCardMetric(
+            label: label,
+            value: value.saturatingAdding(offset),
+            comparisonText: comparisonText,
+            trend: trend
+        )
+    }
+}
+
+private extension Int {
+    func saturatingAdding(_ other: Int) -> Int {
+        let (result, overflow) = addingReportingOverflow(other)
+        guard overflow else { return result }
+        return other >= 0 ? .max : .min
+    }
+}
 
 enum DemoFixtureError: Error, Equatable, LocalizedError, Sendable {
     case missing

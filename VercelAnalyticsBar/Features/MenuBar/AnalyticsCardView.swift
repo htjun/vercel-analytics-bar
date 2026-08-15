@@ -273,13 +273,8 @@ struct AnalyticsCardView<SelectorContent: View>: View {
             }
             .frame(height: 16, alignment: .topLeading)
 
-            Text(metric.valueText)
-                .font(AppTypography.interDisplay48)
-                .tracking(AppTypography.metricTracking)
+            ProportionalMetricText(value: metric.value)
                 .foregroundStyle(AnalyticsCardColors.primaryText)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-                .frame(width: 114, height: 58, alignment: .topLeading)
         }
         .frame(width: 114, height: 80, alignment: .topLeading)
         .accessibilityElement(children: .combine)

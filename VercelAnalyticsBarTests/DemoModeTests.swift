@@ -122,6 +122,71 @@ struct DemoModeTests {
         #expect(emptyBreakdowns.topReferrers.isEmpty)
     }
 
+    @MainActor
+    @Test func metricTickerWaitsOneSecondAndAdvancesAtTheExpectedRate() async throws {
+        let sleeper = DemoTickerTestSleeper()
+        let ticker = DemoMetricTicker(sleep: { duration in
+            try await sleeper.sleep(for: duration)
+        })
+
+        ticker.start()
+        let firstDuration = try await sleeper.waitForPendingSleep(after: 0)
+        #expect(firstDuration == .seconds(1))
+        #expect(ticker.offsets == .zero)
+
+        await sleeper.resumeNext()
+        try await waitUntil { ticker.offsets == DemoMetricOffsets(visitors: 7, pageViews: 13) }
+        let secondDuration = try await sleeper.waitForPendingSleep(after: 1)
+        #expect(secondDuration == .seconds(1))
+
+        await sleeper.resumeNext()
+        try await waitUntil { ticker.offsets == DemoMetricOffsets(visitors: 14, pageViews: 26) }
+        ticker.stop()
+        #expect(ticker.offsets == .zero)
+        #expect(!ticker.isRunning)
+    }
+
+    @MainActor
+    @Test func metricTickerRestartCancelsThePreviousLoopAndResets() async throws {
+        let sleeper = DemoTickerTestSleeper()
+        let ticker = DemoMetricTicker(sleep: { duration in
+            try await sleeper.sleep(for: duration)
+        })
+
+        ticker.start()
+        _ = try await sleeper.waitForPendingSleep(after: 0)
+        ticker.start()
+        _ = try await sleeper.waitForPendingSleep(after: 1)
+        try await sleeper.waitForPendingCount(1)
+        let pendingCount = await sleeper.pendingCount
+        #expect(ticker.offsets == .zero)
+        #expect(pendingCount == 1)
+
+        await sleeper.resumeNext()
+        try await waitUntil { ticker.offsets == DemoMetricOffsets(visitors: 7, pageViews: 13) }
+        ticker.stop()
+    }
+
+    @Test func metricOffsetsSaturateInsteadOfOverflowing() {
+        let offsets = DemoMetricOffsets(visitors: Int.max - 3, pageViews: Int.max - 2)
+
+        #expect(offsets.advanced() == DemoMetricOffsets(visitors: .max, pageViews: .max))
+    }
+
+    @Test func metricOffsetsOnlyChangeHeadlineValues() {
+        let base = AnalyticsCardPresentation.sampleFixture
+        let adjusted = base.applyingDemoOffsets(DemoMetricOffsets(visitors: 7, pageViews: 13))
+
+        #expect(adjusted.visitors.value == base.visitors.value + 7)
+        #expect(adjusted.pageViews.value == base.pageViews.value + 13)
+        #expect(adjusted.visitors.comparisonText == base.visitors.comparisonText)
+        #expect(adjusted.pageViews.comparisonText == base.pageViews.comparisonText)
+        #expect(adjusted.series == base.series)
+        #expect(adjusted.topPages == base.topPages)
+        #expect(adjusted.topReferrers == base.topReferrers)
+        #expect(adjusted.updatedText == base.updatedText)
+    }
+
     private static let fixtureRoot = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()
         .deletingLastPathComponent()
@@ -161,4 +226,86 @@ struct DemoModeTests {
         }
         """#.utf8
     )
+}
+
+private actor DemoTickerTestSleeper {
+    private struct PendingSleep {
+        let id: UUID
+        let duration: Duration
+        let continuation: CheckedContinuation<Void, Error>
+    }
+
+    private var pendingSleeps: [PendingSleep] = []
+    private var registrationCount = 0
+
+    var pendingCount: Int {
+        pendingSleeps.count
+    }
+
+    func sleep(for duration: Duration) async throws {
+        let id = UUID()
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                registrationCount += 1
+                pendingSleeps.append(PendingSleep(
+                    id: id,
+                    duration: duration,
+                    continuation: continuation
+                ))
+            }
+        } onCancel: {
+            Task {
+                await self.cancel(id: id)
+            }
+        }
+    }
+
+    func waitForPendingSleep(after previousRegistrationCount: Int) async throws -> Duration {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .seconds(2))
+        while clock.now < deadline {
+            if registrationCount > previousRegistrationCount, let pendingSleep = pendingSleeps.last {
+                return pendingSleep.duration
+            }
+            try await Task.sleep(for: .milliseconds(1))
+        }
+        throw DemoTickerTestError.timedOut
+    }
+
+    func waitForPendingCount(_ expectedCount: Int) async throws {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .seconds(2))
+        while clock.now < deadline {
+            if pendingSleeps.count == expectedCount { return }
+            try await Task.sleep(for: .milliseconds(1))
+        }
+        throw DemoTickerTestError.timedOut
+    }
+
+    func resumeNext() {
+        guard !pendingSleeps.isEmpty else { return }
+        pendingSleeps.removeFirst().continuation.resume()
+    }
+
+    private func cancel(id: UUID) {
+        guard let index = pendingSleeps.firstIndex(where: { $0.id == id }) else { return }
+        pendingSleeps.remove(at: index).continuation.resume(throwing: CancellationError())
+    }
+}
+
+private enum DemoTickerTestError: Error {
+    case timedOut
+}
+
+@MainActor
+private func waitUntil(
+    _ condition: @MainActor () -> Bool
+) async throws {
+    let clock = ContinuousClock()
+    let deadline = clock.now.advanced(by: .seconds(2))
+    while clock.now < deadline {
+        if condition() { return }
+        try await Task.sleep(for: .milliseconds(1))
+    }
+    throw DemoTickerTestError.timedOut
 }

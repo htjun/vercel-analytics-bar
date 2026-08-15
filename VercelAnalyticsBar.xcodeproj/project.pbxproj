@@ -58,6 +58,8 @@
 		A10000000000000000000035 /* AnalyticsSnapshotTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000035 /* AnalyticsSnapshotTestSupport.swift */; };
 		A10000000000000000000036 /* SettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000036 /* SettingsTests.swift */; };
 		A10000000000000000000037 /* SettingsTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000037 /* SettingsTestSupport.swift */; };
+		A10000000000000000000038 /* ProportionalMetricText.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000038 /* ProportionalMetricText.swift */; };
+		A10000000000000000000039 /* ProportionalMetricTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000039 /* ProportionalMetricTextTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -128,6 +130,8 @@
 		A30000000000000000000035 /* AnalyticsSnapshotTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsSnapshotTestSupport.swift; sourceTree = "<group>"; };
 		A30000000000000000000036 /* SettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsTests.swift; sourceTree = "<group>"; };
 		A30000000000000000000037 /* SettingsTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsTestSupport.swift; sourceTree = "<group>"; };
+		A30000000000000000000038 /* ProportionalMetricText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProportionalMetricText.swift; sourceTree = "<group>"; };
+		A30000000000000000000039 /* ProportionalMetricTextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProportionalMetricTextTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -206,6 +210,7 @@
 				A3000000000000000000002E /* DemoModeTests.swift */,
 				A3000000000000000000002C /* AppTypographyTests.swift */,
 				A30000000000000000000022 /* AnalyticsCardTests.swift */,
+				A30000000000000000000039 /* ProportionalMetricTextTests.swift */,
 				A30000000000000000000032 /* VercelConnectionViewTests.swift */,
 				A30000000000000000000026 /* AnalyticsCardIntegrationTests.swift */,
 				A3000000000000000000000D /* AppModelTestSupport.swift */,
@@ -261,6 +266,7 @@
 			isa = PBXGroup;
 			children = (
 				A30000000000000000000020 /* AnalyticsCardView.swift */,
+				A30000000000000000000038 /* ProportionalMetricText.swift */,
 				A30000000000000000000023 /* AnalyticsGlassShell.swift */,
 				A30000000000000000000031 /* VercelConnectionView.swift */,
 				A30000000000000000000033 /* VercelProjectSelectionView.swift */,
@@ -442,6 +448,7 @@
 				A1000000000000000000001B /* ChartInspectorWebView.swift in Sources */,
 				A1000000000000000000001C /* ChartInspectorView.swift in Sources */,
 				A10000000000000000000020 /* AnalyticsCardView.swift in Sources */,
+				A10000000000000000000038 /* ProportionalMetricText.swift in Sources */,
 				A10000000000000000000023 /* AnalyticsGlassShell.swift in Sources */,
 				A10000000000000000000031 /* VercelConnectionView.swift in Sources */,
 				A10000000000000000000033 /* VercelProjectSelectionView.swift in Sources */,
@@ -461,6 +468,7 @@
 				A1000000000000000000002E /* DemoModeTests.swift in Sources */,
 				A1000000000000000000002C /* AppTypographyTests.swift in Sources */,
 				A10000000000000000000022 /* AnalyticsCardTests.swift in Sources */,
+				A10000000000000000000039 /* ProportionalMetricTextTests.swift in Sources */,
 				A10000000000000000000032 /* VercelConnectionViewTests.swift in Sources */,
 				A10000000000000000000026 /* AnalyticsCardIntegrationTests.swift in Sources */,
 				A10000000000000000000009 /* AppModelTestSupport.swift in Sources */,

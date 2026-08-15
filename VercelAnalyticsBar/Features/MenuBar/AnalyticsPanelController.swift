@@ -69,6 +69,9 @@ final class AnalyticsPanelController {
     private let statusItemWindow: () -> NSWindow?
     private let companionWindows: () -> [NSWindow]
     private let hostingView: NSHostingView<AnyView>
+    #if MOCK_MODE
+        private let demoMetricTicker = DemoMetricTicker()
+    #endif
     private var presentationTask: Task<Void, Never>?
     private var localEventMonitor: Any?
     private var globalEventMonitor: Any?
@@ -97,6 +100,9 @@ final class AnalyticsPanelController {
 
         sessionID = UUID()
         isPresented = true
+        #if MOCK_MODE
+            demoMetricTicker.start()
+        #endif
         updateHostedContent()
         applyInitialPlacement(anchor: anchor)
         window.orderFrontRegardless()
@@ -115,6 +121,9 @@ final class AnalyticsPanelController {
 
     func dismiss() {
         removeEventMonitors()
+        #if MOCK_MODE
+            demoMetricTicker.stop()
+        #endif
         guard isPresented || window.isVisible else { return }
         isPresented = false
         window.orderOutTransientChildWindows()
@@ -135,6 +144,9 @@ final class AnalyticsPanelController {
     func tearDown() {
         presentationTask?.cancel()
         presentationTask = nil
+        #if MOCK_MODE
+            demoMetricTicker.stop()
+        #endif
         dismiss()
         removeEventMonitors()
     }
@@ -159,8 +171,20 @@ final class AnalyticsPanelController {
 
     private func updateHostedContent() {
         let sessionID = sessionID
-        hostingView.rootView = AnyView(
-            MenuBarRootView(
+        #if MOCK_MODE
+            let rootView = MenuBarRootView(
+                model: model,
+                chartStyle: chartStyle,
+                demoMetricTicker: demoMetricTicker,
+                onOpenSettings: { [weak self] in
+                    self?.openSettings()
+                },
+                onDismissPanel: { [weak self] in
+                    self?.dismiss()
+                }
+            )
+        #else
+            let rootView = MenuBarRootView(
                 model: model,
                 chartStyle: chartStyle,
                 onOpenSettings: { [weak self] in
@@ -170,7 +194,9 @@ final class AnalyticsPanelController {
                     self?.dismiss()
                 }
             )
-            .id(sessionID)
+        #endif
+        hostingView.rootView = AnyView(
+            rootView.id(sessionID)
         )
     }
 
