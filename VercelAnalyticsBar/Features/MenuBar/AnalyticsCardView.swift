@@ -425,7 +425,7 @@ private struct AnalyticsHoverBackground<HoverShape: Shape>: ViewModifier {
 }
 
 private extension View {
-    func analyticsHoverBackground(in shape: some Shape) -> some View {
+    func analyticsHoverBackground<HoverShape: Shape>(in shape: HoverShape) -> some View {
         modifier(AnalyticsHoverBackground(shape: shape))
     }
 }

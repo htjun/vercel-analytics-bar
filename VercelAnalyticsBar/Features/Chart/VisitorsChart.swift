@@ -252,11 +252,12 @@ struct VisitorsChart: View {
 
     @MainActor
     private func runIntroAnimation() async {
-        guard style.chartIntroAnimationEnabled,
-              !reduceMotion,
-              let introPlayback,
-              introPlayback.claim()
-        else {
+        guard let introPlayback else {
+            finishIntroAnimation()
+            return
+        }
+        let shouldAnimate = introPlayback.claim()
+        guard style.chartIntroAnimationEnabled, !reduceMotion, shouldAnimate else {
             finishIntroAnimation()
             return
         }
