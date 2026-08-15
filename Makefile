@@ -34,7 +34,7 @@ run-inspector:
 	Scripts/run_inspector_dev.sh
 
 run-inspector-bundled:
-	Scripts/run_debug.sh --chart-inspector
+	Scripts/run_mock.sh "$(FIXTURE)" --chart-inspector
 
 run-mock:
 	Scripts/run_mock.sh "$(FIXTURE)"

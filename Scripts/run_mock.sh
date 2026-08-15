@@ -11,6 +11,19 @@ DERIVED_DATA_PATH="$REPOSITORY_ROOT/.build/MockDerivedData"
 APP_PATH="$DERIVED_DATA_PATH/Build/Products/Debug/VercelAnalyticsBar.app"
 RESOURCE_PATH="$APP_PATH/Contents/Resources/DemoFixture.json"
 APP_EXECUTABLE="$APP_PATH/Contents/MacOS/VercelAnalyticsBar"
+LAUNCH_ARGUMENT=""
+
+case ${2:-} in
+    "")
+        ;;
+    --chart-inspector | --chart-inspector-dev-server)
+        LAUNCH_ARGUMENT=$2
+        ;;
+    *)
+        echo "Unsupported mock launch argument: $2" >&2
+        exit 64
+        ;;
+esac
 
 if [[ ! "$FIXTURE_NAME" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
     echo "Invalid mock fixture name '$FIXTURE_NAME'. Use lowercase letters, numbers, and hyphens." >&2
@@ -35,4 +48,8 @@ xcodebuild \
     build
 
 /usr/bin/install -m 0644 "$FIXTURE_PATH" "$RESOURCE_PATH"
-open "$APP_PATH"
+if [[ -n "$LAUNCH_ARGUMENT" ]]; then
+    open "$APP_PATH" --args "$LAUNCH_ARGUMENT"
+else
+    open "$APP_PATH"
+fi

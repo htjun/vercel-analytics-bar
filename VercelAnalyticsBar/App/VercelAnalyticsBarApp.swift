@@ -88,6 +88,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     minimumContentSize: CGSize(width: 740, height: 560),
                     isResizable: true,
                     rootView: ChartInspectorView(
+                        model: model,
                         styleStore: chartStyle
                     )
                 )

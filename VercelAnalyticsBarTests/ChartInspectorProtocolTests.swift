@@ -346,7 +346,19 @@
             #expect(store.style == response.state.values)
         }
 
-        @Test func previewSampleMatchesTheIdealMockSeries() throws {
+        @Test func previewUsesTheLoadedMockSeries() throws {
+            let fixtureRoot = URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+                .appendingPathComponent("DemoFixtures", isDirectory: true)
+            let snapshot = try DemoFixtureLoader.load(
+                from: fixtureRoot.appendingPathComponent("ideal.json")
+            )
+
+            #expect(ChartInspectorPreview(analyticsState: .loaded(snapshot)).points == snapshot.series)
+        }
+
+        @Test func previewUsesTheIdealMockSeriesUntilTheModelLoads() throws {
             let fixtureRoot = URL(fileURLWithPath: #filePath)
                 .deletingLastPathComponent()
                 .deletingLastPathComponent()

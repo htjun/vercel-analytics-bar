@@ -5,11 +5,16 @@
     import VercelAnalyticsCore
 
     struct ChartInspectorView: View {
+        let model: AppModel
         let styleStore: ChartStyleStore
         @State private var pageState = ChartInspectorPageState()
 
         var body: some View {
+            #if MOCK_MODE
+                let preview = ChartInspectorPreview(analyticsState: model.state)
+            #else
             let preview = ChartInspectorPreview()
+            #endif
 
             HSplitView {
                 ChartInspectorPreviewView(
@@ -95,7 +100,20 @@
         let points: [VercelAnalyticsPoint]
 
         init() {
-            points = Self.samplePoints
+            self.init(points: Self.samplePoints)
+        }
+
+        init(analyticsState: AppModel.State) {
+            guard case let .loaded(snapshot) = analyticsState, !snapshot.series.isEmpty else {
+                self.init()
+                return
+            }
+
+            self.init(points: snapshot.series)
+        }
+
+        private init(points: [VercelAnalyticsPoint]) {
+            self.points = points
         }
 
         private static func sampleDate(hourOffset: Int) -> Date {
