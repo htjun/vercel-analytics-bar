@@ -198,6 +198,7 @@ final class AnalyticsPanel: NSPanel {
             defer: false
         )
 
+        appearance = NSAppearance(named: .aqua)
         isOpaque = false
         backgroundColor = .clear
         hasShadow = false

@@ -150,6 +150,7 @@ private func expectPanelFrames(_ controller: AnalyticsPanelController, equalTo g
     #expect(panel.frame.size == AnalyticsCardLayout.rootSize)
     #expect(panel.styleMask.contains(.borderless))
     #expect(panel.styleMask.contains(.nonactivatingPanel))
+    #expect(panel.appearance?.bestMatch(from: [.aqua, .darkAqua]) == .aqua)
     #expect(!panel.isOpaque)
     #expect(panel.backgroundColor == .clear)
     #expect(!panel.hasShadow)
