@@ -55,7 +55,7 @@ final class DemoMetricTicker {
         stop()
         task = Task { [weak self, sleep] in
             for (delay, visitorIncrement, pageViewIncrement) in [
-                (Duration.seconds(2), 7, 13),
+                (Duration.milliseconds(1200), 7, 13),
                 (Duration.seconds(4), 7, 13),
                 (Duration.seconds(4), 0, 3),
             ] {

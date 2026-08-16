@@ -145,7 +145,7 @@ struct DemoModeTests {
     }
 
     @MainActor
-    @Test func metricTickerUpdatesAfterTwoSixAndTenSeconds() async throws {
+    @Test func metricTickerUpdatesAfterOnePointTwoFivePointTwoAndNinePointTwoSeconds() async throws {
         let sleeper = DemoTickerTestSleeper()
         let ticker = DemoMetricTicker(sleep: { duration in
             try await sleeper.sleep(for: duration)
@@ -153,7 +153,7 @@ struct DemoModeTests {
 
         ticker.start()
         let firstDuration = try await sleeper.waitForPendingSleep(after: 0)
-        #expect(firstDuration == .seconds(2))
+        #expect(firstDuration == .milliseconds(1200))
         #expect(ticker.offsets == .zero)
 
         await sleeper.resumeNext()
