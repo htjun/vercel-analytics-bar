@@ -95,7 +95,7 @@ import Testing
     #expect(metricFont.pointSize == 48)
     #expect(resolvedVariationValue(.weight, in: metricFont) == 250)
     #expect(resolvedVariationValue(.opticalSize, in: metricFont) == 32)
-    #expect(openTypeFeatureTags(in: metricFont) == Set(["zero", "cv02", "cv03", "cv09"]))
+    #expect(openTypeFeatureTags(in: metricFont) == Set(["zero", "cv02", "cv03", "cv09", "ss03"]))
     #expect(AppTypography.metricTracking == 0)
 }
 

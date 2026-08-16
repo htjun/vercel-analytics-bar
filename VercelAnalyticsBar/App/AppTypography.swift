@@ -120,7 +120,7 @@ enum AppTypography {
     static let connectionTitleTracking: CGFloat = -0.16
     static let geistSlashedZeroFeatures = ["ss09"]
     static let interSlashedZeroFeatures = ["zero"]
-    static let metricFeatures = interSlashedZeroFeatures + ["cv03", "cv02", "cv09"]
+    static let metricFeatures = interSlashedZeroFeatures + ["cv03", "cv02", "cv09", "ss03"]
 
     static var geistRegular12: Font {
         AppFontRegistry.font(
