@@ -52,6 +52,13 @@ struct ChartStyleTests {
         #expect(VisitorsChart.yAxisValues(for: [1], desiredCount: 4, headroom: 0.1) == [0, 1, 2])
     }
 
+    @Test func yAxisLabelsUseCompactCountFormatting() {
+        #expect(VisitorsChart.yAxisLabel(for: 0) == "0")
+        #expect(VisitorsChart.yAxisLabel(for: 500_000_000_000) == "500B")
+        #expect(VisitorsChart.yAxisLabel(for: 1_500_000_000_000) == "1.5T")
+        #expect(VisitorsChart.yAxisLabel(for: 2_000_000_000_000) == "2T")
+    }
+
     @Test func defaultsMatchTheCanonicalChartPresentation() {
         let style = ChartStyle.default
 

@@ -2,30 +2,57 @@ import Foundation
 import VercelAnalyticsCore
 
 enum AnalyticsCountFormatter {
-    static func compact(_ value: Int) -> String {
-        if value < 1000 {
-            return value.formatted(.number.grouping(.never))
-        }
-        if value < 999_500 {
-            return compact(value, divisor: 1000, suffix: "K")
-        }
-        if value < 999_500_000 {
-            return compact(value, divisor: 1_000_000, suffix: "M")
-        }
-        return "999M+"
+    private struct Scale {
+        let divisor: Int
+        let suffix: String
     }
 
-    private static func compact(_ value: Int, divisor: Int, suffix: String) -> String {
-        let roundingIncrement = value < divisor * 10 ? divisor / 10 : divisor
-        let roundedValue = (value + roundingIncrement / 2) / roundingIncrement * roundingIncrement
-        let whole = roundedValue / divisor
+    private static let scales = [
+        Scale(divisor: 1_000, suffix: "K"),
+        Scale(divisor: 1_000_000, suffix: "M"),
+        Scale(divisor: 1_000_000_000, suffix: "B"),
+        Scale(divisor: 1_000_000_000_000, suffix: "T"),
+        Scale(divisor: 1_000_000_000_000_000, suffix: "P"),
+        Scale(divisor: 1_000_000_000_000_000_000, suffix: "E"),
+    ]
 
-        guard roundedValue < divisor * 10 else {
-            return "\(whole)\(suffix)"
+    static func compact(_ value: Int) -> String {
+        guard value >= 1_000 else {
+            return value.formatted(.number.grouping(.never))
         }
 
-        let tenth = roundedValue % divisor / (divisor / 10)
-        return tenth == 0 ? "\(whole)\(suffix)" : "\(whole).\(tenth)\(suffix)"
+        let scale = selectedScale(for: value)
+        let roundingIncrement = value / scale.divisor < 10
+            ? scale.divisor / 10
+            : scale.divisor
+        let roundedUnits = roundedUnits(value, increment: roundingIncrement)
+
+        if roundingIncrement == scale.divisor {
+            return "\(roundedUnits)\(scale.suffix)"
+        }
+
+        let whole = roundedUnits / 10
+        let tenth = roundedUnits % 10
+        return tenth == 0 ? "\(whole)\(scale.suffix)" : "\(whole).\(tenth)\(scale.suffix)"
+    }
+
+    private static func selectedScale(for value: Int) -> Scale {
+        for (index, scale) in scales.enumerated() where index < scales.count - 1 {
+            let nextScale = scales[index + 1]
+            let threshold = nextScale.divisor - nextScale.divisor / 2_000
+            if value < threshold {
+                return scale
+            }
+        }
+
+        return scales[scales.count - 1]
+    }
+
+    private static func roundedUnits(_ value: Int, increment: Int) -> Int {
+        let quotient = value / increment
+        let remainder = value % increment
+
+        return remainder >= increment / 2 ? quotient + 1 : quotient
     }
 }
 

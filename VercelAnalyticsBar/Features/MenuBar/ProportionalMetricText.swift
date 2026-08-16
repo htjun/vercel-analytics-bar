@@ -5,7 +5,7 @@ struct ProportionalMetricToken: Equatable, Identifiable {
     enum TokenID: Hashable {
         case digit(place: Int)
         case grouping(digitsToRight: Int)
-        case sign
+        case literal(positionFromRight: Int)
     }
 
     let id: TokenID
@@ -16,7 +16,10 @@ struct ProportionalMetricToken: Equatable, Identifiable {
     }
 
     static func make(for value: Int) -> [ProportionalMetricToken] {
-        let formatted = ProportionalMetricText.format(value)
+        make(for: ProportionalMetricText.format(value))
+    }
+
+    static func make(for formatted: String) -> [ProportionalMetricToken] {
         var digitPlace = 0
         var reversedTokens: [ProportionalMetricToken] = []
 
@@ -28,7 +31,7 @@ struct ProportionalMetricToken: Equatable, Identifiable {
             } else if character == "," {
                 id = .grouping(digitsToRight: digitPlace)
             } else {
-                id = .sign
+                id = .literal(positionFromRight: reversedTokens.count)
             }
             reversedTokens.append(ProportionalMetricToken(id: id, character: character))
         }
@@ -66,7 +69,7 @@ enum ProportionalMetricLayout {
             switch token.id {
             case .digit:
                 width + maximumDigitWidth
-            case .grouping, .sign:
+            case .grouping, .literal:
                 width + self.width(for: token, style: style)
             }
         } + trackingWidth(for: tokens, style: style)
@@ -136,6 +139,7 @@ struct ProportionalMetricText: View {
         .frame(width: Self.frameWidth, height: Self.frameHeight, alignment: .topLeading)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Self.format(value))
+        .help(Self.format(value))
         .onChange(of: value) { _, newValue in
             updateRenderedValue(newValue, animated: !reduceMotion)
         }
@@ -145,9 +149,10 @@ struct ProportionalMetricText: View {
     }
 
     private var staticText: some View {
-        let tokens = ProportionalMetricToken.make(for: value)
+        let displayText = Self.displayText(for: value, style: style)
+        let tokens = ProportionalMetricToken.make(for: displayText)
 
-        return Text(Self.format(value))
+        return Text(displayText)
             .font(style.font)
             .tracking(style.tracking)
             .lineLimit(1)
@@ -158,7 +163,8 @@ struct ProportionalMetricText: View {
     }
 
     private var animatedText: some View {
-        let tokens = ProportionalMetricToken.make(for: renderedValue)
+        let displayText = Self.displayText(for: renderedValue, style: style)
+        let tokens = ProportionalMetricToken.make(for: displayText)
 
         return HStack(alignment: .firstTextBaseline, spacing: CGFloat(style.tracking)) {
             ForEach(tokens) { token in
@@ -205,6 +211,18 @@ struct ProportionalMetricText: View {
 
     nonisolated static func rollsDown(from oldValue: Int, to newValue: Int) -> Bool {
         newValue < oldValue
+    }
+
+    static func displayText(for value: Int, style: NumberStyle = .default) -> String {
+        let fullText = format(value)
+        let fullTokens = ProportionalMetricToken.make(for: fullText)
+        let minimumScaleWidth = availableWidth / minimumScale
+
+        guard ProportionalMetricLayout.reservedWidth(for: fullTokens, style: style) > minimumScaleWidth else {
+            return fullText
+        }
+
+        return AnalyticsCountFormatter.compact(value)
     }
 
     static func scale(for tokens: [ProportionalMetricToken], style: NumberStyle = .default) -> CGFloat {

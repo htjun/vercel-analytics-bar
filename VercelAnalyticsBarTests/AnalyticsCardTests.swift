@@ -42,13 +42,24 @@ import VercelAnalyticsCore
         (10_499_999, "10M"),
         (10_500_000, "11M"),
         (999_499_999, "999M"),
-        (999_500_000, "999M+"),
-        (Int.max, "999M+"),
+        (999_500_000, "1B"),
+        (1_050_000_000, "1.1B"),
+        (999_500_000_000, "1T"),
+        (1_050_000_000_000, "1.1T"),
+        (999_500_000_000_000, "1P"),
+        (999_500_000_000_000_000, "1E"),
+        (Int.max, "9.2E"),
     ]
 
     for (value, expected) in cases {
         #expect(AnalyticsCountFormatter.compact(value) == expected)
     }
+}
+
+@MainActor
+@Test func proportionalMetricTextCompactsOnlyWhenTheFullValueWouldClip() {
+    #expect(ProportionalMetricText.displayText(for: 9_876_543, style: .default) == "9,876,543")
+    #expect(ProportionalMetricText.displayText(for: 9_876_543_210_987, style: .default) == "9.9T")
 }
 
 @Test func analyticsCardLayoutAndFixturesMatchTheReferenceFrame() {

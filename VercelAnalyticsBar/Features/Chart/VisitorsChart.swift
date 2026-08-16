@@ -166,7 +166,7 @@ struct VisitorsChart: View {
 
     @AxisContentBuilder
     private var yAxisContent: some AxisContent {
-        AxisMarks(position: .leading, values: yAxisValues) { _ in
+        AxisMarks(position: .leading, values: yAxisValues) { value in
             if style.showsHorizontalGridLines {
                 AxisGridLine(
                     stroke: style.horizontalGridLineStyle.strokeStyle(
@@ -188,9 +188,11 @@ struct VisitorsChart: View {
                         .opacity(style.horizontalAxisTickOpacity)
                 )
             }
-            if style.showsYAxisLabels {
-                AxisValueLabel()
-                    .font(AppTypography.geistMonoRegular11)
+            if style.showsYAxisLabels, let count = value.as(Int.self) {
+                AxisValueLabel {
+                    Text(Self.yAxisLabel(for: count))
+                }
+                .font(AppTypography.geistMonoRegular11)
             }
         }
     }
@@ -263,6 +265,10 @@ struct VisitorsChart: View {
         let axisMaximum = Int(ceil(Double(paddedMaximum) / Double(step))) * step
 
         return Array(stride(from: 0, through: axisMaximum, by: step))
+    }
+
+    static func yAxisLabel(for value: Int) -> String {
+        AnalyticsCountFormatter.compact(value)
     }
 
     private static func niceYAxisStep(for roughStep: Double) -> Int {
