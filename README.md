@@ -1,3 +1,5 @@
+![Analytics Menu Bar](assets/cover.png)
+
 # Analytics Menu Bar
 
 A macOS menu bar app for Vercel Analytics.
