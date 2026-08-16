@@ -204,6 +204,7 @@ private func renderAnalyticsCardFixture(
         presentation: presentation,
         chartStyle: .default,
         breakdownListStyle: .default,
+        numberStyle: .default,
         isProjectSelectorPresented: .constant(false),
         selectedBreakdown: .constant(selection),
         projectSelectorContent: { EmptyView() },

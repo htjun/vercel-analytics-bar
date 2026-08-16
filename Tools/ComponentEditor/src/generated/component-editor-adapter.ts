@@ -7,6 +7,8 @@ import {
   CHART_STYLE_RANGES,
   BREAKDOWN_LIST_STYLE_DEFAULT,
   BREAKDOWN_LIST_STYLE_RANGES,
+  NUMBER_STYLE_DEFAULT,
+  NUMBER_STYLE_RANGES,
   LINE_CAP_VALUES,
   LINE_JOIN_VALUES,
   INTERPOLATION_VALUES,
@@ -14,8 +16,10 @@ import {
   GRID_LINE_STYLE_VALUES,
   BORDER_STYLE_VALUES,
   FONT_WEIGHT_VALUES,
+  NUMBER_COMMA_STYLE_VALUES,
+  NUMBER_ANIMATION_EASING_VALUES,
 } from "./contract";
-import type { ChartStyle, BreakdownListStyle, ChartLineCap, ChartLineJoin, ChartInterpolation, ChartAnimationEasing, ChartGridLineStyle, ChartBorderStyle, ChartFontWeight } from "./contract";
+import type { ChartStyle, BreakdownListStyle, NumberStyle, ChartLineCap, ChartLineJoin, ChartInterpolation, ChartAnimationEasing, ChartGridLineStyle, ChartBorderStyle, ChartFontWeight, ChartNumberCommaStyle, ChartNumberAnimationEasing } from "./contract";
 
 export const CHART_STYLE_EDITOR_FIELDS = [
   { name: "lineColor", path: "line.color", control: "color" },
@@ -406,6 +410,82 @@ export function listStyleFromDialValues(values: ResolvedValues<typeof listFieldC
     introAnimationEasing: values.introAnimation.easing as ChartAnimationEasing,
     rowAnimationDuration: values.introAnimation.rowDuration,
     rowAnimationDelay: values.introAnimation.rowDelay,
+  };
+}
+
+export const NUMBER_STYLE_EDITOR_FIELDS = [
+  { name: "color", path: "typography.color", control: "color" },
+  { name: "fontSize", path: "typography.fontSize", control: "range" },
+  { name: "fontWeight", path: "typography.fontWeight", control: "range" },
+  { name: "opticalSize", path: "typography.opticalSize", control: "range" },
+  { name: "tracking", path: "typography.tracking", control: "range" },
+  { name: "commaStyle", path: "features.commaStyle", control: "select" },
+  { name: "slashedZero", path: "features.slashedZero", control: "boolean" },
+  { name: "openFour", path: "features.openFour", control: "boolean" },
+  { name: "openSix", path: "features.openSix", control: "boolean" },
+  { name: "flatTopThree", path: "features.flatTopThree", control: "boolean" },
+  { name: "animationDuration", path: "animation.duration", control: "range" },
+  { name: "animationEasing", path: "animation.easing", control: "select" },
+] as const;
+
+export const numberFieldConfig = {
+  typography: {
+    color: { type: "color" as const, default: NUMBER_STYLE_DEFAULT.color },
+    fontSize: dialRange(NUMBER_STYLE_DEFAULT.fontSize, NUMBER_STYLE_RANGES.fontSize),
+    fontWeight: dialRange(NUMBER_STYLE_DEFAULT.fontWeight, NUMBER_STYLE_RANGES.fontWeight),
+    opticalSize: dialRange(NUMBER_STYLE_DEFAULT.opticalSize, NUMBER_STYLE_RANGES.opticalSize),
+    tracking: dialRange(NUMBER_STYLE_DEFAULT.tracking, NUMBER_STYLE_RANGES.tracking),
+  },
+  features: {
+    commaStyle: { type: "select" as const, options: [...NUMBER_COMMA_STYLE_VALUES], default: NUMBER_STYLE_DEFAULT.commaStyle },
+    slashedZero: NUMBER_STYLE_DEFAULT.slashedZero,
+    openFour: NUMBER_STYLE_DEFAULT.openFour,
+    openSix: NUMBER_STYLE_DEFAULT.openSix,
+    flatTopThree: NUMBER_STYLE_DEFAULT.flatTopThree,
+  },
+  animation: {
+    duration: dialRange(NUMBER_STYLE_DEFAULT.animationDuration, NUMBER_STYLE_RANGES.animationDuration),
+    easing: { type: "select" as const, options: [...NUMBER_ANIMATION_EASING_VALUES], default: NUMBER_STYLE_DEFAULT.animationEasing },
+  },
+};
+
+export function numberDialValuesFromStyle(style: NumberStyle) {
+  return {
+    typography: {
+      color: style.color === "accent" ? "#007AFF" : style.color,
+      fontSize: style.fontSize,
+      fontWeight: style.fontWeight,
+      opticalSize: style.opticalSize,
+      tracking: style.tracking,
+    },
+    features: {
+      commaStyle: style.commaStyle,
+      slashedZero: style.slashedZero,
+      openFour: style.openFour,
+      openSix: style.openSix,
+      flatTopThree: style.flatTopThree,
+    },
+    animation: {
+      duration: style.animationDuration,
+      easing: style.animationEasing,
+    },
+  };
+}
+
+export function numberStyleFromDialValues(values: ResolvedValues<typeof numberFieldConfig>): NumberStyle {
+  return {
+    color: values.typography.color,
+    fontSize: values.typography.fontSize,
+    fontWeight: values.typography.fontWeight,
+    opticalSize: values.typography.opticalSize,
+    tracking: values.typography.tracking,
+    commaStyle: values.features.commaStyle as ChartNumberCommaStyle,
+    slashedZero: values.features.slashedZero,
+    openFour: values.features.openFour,
+    openSix: values.features.openSix,
+    flatTopThree: values.features.flatTopThree,
+    animationDuration: values.animation.duration,
+    animationEasing: values.animation.easing as ChartNumberAnimationEasing,
   };
 }
 

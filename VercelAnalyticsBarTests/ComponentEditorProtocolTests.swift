@@ -15,7 +15,7 @@
             let response = try session.receive(readyMessage)
 
             #expect(session.isReady)
-            #expect(response.state.protocolVersion == 7)
+            #expect(response.state.protocolVersion == 9)
             #expect(response.state.revision == 0)
             #expect(response.state.values == .chart(.default))
         }
@@ -25,7 +25,7 @@
             let session = ComponentEditorSession(styleStore: store)
             let changedStyle = try makeEditorStyle(lineWidth: 4)
             let styleChange = ComponentEditorIncomingMessage(
-                protocolVersion: 7,
+                protocolVersion: 9,
                 type: .styleChanged,
                 source: "component-editor",
                 revision: 1,
@@ -46,7 +46,7 @@
             }
 
             let invalidRevision = ComponentEditorIncomingMessage(
-                protocolVersion: 7,
+                protocolVersion: 9,
                 type: .styleChanged,
                 source: "component-editor",
                 revision: ComponentEditorProtocol.maximumRevision + 1,
@@ -63,7 +63,7 @@
             _ = try session.receive(readyMessage)
             _ = try session.receive(
                 ComponentEditorIncomingMessage(
-                    protocolVersion: 7,
+                    protocolVersion: 9,
                     type: .styleChanged,
                     source: "component-editor",
                     revision: ComponentEditorProtocol.maximumRevision,
@@ -103,7 +103,7 @@
 
             let lineWidthResponse = try session.receive(
                 ComponentEditorIncomingMessage(
-                    protocolVersion: 7,
+                    protocolVersion: 9,
                     type: .styleChanged,
                     source: "component-editor",
                     revision: 1,
@@ -114,7 +114,7 @@
 
             let timingResponse = try session.receive(
                 ComponentEditorIncomingMessage(
-                    protocolVersion: 7,
+                    protocolVersion: 9,
                     type: .styleChanged,
                     source: "component-editor",
                     revision: 2,
@@ -140,11 +140,16 @@
             let chartState = session.stateMessage
             session.select(.list)
             let listState = session.stateMessage
+            session.select(.numbers)
+            let numbersState = session.stateMessage
 
             #expect(chartState.component == .chart)
             #expect(listState.component == .list)
+            #expect(numbersState.component == .numbers)
             #expect(chartState.revision == listState.revision)
             #expect(listState.values == .list(.default))
+            #expect(numbersState.values == .numbers(.default))
+            #expect(numbersState.testValue == "325922")
         }
 
         @Test func componentEditorUsesThePlannedWindowTitleAndSizes() {
@@ -183,6 +188,71 @@
             #expect(store.listStyle == .default)
         }
 
+        @Test func numbersActionsOnlyAffectTheSelectedComponent() throws {
+            let chart = try makeEditorStyle(lineWidth: 5)
+            let list = try makeEditorListStyle(visibleRowCount: 4)
+            let store = ComponentStyleStore(chartStyle: chart, listStyle: list)
+            let session = ComponentEditorSession(styleStore: store)
+            _ = try session.receive(readyMessage)
+            session.select(.numbers)
+
+            let numbers = try makeEditorNumberStyle(fontWeight: 375)
+            let response = try session.receive(body: styleChangeBody(
+                component: .numbers,
+                values: numbers,
+                revision: 1
+            ))
+
+            #expect(response.state.component == .numbers)
+            #expect(store.chartStyle == chart)
+            #expect(store.listStyle == list)
+            #expect(store.numberStyle == numbers)
+
+            let copiedResponse = try session.receive(commandMessage(.copyStyle, component: .numbers))
+            let copiedJSON = try #require(copiedResponse.copiedStyleJSON)
+            #expect(try JSONDecoder().decode(NumberStyle.self, from: Data(copiedJSON.utf8)) == numbers)
+            #expect(!copiedJSON.contains("testValue"))
+
+            _ = try session.receive(commandMessage(.reset, component: .numbers))
+            #expect(store.chartStyle == chart)
+            #expect(store.listStyle == list)
+            #expect(store.numberStyle == .default)
+        }
+
+        @Test func numberPreviewValueIsEditorOnlyAndRejectsNegativeValues() throws {
+            let pageState = ComponentEditorPageState()
+
+            #expect(pageState.numberPreviewValue == 325_922)
+            pageState.setNumberPreviewValue(1_006)
+            #expect(pageState.numberPreviewValue == 1_006)
+            pageState.setNumberPreviewValue(-1)
+            #expect(pageState.numberPreviewValue == 1_006)
+
+            let session = ComponentEditorSession(styleStore: ComponentStyleStore())
+            _ = try session.receive(readyMessage)
+            session.select(.numbers)
+            let response = try session.receive(body: [
+                "protocolVersion": 9,
+                "type": "numberPreviewValueChanged",
+                "source": "component-editor",
+                "component": "numbers",
+                "testValue": "9223372036854775807",
+            ])
+            #expect(response.numberPreviewValue == Int.max)
+            #expect(response.state.testValue == String(Int.max))
+
+            #expect(throws: ComponentEditorProtocolError.invalidNumberPreviewValue) {
+                try session.receive(body: [
+                    "protocolVersion": 9,
+                    "type": "numberPreviewValueChanged",
+                    "source": "component-editor",
+                    "component": "numbers",
+                    "testValue": "-1",
+                ])
+            }
+            #expect(session.stateMessage.testValue == String(Int.max))
+        }
+
         @Test func styleChangesRejectAComponentMismatch() throws {
             let session = ComponentEditorSession(styleStore: ComponentStyleStore())
             _ = try session.receive(readyMessage)
@@ -210,7 +280,7 @@
             #expect(throws: ComponentEditorProtocolError.unexpectedProtocolVersion) {
                 try session.receive(
                     ComponentEditorIncomingMessage(
-                        protocolVersion: 8,
+                        protocolVersion: 10,
                         type: .ready,
                         source: "component-editor",
                         revision: nil,
@@ -221,7 +291,7 @@
             #expect(throws: ComponentEditorProtocolError.unexpectedSource) {
                 try session.receive(
                     ComponentEditorIncomingMessage(
-                        protocolVersion: 7,
+                        protocolVersion: 9,
                         type: .ready,
                         source: "unexpected",
                         revision: nil,
@@ -230,7 +300,7 @@
                 )
             }
             #expect(throws: (any Error).self) {
-                try session.receive(body: ["protocolVersion": 7, "type": "unknown"])
+                try session.receive(body: ["protocolVersion": 9, "type": "unknown"])
             }
         }
 
@@ -331,7 +401,7 @@
 
         private var readyMessage: ComponentEditorIncomingMessage {
             ComponentEditorIncomingMessage(
-                protocolVersion: 7,
+                protocolVersion: 9,
                 type: .ready,
                 source: "component-editor",
                 revision: nil,
@@ -344,7 +414,7 @@
             component: EditableComponent = .chart
         ) -> ComponentEditorIncomingMessage {
             ComponentEditorIncomingMessage(
-                protocolVersion: 7,
+                protocolVersion: 9,
                 type: type,
                 source: "component-editor",
                 revision: nil,
@@ -361,7 +431,7 @@
             let data = try JSONEncoder().encode(values)
             let styleValues = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
             return [
-                "protocolVersion": 7,
+                "protocolVersion": 9,
                 "type": "styleChanged",
                 "source": "component-editor",
                 "revision": revision,
@@ -378,7 +448,7 @@
             let session = ComponentEditorSession(styleStore: store)
             _ = try session.receive(readyMessage)
             let response = try session.receive(body: [
-                "protocolVersion": 7,
+                "protocolVersion": 9,
                 "type": "styleChanged",
                 "source": "component-editor",
                 "revision": 4,
@@ -543,6 +613,16 @@
         object["visibleRowCount"] = visibleRowCount
         return try JSONDecoder().decode(
             BreakdownListStyle.self,
+            from: JSONSerialization.data(withJSONObject: object)
+        )
+    }
+
+    private func makeEditorNumberStyle(fontWeight: Double) throws -> NumberStyle {
+        let data = try JSONEncoder().encode(NumberStyle.default)
+        var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object["fontWeight"] = fontWeight
+        return try JSONDecoder().decode(
+            NumberStyle.self,
             from: JSONSerialization.data(withJSONObject: object)
         )
     }

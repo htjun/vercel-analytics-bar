@@ -8,6 +8,7 @@ import {
 import type {
   BreakdownListStyle,
   ChartStyle,
+  NumberStyle,
   NativeStateMessage,
   WebCommandMessage,
   WebMessage,
@@ -17,7 +18,8 @@ type MessageSender = (message: WebMessage) => void;
 type StateListener = (message: NativeStateMessage) => void;
 export type ComponentStyleChange =
   | { component: "chart"; values: ChartStyle }
-  | { component: "list"; values: BreakdownListStyle };
+  | { component: "list"; values: BreakdownListStyle }
+  | { component: "numbers"; values: NumberStyle };
 
 export class ComponentEditorBridge {
   private currentState: NativeStateMessage | undefined;
@@ -83,24 +85,37 @@ export class ComponentEditorBridge {
     }
 
     const revision = this.nextRevision;
-    if (change.component === "chart") {
-      this.send({
-        protocolVersion: EDITOR_PROTOCOL_VERSION,
-        type: "styleChanged",
-        source: EDITOR_SOURCE,
-        revision,
-        component: "chart",
-        values: change.values,
-      });
-    } else {
-      this.send({
-        protocolVersion: EDITOR_PROTOCOL_VERSION,
-        type: "styleChanged",
-        source: EDITOR_SOURCE,
-        revision,
-        component: "list",
-        values: change.values,
-      });
+    switch (change.component) {
+      case "chart":
+        this.send({
+          protocolVersion: EDITOR_PROTOCOL_VERSION,
+          type: "styleChanged",
+          source: EDITOR_SOURCE,
+          revision,
+          component: change.component,
+          values: change.values,
+        });
+        break;
+      case "list":
+        this.send({
+          protocolVersion: EDITOR_PROTOCOL_VERSION,
+          type: "styleChanged",
+          source: EDITOR_SOURCE,
+          revision,
+          component: change.component,
+          values: change.values,
+        });
+        break;
+      case "numbers":
+        this.send({
+          protocolVersion: EDITOR_PROTOCOL_VERSION,
+          type: "styleChanged",
+          source: EDITOR_SOURCE,
+          revision,
+          component: change.component,
+          values: change.values,
+        });
+        break;
     }
     this.nextRevision += 1;
     this.pendingStyles.set(revision, change);
@@ -117,6 +132,22 @@ export class ComponentEditorBridge {
 
   postReplayAnimation(): void {
     this.postCommand("replayAnimation");
+  }
+
+  postNumberPreviewValue(testValue: string): boolean {
+    const currentState = this.currentState;
+    if (currentState?.component !== "numbers" || currentState.testValue === testValue) {
+      return false;
+    }
+    this.currentState = { ...currentState, testValue };
+    this.send({
+      protocolVersion: EDITOR_PROTOCOL_VERSION,
+      type: "numberPreviewValueChanged",
+      source: EDITOR_SOURCE,
+      component: "numbers",
+      testValue,
+    });
+    return true;
   }
 
   subscribe(listener: StateListener): () => void {
@@ -160,21 +191,43 @@ export function listStylesAreEquivalent(left: BreakdownListStyle, right: Breakdo
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
+export function numberStylesAreEquivalent(left: NumberStyle, right: NumberStyle): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
 function componentStyleMatches(state: NativeStateMessage, change: ComponentStyleChange): boolean {
-  return state.component === change.component &&
-    (state.component === "chart"
-      ? chartStylesAreEquivalent(state.values, change.values as ChartStyle)
-      : listStylesAreEquivalent(state.values, change.values as BreakdownListStyle));
+  if (state.component !== change.component) {
+    return false;
+  }
+  if (state.component === "chart" && change.component === "chart") {
+    return chartStylesAreEquivalent(state.values, change.values);
+  }
+  if (state.component === "list" && change.component === "list") {
+    return listStylesAreEquivalent(state.values, change.values);
+  }
+  if (state.component === "numbers" && change.component === "numbers") {
+    return numberStylesAreEquivalent(state.values, change.values);
+  }
+  return false;
 }
 
 function componentChangesAreEquivalent(
   left: ComponentStyleChange,
   right: ComponentStyleChange,
 ): boolean {
-  return left.component === right.component &&
-    (left.component === "chart"
-      ? chartStylesAreEquivalent(left.values, right.values as ChartStyle)
-      : listStylesAreEquivalent(left.values, right.values as BreakdownListStyle));
+  if (left.component !== right.component) {
+    return false;
+  }
+  if (left.component === "chart" && right.component === "chart") {
+    return chartStylesAreEquivalent(left.values, right.values);
+  }
+  if (left.component === "list" && right.component === "list") {
+    return listStylesAreEquivalent(left.values, right.values);
+  }
+  if (left.component === "numbers" && right.component === "numbers") {
+    return numberStylesAreEquivalent(left.values, right.values);
+  }
+  return false;
 }
 
 function serializeStyle(style: ChartStyle): string {

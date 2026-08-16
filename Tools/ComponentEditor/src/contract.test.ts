@@ -3,6 +3,8 @@ import {
   CHART_STYLE_DEFAULT,
   CHART_STYLE_RANGES,
   BREAKDOWN_LIST_STYLE_DEFAULT,
+  NUMBER_STYLE_DEFAULT,
+  NUMBER_STYLE_RANGES,
   ANIMATION_EASING_VALUES,
   BORDER_STYLE_VALUES,
   FIRST_STYLE_CHANGE_REVISION,
@@ -12,23 +14,29 @@ import {
   LINE_CAP_VALUES,
   INTERPOLATION_VALUES,
   LINE_JOIN_VALUES,
+  NUMBER_ANIMATION_EASING_VALUES,
+  NUMBER_COMMA_STYLE_VALUES,
   MAX_EDITOR_REVISION,
   MIN_EDITOR_REVISION,
   NATIVE_SOURCE,
   NATIVE_STATE_MESSAGE,
   isBreakdownListStyle,
   isChartStyle,
+  isNumberStyle,
   isNativeStateMessage,
 } from "./generated/contract";
-import type { BreakdownListStyle, ChartStyle } from "./generated/contract";
+import type { BreakdownListStyle, ChartStyle, NumberStyle } from "./generated/contract";
 import {
   CHART_STYLE_EDITOR_FIELDS,
   LIST_STYLE_EDITOR_FIELDS,
+  NUMBER_STYLE_EDITOR_FIELDS,
   chartFieldConfig,
   chartDialValuesFromStyle,
   chartStyleFromDialValues,
   listDialValuesFromStyle,
   listStyleFromDialValues,
+  numberDialValuesFromStyle,
+  numberStyleFromDialValues,
 } from "./generated/component-editor-adapter";
 
 describe("generated Component Editor contract", () => {
@@ -42,7 +50,7 @@ describe("generated Component Editor contract", () => {
       nativeSource: NATIVE_SOURCE,
       nativeStateMessage: NATIVE_STATE_MESSAGE,
     }).toEqual({
-      version: 7,
+      version: 9,
       minimumRevision: 0,
       firstStyleChangeRevision: 1,
       maximumRevision: 1_000_000_000,
@@ -380,5 +388,93 @@ describe("generated Component Editor contract", () => {
       component: "chart",
       values: style,
     })).toBe(false);
+    expect(isNativeStateMessage({
+      protocolVersion: EDITOR_PROTOCOL_VERSION,
+      type: NATIVE_STATE_MESSAGE,
+      source: NATIVE_SOURCE,
+      revision: 1,
+      component: "numbers",
+      values: style,
+      testValue: "9223372036854775808",
+    })).toBe(false);
+  });
+
+  it("validates and translates the Numbers component contract", () => {
+    const style: NumberStyle = {
+      color: "#123456",
+      fontSize: 64,
+      fontWeight: 375,
+      opticalSize: 20,
+      tracking: -0.25,
+      commaStyle: "square",
+      slashedZero: false,
+      openFour: false,
+      openSix: true,
+      flatTopThree: false,
+      animationDuration: 1.25,
+      animationEasing: "easeInOut",
+    };
+
+    expect(NUMBER_STYLE_DEFAULT).toEqual({
+      color: "#262626",
+      fontSize: 48,
+      fontWeight: 280,
+      opticalSize: 32,
+      tracking: -0.25,
+      commaStyle: "square",
+      slashedZero: true,
+      openFour: true,
+      openSix: true,
+      flatTopThree: true,
+      animationDuration: 0.4,
+      animationEasing: "snappy",
+    });
+    expect(NUMBER_STYLE_RANGES).toEqual({
+      fontSize: { minimum: 24, maximum: 72, step: 1, integer: false },
+      fontWeight: { minimum: 100, maximum: 900, step: 1, integer: false },
+      opticalSize: { minimum: 14, maximum: 32, step: 1, integer: false },
+      tracking: { minimum: -2, maximum: 2, step: 0.05, integer: false },
+      animationDuration: { minimum: 0.1, maximum: 2, step: 0.05, integer: false },
+    });
+    expect(NUMBER_COMMA_STYLE_VALUES).toEqual(["default", "round", "square"]);
+    expect(NUMBER_ANIMATION_EASING_VALUES).toEqual(["snappy", "linear", "easeIn", "easeOut", "easeInOut"]);
+    expect(NUMBER_STYLE_EDITOR_FIELDS).toHaveLength(12);
+    expect(isNumberStyle(style)).toBe(true);
+    expect(numberStyleFromDialValues(numberDialValuesFromStyle(style))).toEqual(style);
+    expect(isNativeStateMessage({
+      protocolVersion: EDITOR_PROTOCOL_VERSION,
+      type: NATIVE_STATE_MESSAGE,
+      source: NATIVE_SOURCE,
+      revision: 1,
+      component: "numbers",
+      values: style,
+      testValue: "3159",
+    })).toBe(true);
+    expect(isNativeStateMessage({
+      protocolVersion: EDITOR_PROTOCOL_VERSION,
+      type: NATIVE_STATE_MESSAGE,
+      source: NATIVE_SOURCE,
+      revision: 1,
+      component: "numbers",
+      values: style,
+    })).toBe(false);
+
+    const invalidValues: Partial<NumberStyle>[] = [
+      { color: "red" },
+      { fontSize: 23 },
+      { fontWeight: 901 },
+      { opticalSize: 33 },
+      { tracking: 2.01 },
+      { commaStyle: "curved" as NumberStyle["commaStyle"] },
+      { slashedZero: 1 as unknown as boolean },
+      { openFour: 1 as unknown as boolean },
+      { openSix: 1 as unknown as boolean },
+      { flatTopThree: 1 as unknown as boolean },
+      { animationDuration: 2.1 },
+      { animationEasing: "spring" as NumberStyle["animationEasing"] },
+    ];
+    for (const invalidValue of invalidValues) {
+      expect(isNumberStyle({ ...NUMBER_STYLE_DEFAULT, ...invalidValue })).toBe(false);
+    }
   });
 });

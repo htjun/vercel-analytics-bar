@@ -136,6 +136,7 @@ struct MenuBarRootView: View {
             presentation: presentation(for: snapshot),
             chartStyle: componentStyle.chartStyle,
             breakdownListStyle: componentStyle.listStyle,
+            numberStyle: componentStyle.numberStyle,
             chartIntroPlayback: chartIntroPlayback,
             breakdownListIntroPlayback: breakdownListIntroPlayback,
             isProjectSelectorPresented: $isProjectSelectorPresented,

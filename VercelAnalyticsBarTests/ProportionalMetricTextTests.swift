@@ -65,3 +65,57 @@ import Testing
     #expect(ProportionalMetricText.scale(for: overflowingTokens) >=
         ProportionalMetricText.minimumScale)
 }
+
+@MainActor
+@Test func proportionalMetricLayoutUsesTheActiveNumberStyle() throws {
+    let tokens = ProportionalMetricToken.make(for: 9999)
+    let enlargedStyle = try NumberStyle(
+        color: .rgb(red: 38, green: 38, blue: 38),
+        fontSize: 72,
+        fontWeight: 280,
+        opticalSize: 32,
+        tracking: 0,
+        commaStyle: .square,
+        slashedZero: true,
+        openFour: true,
+        openSix: true,
+        flatTopThree: true,
+        animationDuration: 0.4,
+        animationEasing: .snappy
+    )
+
+    #expect(
+        ProportionalMetricLayout.reservedWidth(for: tokens, style: enlargedStyle) >
+            ProportionalMetricLayout.reservedWidth(for: tokens)
+    )
+    #expect(ProportionalMetricText.scale(for: tokens, style: enlargedStyle) < 1)
+}
+
+@MainActor
+@Test func proportionalMetricLayoutIncludesActiveTrackingInWidthReservations() throws {
+    let tokens = ProportionalMetricToken.make(for: 3_159)
+    let trackedStyle = try NumberStyle(
+        color: .rgb(red: 38, green: 38, blue: 38),
+        fontSize: 48,
+        fontWeight: 280,
+        opticalSize: 32,
+        tracking: 2,
+        commaStyle: .square,
+        slashedZero: true,
+        openFour: true,
+        openSix: true,
+        flatTopThree: true,
+        animationDuration: 0.4,
+        animationEasing: .snappy
+    )
+
+    let expectedTrackingWidth = CGFloat(tokens.count - 1)
+        * CGFloat(trackedStyle.tracking - NumberStyle.default.tracking)
+    let reservedWidthDelta = ProportionalMetricLayout.reservedWidth(for: tokens, style: trackedStyle)
+        - ProportionalMetricLayout.reservedWidth(for: tokens)
+    let naturalWidthDelta = ProportionalMetricLayout.naturalWidth(for: tokens, style: trackedStyle)
+        - ProportionalMetricLayout.naturalWidth(for: tokens)
+
+    #expect(abs(reservedWidthDelta - expectedTrackingWidth) < 0.001)
+    #expect(abs(naturalWidthDelta - expectedTrackingWidth) < 0.001)
+}

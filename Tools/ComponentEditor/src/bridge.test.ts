@@ -5,6 +5,7 @@ import {
   EDITOR_PROTOCOL_VERSION,
   MAX_EDITOR_REVISION,
   NATIVE_SOURCE,
+  NUMBER_STYLE_DEFAULT,
 } from "./generated/contract";
 import type { ChartStyle } from "./generated/contract";
 
@@ -282,6 +283,59 @@ describe("ComponentEditorBridge", () => {
         type: "copyStyle",
         source: "component-editor",
         component: "list",
+      },
+    ]);
+  });
+
+  it("scopes edits and commands to the native-selected Numbers component", () => {
+    const messages: unknown[] = [];
+    const bridge = new ComponentEditorBridge((message) => messages.push(message));
+    const numberStyle = { ...NUMBER_STYLE_DEFAULT, fontWeight: 375 };
+
+    expect(bridge.receiveState({
+      protocolVersion: EDITOR_PROTOCOL_VERSION,
+      type: "state",
+      source: NATIVE_SOURCE,
+      revision: 3,
+      component: "numbers",
+      values: NUMBER_STYLE_DEFAULT,
+      testValue: "3159",
+    })).toBe(true);
+    expect(bridge.postStyleChanged({ component: "chart", values: defaultStyle })).toBe(false);
+    expect(bridge.postStyleChanged({ component: "numbers", values: numberStyle })).toBe(true);
+    expect(bridge.postNumberPreviewValue("1006")).toBe(true);
+    expect(bridge.postNumberPreviewValue("1006")).toBe(false);
+
+    bridge.postReset();
+    bridge.postCopyStyle();
+
+    expect(messages).toEqual([
+      {
+        protocolVersion: EDITOR_PROTOCOL_VERSION,
+        type: "styleChanged",
+        source: "component-editor",
+        revision: 4,
+        component: "numbers",
+        values: numberStyle,
+      },
+      {
+        protocolVersion: EDITOR_PROTOCOL_VERSION,
+        type: "numberPreviewValueChanged",
+        source: "component-editor",
+        component: "numbers",
+        testValue: "1006",
+      },
+      {
+        protocolVersion: EDITOR_PROTOCOL_VERSION,
+        type: "reset",
+        source: "component-editor",
+        component: "numbers",
+      },
+      {
+        protocolVersion: EDITOR_PROTOCOL_VERSION,
+        type: "copyStyle",
+        source: "component-editor",
+        component: "numbers",
       },
     ]);
   });

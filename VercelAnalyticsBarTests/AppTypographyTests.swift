@@ -99,6 +99,36 @@ import Testing
     #expect(AppTypography.metricTracking == 0)
 }
 
+@MainActor
+@Test func numberStyleMapsInterAxesAndOpenTypeFeatures() throws {
+    let defaultStyle = NumberStyle.default
+    let defaultFont = defaultStyle.nsFont
+    let squareCommaStyle = try NumberStyle(
+        color: .rgb(red: 38, green: 38, blue: 38),
+        fontSize: 64,
+        fontWeight: 375,
+        opticalSize: 20,
+        tracking: -0.25,
+        commaStyle: .square,
+        slashedZero: false,
+        openFour: false,
+        openSix: true,
+        flatTopThree: false,
+        animationDuration: 1.25,
+        animationEasing: .easeInOut
+    )
+    let squareCommaFont = squareCommaStyle.nsFont
+
+    #expect(resolvedVariationValue(.weight, in: defaultFont) == 280)
+    #expect(resolvedVariationValue(.opticalSize, in: defaultFont) == 32)
+    #expect(openTypeFeatureTags(in: defaultFont) == Set(["zero", "cv02", "cv03", "cv09", "ss07"]))
+
+    #expect(squareCommaFont.pointSize == 64)
+    #expect(resolvedVariationValue(.weight, in: squareCommaFont) == 375)
+    #expect(resolvedVariationValue(.opticalSize, in: squareCommaFont) == 20)
+    #expect(openTypeFeatureTags(in: squareCommaFont) == Set(["cv03", "ss07"]))
+}
+
 private func resolvedVariationValue(_ axis: AppFontRegistry.VariationAxis, in font: NSFont) -> CGFloat? {
     let variations = CTFontCopyVariation(font as CTFont) as? [NSNumber: NSNumber]
     if let value = variations?[axis.identifier] {

@@ -120,6 +120,10 @@
                 if let component = response.replayedComponent {
                     pageState.replayAnimation(for: component)
                 }
+                if let numberPreviewValue = response.numberPreviewValue {
+                    pageState.setNumberPreviewValue(numberPreviewValue)
+                    return
+                }
                 send(response.state)
             }
 

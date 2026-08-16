@@ -44,7 +44,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             model: model,
             componentStyle: componentStyle,
             companionWindows: { [weak self] in
-                [self?.settingsWindowController?.window].compactMap(\.self)
+                self?.analyticsCompanionWindows ?? []
             },
             onOpenSettings: { [weak self] context in
                 self?.settingsWindowController?.present(adjacentTo: context)
@@ -102,6 +102,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             componentEditorWindowController?.present()
         #endif
+    }
+
+    private var analyticsCompanionWindows: [NSWindow] {
+        var windows = [settingsWindowController?.window].compactMap(\.self)
+        #if COMPONENT_EDITOR
+            windows.append(contentsOf: [componentEditorWindowController?.window].compactMap(\.self))
+        #endif
+        return windows
     }
 
     private var isComponentEditorEnabled: Bool {

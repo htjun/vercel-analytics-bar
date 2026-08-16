@@ -3,7 +3,7 @@
 
     struct ComponentEditorIncomingMessage: Decodable {
         private enum CodingKeys: String, CodingKey {
-            case protocolVersion, type, source, revision, component, values
+            case protocolVersion, type, source, revision, component, values, testValue
         }
 
         let protocolVersion: Int
@@ -12,6 +12,7 @@
         let revision: Int?
         let component: EditableComponent?
         let values: ComponentStyle?
+        let testValue: String?
 
         init(
             protocolVersion: Int,
@@ -19,7 +20,8 @@
             source: String,
             revision: Int?,
             component: EditableComponent? = nil,
-            values: ChartStyle?
+            values: ChartStyle?,
+            testValue: String? = nil
         ) {
             self.protocolVersion = protocolVersion
             self.type = type
@@ -27,6 +29,7 @@
             self.revision = revision
             self.component = component ?? (values == nil ? nil : .chart)
             self.values = values.map(ComponentStyle.chart)
+            self.testValue = testValue
         }
 
         static func decode(body: Any) throws -> ComponentEditorIncomingMessage {
@@ -44,6 +47,7 @@
             source = try container.decode(String.self, forKey: .source)
             revision = try container.decodeIfPresent(Int.self, forKey: .revision)
             component = try container.decodeIfPresent(EditableComponent.self, forKey: .component)
+            testValue = try container.decodeIfPresent(String.self, forKey: .testValue)
 
             guard let component, container.contains(.values) else {
                 values = nil
@@ -54,13 +58,15 @@
                 values = try .chart(container.decode(ChartStyle.self, forKey: .values))
             case .list:
                 values = try .list(container.decode(BreakdownListStyle.self, forKey: .values))
+            case .numbers:
+                values = try .numbers(container.decode(NumberStyle.self, forKey: .values))
             }
         }
     }
 
     struct ComponentEditorStateMessage: Encodable, Equatable {
         private enum CodingKeys: String, CodingKey {
-            case protocolVersion, type, source, revision, component, values
+            case protocolVersion, type, source, revision, component, values, testValue
         }
 
         let protocolVersion = ComponentEditorProtocol.version
@@ -69,6 +75,7 @@
         let revision: Int
         let component: EditableComponent
         let values: ComponentStyle
+        let testValue: String?
 
         func encode(to encoder: any Encoder) throws {
             var container = encoder.container(keyedBy: CodingKeys.self)
@@ -82,6 +89,9 @@
                 try container.encode(style, forKey: .values)
             case let .list(style):
                 try container.encode(style, forKey: .values)
+            case let .numbers(style):
+                try container.encode(style, forKey: .values)
+                try container.encodeIfPresent(testValue, forKey: .testValue)
             }
         }
 
@@ -98,6 +108,7 @@
         let state: ComponentEditorStateMessage
         let copiedStyleJSON: String?
         let replayedComponent: EditableComponent?
+        let numberPreviewValue: Int?
     }
 
     enum ComponentEditorProtocolError: Error, Equatable {
@@ -110,6 +121,7 @@
         case notReady
         case invalidRevision
         case staleRevision
+        case invalidNumberPreviewValue
     }
 
     @MainActor
@@ -118,6 +130,7 @@
         private(set) var isReady = false
         private(set) var revision = ComponentEditorProtocol.minimumRevision
         private(set) var selectedComponent: EditableComponent = .chart
+        private(set) var numberPreviewValue = 325_922
 
         init(styleStore: ComponentStyleStore) {
             self.styleStore = styleStore
@@ -145,15 +158,18 @@
 
             let copiedStyleJSON: String?
             let replayedComponent: EditableComponent?
+            let updatedNumberPreviewValue: Int?
             switch message.type {
             case .ready:
                 isReady = true
                 copiedStyleJSON = nil
                 replayedComponent = nil
+                updatedNumberPreviewValue = nil
             case .styleChanged:
                 try applyStyleChange(message)
                 copiedStyleJSON = nil
                 replayedComponent = nil
+                updatedNumberPreviewValue = nil
             case .reset:
                 try requireSelectedComponent(message)
                 guard revision < ComponentEditorProtocol.maximumRevision else {
@@ -163,20 +179,28 @@
                 revision += 1
                 copiedStyleJSON = nil
                 replayedComponent = nil
+                updatedNumberPreviewValue = nil
             case .copyStyle:
                 try requireSelectedComponent(message)
                 copiedStyleJSON = try canonicalStyleJSON()
                 replayedComponent = nil
+                updatedNumberPreviewValue = nil
             case .replayAnimation:
                 try requireSelectedComponent(message)
                 copiedStyleJSON = nil
                 replayedComponent = selectedComponent
+                updatedNumberPreviewValue = nil
+            case .numberPreviewValueChanged:
+                copiedStyleJSON = nil
+                replayedComponent = nil
+                updatedNumberPreviewValue = try applyNumberPreviewValueChange(message)
             }
 
             return ComponentEditorSessionResponse(
                 state: stateMessage,
                 copiedStyleJSON: copiedStyleJSON,
-                replayedComponent: replayedComponent
+                replayedComponent: replayedComponent,
+                numberPreviewValue: updatedNumberPreviewValue
             )
         }
 
@@ -184,7 +208,8 @@
             ComponentEditorStateMessage(
                 revision: revision,
                 component: selectedComponent,
-                values: styleStore.style(for: selectedComponent)
+                values: styleStore.style(for: selectedComponent),
+                testValue: selectedComponent == .numbers ? String(numberPreviewValue) : nil
             )
         }
 
@@ -224,6 +249,19 @@
             revision = incomingRevision
         }
 
+        private func applyNumberPreviewValueChange(_ message: ComponentEditorIncomingMessage) throws -> Int {
+            try requireSelectedComponent(message)
+            guard selectedComponent == .numbers,
+                  let testValue = message.testValue,
+                  let value = Int(testValue),
+                  value >= 0
+            else {
+                throw ComponentEditorProtocolError.invalidNumberPreviewValue
+            }
+            numberPreviewValue = value
+            return value
+        }
+
         private func canonicalStyleJSON() throws -> String {
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -231,6 +269,8 @@
             case let .chart(style):
                 try encoder.encode(style)
             case let .list(style):
+                try encoder.encode(style)
+            case let .numbers(style):
                 try encoder.encode(style)
             }
             guard let json = String(data: data, encoding: .utf8) else {

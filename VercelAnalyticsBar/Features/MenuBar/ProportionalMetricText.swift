@@ -39,50 +39,71 @@ struct ProportionalMetricToken: Equatable, Identifiable {
 
 @MainActor
 enum ProportionalMetricLayout {
-    private static let maximumDigitWidth = (0 ... 9)
-        .map { width(for: String($0)) }
+    static func width(
+        for token: ProportionalMetricToken,
+        style: NumberStyle = .default
+    ) -> CGFloat {
+        width(for: token.text, style: style)
+    }
+
+    static func naturalWidth(
+        for tokens: [ProportionalMetricToken],
+        style: NumberStyle = .default
+    ) -> CGFloat {
+        tokens.reduce(0) { $0 + width(for: $1, style: style) }
+            + trackingWidth(for: tokens, style: style)
+    }
+
+    static func reservedWidth(
+        for tokens: [ProportionalMetricToken],
+        style: NumberStyle = .default
+    ) -> CGFloat {
+        let maximumDigitWidth = (0 ... 9)
+            .map { width(for: String($0), style: style) }
         .max() ?? 0
 
-    static func width(for token: ProportionalMetricToken) -> CGFloat {
-        width(for: token.text)
-    }
-
-    static func naturalWidth(for tokens: [ProportionalMetricToken]) -> CGFloat {
-        tokens.reduce(0) { $0 + width(for: $1) }
-    }
-
-    static func reservedWidth(for tokens: [ProportionalMetricToken]) -> CGFloat {
-        tokens.reduce(0) { width, token in
+        return tokens.reduce(0) { width, token in
             switch token.id {
             case .digit:
                 width + maximumDigitWidth
             case .grouping, .sign:
-                width + self.width(for: token)
+                width + self.width(for: token, style: style)
             }
-        }
+        } + trackingWidth(for: tokens, style: style)
     }
 
     static func leadingOffsets(
-        for tokens: [ProportionalMetricToken]
+        for tokens: [ProportionalMetricToken],
+        style: NumberStyle = .default
     ) -> [ProportionalMetricToken.TokenID: CGFloat] {
         var offset: CGFloat = 0
         var offsets: [ProportionalMetricToken.TokenID: CGFloat] = [:]
 
-        for token in tokens {
+        for (index, token) in tokens.enumerated() {
             offsets[token.id] = offset
-            offset += width(for: token)
+            offset += width(for: token, style: style)
+            if index < tokens.count - 1 {
+                offset += CGFloat(style.tracking)
+            }
         }
 
         return offsets
     }
 
-    private static func width(for text: String) -> CGFloat {
+    private static func width(for text: String, style: NumberStyle) -> CGFloat {
         let attributedText = NSAttributedString(
             string: text,
-            attributes: [.font: AppTypography.interDisplay48NSFont]
+            attributes: [.font: style.nsFont]
         )
         let line = CTLineCreateWithAttributedString(attributedText)
         return CGFloat(CTLineGetTypographicBounds(line, nil, nil, nil))
+    }
+
+    private static func trackingWidth(
+        for tokens: [ProportionalMetricToken],
+        style: NumberStyle
+    ) -> CGFloat {
+        CGFloat(max(tokens.count - 1, 0)) * CGFloat(style.tracking)
     }
 }
 
@@ -91,15 +112,16 @@ struct ProportionalMetricText: View {
     static let availableWidth: CGFloat = 160
     static let frameHeight: CGFloat = 58
     static let minimumScale: CGFloat = 0.7
-    static let animation = Animation.snappy(duration: 0.4)
 
     let value: Int
+    let style: NumberStyle
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var renderedValue: Int
     @State private var countsDown = false
 
-    init(value: Int) {
+    init(value: Int, style: NumberStyle = .default) {
         self.value = value
+        self.style = style
         _renderedValue = State(initialValue: value)
     }
 
@@ -126,11 +148,11 @@ struct ProportionalMetricText: View {
         let tokens = ProportionalMetricToken.make(for: value)
 
         return Text(Self.format(value))
-            .font(AppTypography.interDisplay48)
-            .tracking(AppTypography.metricTracking)
+            .font(style.font)
+            .tracking(style.tracking)
             .lineLimit(1)
             .fixedSize()
-            .scaleEffect(Self.scale(for: tokens), anchor: .topLeading)
+            .scaleEffect(Self.scale(for: tokens, style: style), anchor: .topLeading)
             .frame(width: Self.availableWidth, height: Self.frameHeight, alignment: .topLeading)
             .clipped()
     }
@@ -138,23 +160,23 @@ struct ProportionalMetricText: View {
     private var animatedText: some View {
         let tokens = ProportionalMetricToken.make(for: renderedValue)
 
-        return HStack(alignment: .firstTextBaseline, spacing: 0) {
+        return HStack(alignment: .firstTextBaseline, spacing: CGFloat(style.tracking)) {
             ForEach(tokens) { token in
                 tokenText(token)
             }
         }
         .fixedSize()
-        .scaleEffect(Self.scale(for: tokens), anchor: .topLeading)
+        .scaleEffect(Self.scale(for: tokens, style: style), anchor: .topLeading)
         .frame(width: Self.availableWidth, height: Self.frameHeight, alignment: .topLeading)
         .clipped()
     }
 
     private func tokenText(_ token: ProportionalMetricToken) -> some View {
-        let width = ProportionalMetricLayout.width(for: token)
+        let width = ProportionalMetricLayout.width(for: token, style: style)
 
         return Text(token.text)
-            .font(AppTypography.interDisplay48)
-            .tracking(AppTypography.metricTracking)
+            .font(style.font)
+            .tracking(style.tracking)
             .contentTransition(.numericText(countsDown: countsDown))
             .frame(width: width, height: Self.frameHeight, alignment: .topLeading)
             .clipped()
@@ -172,7 +194,7 @@ struct ProportionalMetricText: View {
             return
         }
 
-        withAnimation(Self.animation) {
+        withAnimation(style.animation) {
             renderedValue = newValue
         }
     }
@@ -185,8 +207,8 @@ struct ProportionalMetricText: View {
         newValue < oldValue
     }
 
-    static func scale(for tokens: [ProportionalMetricToken]) -> CGFloat {
-        let reservedWidth = ProportionalMetricLayout.reservedWidth(for: tokens)
+    static func scale(for tokens: [ProportionalMetricToken], style: NumberStyle = .default) -> CGFloat {
+        let reservedWidth = ProportionalMetricLayout.reservedWidth(for: tokens, style: style)
         return max(Self.minimumScale, min(1, Self.availableWidth / max(reservedWidth, 1)))
     }
 }

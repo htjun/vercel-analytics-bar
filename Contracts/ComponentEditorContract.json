@@ -1,6 +1,6 @@
 {
   "protocol": {
-    "version": 7,
+    "version": 9,
     "revisions": {
       "nativeMinimum": 0,
       "styleChangeMinimum": 1,
@@ -14,6 +14,7 @@
       "nativeState": "state",
       "webIncoming": [
         "copyStyle",
+        "numberPreviewValueChanged",
         "ready",
         "replayAnimation",
         "reset",
@@ -62,6 +63,18 @@
       "fontWeight": [
         "regular",
         "medium"
+      ],
+      "numberCommaStyle": [
+        "default",
+        "round",
+        "square"
+      ],
+      "numberAnimationEasing": [
+        "snappy",
+        "linear",
+        "easeIn",
+        "easeOut",
+        "easeInOut"
       ]
     },
     "fields": [
@@ -839,6 +852,99 @@
         "maximum": 0.25,
         "step": 0.01,
         "editor": { "group": "introAnimation", "key": "rowDelay", "control": "range" }
+      }
+    ]
+  },
+  "numberStyle": {
+    "fields": [
+      {
+        "name": "color",
+        "type": "color",
+        "default": "#262626",
+        "editor": { "group": "typography", "key": "color", "control": "color", "accentDisplay": "#007AFF" }
+      },
+      {
+        "name": "fontSize",
+        "type": "number",
+        "default": 48,
+        "minimum": 24,
+        "maximum": 72,
+        "step": 1,
+        "editor": { "group": "typography", "key": "fontSize", "control": "range" }
+      },
+      {
+        "name": "fontWeight",
+        "type": "number",
+        "default": 280,
+        "minimum": 100,
+        "maximum": 900,
+        "step": 1,
+        "editor": { "group": "typography", "key": "fontWeight", "control": "range" }
+      },
+      {
+        "name": "opticalSize",
+        "type": "number",
+        "default": 32,
+        "minimum": 14,
+        "maximum": 32,
+        "step": 1,
+        "editor": { "group": "typography", "key": "opticalSize", "control": "range" }
+      },
+      {
+        "name": "tracking",
+        "type": "number",
+        "default": -0.25,
+        "minimum": -2,
+        "maximum": 2,
+        "step": 0.05,
+        "editor": { "group": "typography", "key": "tracking", "control": "range" }
+      },
+      {
+        "name": "commaStyle",
+        "type": "enum",
+        "enum": "numberCommaStyle",
+        "default": "square",
+        "editor": { "group": "features", "key": "commaStyle", "control": "select" }
+      },
+      {
+        "name": "slashedZero",
+        "type": "boolean",
+        "default": true,
+        "editor": { "group": "features", "key": "slashedZero", "control": "boolean" }
+      },
+      {
+        "name": "openFour",
+        "type": "boolean",
+        "default": true,
+        "editor": { "group": "features", "key": "openFour", "control": "boolean" }
+      },
+      {
+        "name": "openSix",
+        "type": "boolean",
+        "default": true,
+        "editor": { "group": "features", "key": "openSix", "control": "boolean" }
+      },
+      {
+        "name": "flatTopThree",
+        "type": "boolean",
+        "default": true,
+        "editor": { "group": "features", "key": "flatTopThree", "control": "boolean" }
+      },
+      {
+        "name": "animationDuration",
+        "type": "number",
+        "default": 0.4,
+        "minimum": 0.1,
+        "maximum": 2,
+        "step": 0.05,
+        "editor": { "group": "animation", "key": "duration", "control": "range" }
+      },
+      {
+        "name": "animationEasing",
+        "type": "enum",
+        "enum": "numberAnimationEasing",
+        "default": "snappy",
+        "editor": { "group": "animation", "key": "easing", "control": "select" }
       }
     ]
   }

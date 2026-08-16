@@ -22,6 +22,7 @@ final class ChartStyleStore {
 enum ComponentStyle: Equatable {
     case chart(ChartStyle)
     case list(BreakdownListStyle)
+    case numbers(NumberStyle)
 
     var component: EditableComponent {
         switch self {
@@ -29,6 +30,8 @@ enum ComponentStyle: Equatable {
             .chart
         case .list:
             .list
+        case .numbers:
+            .numbers
         }
     }
 }
@@ -38,13 +41,16 @@ enum ComponentStyle: Equatable {
 final class ComponentStyleStore {
     private(set) var chartStyle: ChartStyle
     private(set) var listStyle: BreakdownListStyle
+    private(set) var numberStyle: NumberStyle
 
     init(
         chartStyle: ChartStyle = .default,
-        listStyle: BreakdownListStyle = .default
+        listStyle: BreakdownListStyle = .default,
+        numberStyle: NumberStyle = .default
     ) {
         self.chartStyle = chartStyle
         self.listStyle = listStyle
+        self.numberStyle = numberStyle
     }
 
     func style(for component: EditableComponent) -> ComponentStyle {
@@ -53,6 +59,8 @@ final class ComponentStyleStore {
             .chart(chartStyle)
         case .list:
             .list(listStyle)
+        case .numbers:
+            .numbers(numberStyle)
         }
     }
 
@@ -64,6 +72,9 @@ final class ComponentStyleStore {
         case let .list(style):
             guard style != listStyle else { return }
             listStyle = style
+        case let .numbers(style):
+            guard style != numberStyle else { return }
+            numberStyle = style
         }
     }
 
@@ -73,6 +84,8 @@ final class ComponentStyleStore {
             update(.chart(.default))
         case .list:
             update(.list(.default))
+        case .numbers:
+            update(.numbers(.default))
         }
     }
 }

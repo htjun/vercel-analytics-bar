@@ -5,10 +5,12 @@ import {
   chartStylesAreEquivalent,
   createBrowserBridge,
   listStylesAreEquivalent,
+  numberStylesAreEquivalent,
 } from "./bridge";
 import type {
   BreakdownListStyle,
   ChartStyle,
+  NumberStyle,
   NativeStateMessage,
 } from "./generated/contract";
 import {
@@ -18,9 +20,13 @@ import {
   listDialValuesFromStyle,
   listFieldConfig,
   listStyleFromDialValues,
+  numberDialValuesFromStyle,
+  numberFieldConfig,
+  numberStyleFromDialValues,
 } from "./generated/component-editor-adapter";
 
 const bridge = createBrowserBridge();
+const maximumNumberPreviewValue = BigInt("9223372036854775807");
 export const chartConfig = {
   line: { ...chartFieldConfig.line, _collapsed: true },
   area: { ...chartFieldConfig.area, _collapsed: true },
@@ -57,6 +63,48 @@ export const listConfig = {
   },
 };
 
+export const numbersConfig = {
+  preview: {
+    _collapsed: false,
+    testValue: { type: "text" as const, default: "325,922", placeholder: "0" },
+  },
+  typography: {
+    ...numberFieldConfig.typography,
+    color: { type: "color" as const, default: "#262626" as const },
+    fontSize: [48, 24, 72, 1] as [number, number, number, number],
+    fontWeight: [280, 100, 900, 1] as [number, number, number, number],
+    opticalSize: [32, 14, 32, 1] as [number, number, number, number],
+    tracking: [-0.25, -2, 2, 0.05] as [number, number, number, number],
+    _collapsed: true,
+  },
+  features: {
+    ...numberFieldConfig.features,
+    commaStyle: {
+      ...numberFieldConfig.features.commaStyle,
+      default: "square" as const,
+    },
+    slashedZero: true,
+    openFour: true,
+    openSix: true,
+    flatTopThree: true,
+    _collapsed: true,
+  },
+  animation: {
+    ...numberFieldConfig.animation,
+    duration: [0.4, 0.1, 2, 0.05] as [number, number, number, number],
+    easing: {
+      ...numberFieldConfig.animation.easing,
+      default: "snappy" as const,
+    },
+    _collapsed: true,
+  },
+  actions: {
+    _collapsed: false,
+    reset: { type: "action" as const, label: "Reset to defaults" },
+    copyStyle: { type: "action" as const, label: "Copy canonical JSON" },
+  },
+};
+
 export function ComponentEditor() {
   const [nativeState, setNativeState] = useState<NativeStateMessage>();
 
@@ -75,6 +123,9 @@ export function ComponentEditor() {
     <>
       {nativeState?.component === "chart" && <ChartControls style={nativeState.values} />}
       {nativeState?.component === "list" && <ListControls style={nativeState.values} />}
+      {nativeState?.component === "numbers" && (
+        <NumbersControls style={nativeState.values} testValue={nativeState.testValue} />
+      )}
       <DialRoot mode="inline" theme="system" productionEnabled />
     </>
   );
@@ -150,4 +201,74 @@ function ListControls({ style }: { style: BreakdownListStyle }) {
   }, [nextStyle]);
 
   return null;
+}
+
+function NumbersControls({ style, testValue: nativeTestValue }: { style: NumberStyle; testValue: string }) {
+  const suppressNextStylePost = useRef(false);
+  const latestValidTestValue = useRef("325,922");
+  const dial = useDialKitController("Numbers", numbersConfig, {
+    id: "vercel-analytics-numbers",
+    onAction: (action) => {
+      if (action === "actions.reset") {
+        bridge.postReset();
+      } else if (action === "actions.copyStyle") {
+        bridge.postCopyStyle();
+      }
+    },
+  });
+  const setDialValues = dial.setValues;
+  const getDialValues = dial.getValues;
+  const values = dial.values;
+  const nextStyle = useMemo(() => numberStyleFromDialValues(values), [values]);
+  const testValue = values.preview.testValue;
+
+  useEffect(() => {
+    const currentDialStyle = numberStyleFromDialValues(getDialValues());
+    suppressNextStylePost.current = !numberStylesAreEquivalent(currentDialStyle, style);
+    const formattedTestValue = formatNumberPreviewValue(nativeTestValue);
+    latestValidTestValue.current = formattedTestValue;
+    setDialValues({
+      ...numberDialValuesFromStyle(style),
+      preview: { testValue: formattedTestValue },
+    });
+  }, [getDialValues, nativeTestValue, setDialValues, style]);
+
+  useEffect(() => {
+    if (suppressNextStylePost.current) {
+      suppressNextStylePost.current = false;
+      return;
+    }
+    bridge.postStyleChanged({ component: "numbers", values: nextStyle });
+  }, [nextStyle]);
+
+  useEffect(() => {
+    const canonicalTestValue = canonicalNumberPreviewValue(testValue);
+    if (canonicalTestValue === undefined) {
+      setDialValues({ preview: { testValue: latestValidTestValue.current } });
+      return;
+    }
+
+    const formattedTestValue = formatNumberPreviewValue(canonicalTestValue);
+    latestValidTestValue.current = formattedTestValue;
+    bridge.postNumberPreviewValue(canonicalTestValue);
+    if (testValue !== formattedTestValue) {
+      setDialValues({ preview: { testValue: formattedTestValue } });
+    }
+  }, [setDialValues, testValue]);
+
+  return null;
+}
+
+function canonicalNumberPreviewValue(value: string): string | undefined {
+  const digits = value.replaceAll(",", "").trim();
+  if (!/^\d+$/.test(digits)) {
+    return undefined;
+  }
+
+  const parsedValue = BigInt(digits);
+  return parsedValue <= maximumNumberPreviewValue ? parsedValue.toString() : undefined;
+}
+
+function formatNumberPreviewValue(value: string): string {
+  return new Intl.NumberFormat("en-US").format(BigInt(value));
 }

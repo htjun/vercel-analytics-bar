@@ -28,6 +28,11 @@
                             style: styleStore.listStyle,
                             animationReplayToken: pageState.listAnimationReplayToken
                         )
+                    case .numbers:
+                        ComponentEditorNumbersPreviewView(
+                            style: styleStore.numberStyle,
+                            value: pageState.numberPreviewValue
+                        )
                     }
                 }
                 .frame(minWidth: 380, idealWidth: 480, maxHeight: .infinity, alignment: .topLeading)
@@ -43,6 +48,7 @@
             HStack(spacing: 16) {
                 componentTab("Chart", component: .chart)
                 componentTab("List", component: .list)
+                componentTab("Numbers", component: .numbers)
             }
             .padding(.horizontal, 24)
             .padding(.top, 24)
@@ -209,6 +215,18 @@
         }
     }
 
+    struct ComponentEditorNumbersPreviewView: View {
+        let style: NumberStyle
+        let value: Int
+
+        var body: some View {
+            ProportionalMetricText(value: value, style: style)
+                .foregroundStyle(style.color.swiftUIColor)
+            .padding(24)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        }
+    }
+
     struct ComponentEditorPreview: Equatable {
         static let samplePoints: [VercelAnalyticsPoint] = {
             let values = [
@@ -264,6 +282,7 @@
         private(set) var reloadToken = 0
         private(set) var chartAnimationReplayToken = 0
         private(set) var listAnimationReplayToken = 0
+        private(set) var numberPreviewValue = 325_922
 
         func startLoading() {
             phase = .loading
@@ -288,7 +307,14 @@
                 chartAnimationReplayToken += 1
             case .list:
                 listAnimationReplayToken += 1
+            case .numbers:
+                break
             }
+        }
+
+        func setNumberPreviewValue(_ value: Int) {
+            guard value >= 0 else { return }
+            numberPreviewValue = value
         }
     }
 #endif

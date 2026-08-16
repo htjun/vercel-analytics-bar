@@ -96,6 +96,20 @@ enum ChartFontWeight: String, Codable, CaseIterable, Sendable {
     case medium
 }
 
+enum ChartNumberCommaStyle: String, Codable, CaseIterable, Sendable {
+    case `default`
+    case round
+    case square
+}
+
+enum ChartNumberAnimationEasing: String, Codable, CaseIterable, Sendable {
+    case snappy
+    case linear
+    case easeIn
+    case easeOut
+    case easeInOut
+}
+
 enum ChartStyleValidationError: Error, Equatable {
     case outOfRange(field: String, range: ClosedRange<Double>)
 }
@@ -808,14 +822,144 @@ struct BreakdownListStyle: Codable, Equatable, Sendable {
     }
 }
 
+enum NumberStyleValidationError: Error, Equatable {
+    case outOfRange(field: String, range: ClosedRange<Double>)
+}
+
+struct NumberStyle: Codable, Equatable, Sendable {
+    static let fontSizeRange = 24.0 ... 72.0
+    static let fontWeightRange = 100.0 ... 900.0
+    static let opticalSizeRange = 14.0 ... 32.0
+    static let trackingRange = -2.0 ... 2.0
+    static let animationDurationRange = 0.1 ... 2.0
+
+    static let `default`: NumberStyle = {
+        do {
+            return try NumberStyle(
+                color: .rgb(red: 38, green: 38, blue: 38),
+                fontSize: 48,
+                fontWeight: 280,
+                opticalSize: 32,
+                tracking: -0.25,
+                commaStyle: .square,
+                slashedZero: true,
+                openFour: true,
+                openSix: true,
+                flatTopThree: true,
+                animationDuration: 0.4,
+                animationEasing: .snappy
+            )
+        } catch {
+            preconditionFailure("The contract-defined NumberStyle must be valid: \(error)")
+        }
+    }()
+
+    let color: ChartColor
+    let fontSize: Double
+    let fontWeight: Double
+    let opticalSize: Double
+    let tracking: Double
+    let commaStyle: ChartNumberCommaStyle
+    let slashedZero: Bool
+    let openFour: Bool
+    let openSix: Bool
+    let flatTopThree: Bool
+    let animationDuration: Double
+    let animationEasing: ChartNumberAnimationEasing
+
+    // swiftlint:disable:next function_body_length
+    init(
+        color: ChartColor,
+        fontSize: Double,
+        fontWeight: Double,
+        opticalSize: Double,
+        tracking: Double,
+        commaStyle: ChartNumberCommaStyle,
+        slashedZero: Bool,
+        openFour: Bool,
+        openSix: Bool,
+        flatTopThree: Bool,
+        animationDuration: Double,
+        animationEasing: ChartNumberAnimationEasing
+    ) throws {
+        try Self.validate(
+            fontSize,
+            field: "fontSize",
+            range: Self.fontSizeRange
+        )
+        try Self.validate(
+            fontWeight,
+            field: "fontWeight",
+            range: Self.fontWeightRange
+        )
+        try Self.validate(
+            opticalSize,
+            field: "opticalSize",
+            range: Self.opticalSizeRange
+        )
+        try Self.validate(
+            tracking,
+            field: "tracking",
+            range: Self.trackingRange
+        )
+        try Self.validate(
+            animationDuration,
+            field: "animationDuration",
+            range: Self.animationDurationRange
+        )
+
+        self.color = color
+        self.fontSize = fontSize
+        self.fontWeight = fontWeight
+        self.opticalSize = opticalSize
+        self.tracking = tracking
+        self.commaStyle = commaStyle
+        self.slashedZero = slashedZero
+        self.openFour = openFour
+        self.openSix = openSix
+        self.flatTopThree = flatTopThree
+        self.animationDuration = animationDuration
+        self.animationEasing = animationEasing
+    }
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        try self.init(
+            color: container.decode(ChartColor.self, forKey: .color),
+            fontSize: container.decode(Double.self, forKey: .fontSize),
+            fontWeight: container.decode(Double.self, forKey: .fontWeight),
+            opticalSize: container.decode(Double.self, forKey: .opticalSize),
+            tracking: container.decode(Double.self, forKey: .tracking),
+            commaStyle: container.decode(ChartNumberCommaStyle.self, forKey: .commaStyle),
+            slashedZero: container.decode(Bool.self, forKey: .slashedZero),
+            openFour: container.decode(Bool.self, forKey: .openFour),
+            openSix: container.decode(Bool.self, forKey: .openSix),
+            flatTopThree: container.decode(Bool.self, forKey: .flatTopThree),
+            animationDuration: container.decode(Double.self, forKey: .animationDuration),
+            animationEasing: container.decode(ChartNumberAnimationEasing.self, forKey: .animationEasing)
+        )
+    }
+
+    private static func validate(
+        _ value: Double,
+        field: String,
+        range: ClosedRange<Double>
+    ) throws {
+        guard value.isFinite, range.contains(value) else {
+            throw NumberStyleValidationError.outOfRange(field: field, range: range)
+        }
+    }
+}
+
 enum EditableComponent: String, Codable, CaseIterable, Sendable {
     case chart
     case list
+    case numbers
 }
 
 #if COMPONENT_EDITOR
     enum ComponentEditorProtocol {
-        static let version = 7
+        static let version = 9
         static let minimumRevision = 0
         static let firstStyleChangeRevision = 1
         static let maximumRevision = 1_000_000_000
@@ -827,6 +971,7 @@ enum EditableComponent: String, Codable, CaseIterable, Sendable {
 
     enum ComponentEditorIncomingMessageType: String, Codable {
         case copyStyle
+        case numberPreviewValueChanged
         case ready
         case replayAnimation
         case reset

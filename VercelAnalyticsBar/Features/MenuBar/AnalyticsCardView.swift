@@ -137,6 +137,7 @@ struct AnalyticsCardView<SelectorContent: View>: View {
     let presentation: AnalyticsCardPresentation
     let chartStyle: ChartStyle
     let breakdownListStyle: BreakdownListStyle
+    let numberStyle: NumberStyle
     var chartIntroPlayback: ChartIntroPlayback?
     var breakdownListIntroPlayback: BreakdownListIntroPlayback?
     @Binding var isProjectSelectorPresented: Bool
@@ -284,8 +285,8 @@ struct AnalyticsCardView<SelectorContent: View>: View {
             }
             .frame(height: 16, alignment: .topLeading)
 
-            ProportionalMetricText(value: metric.value)
-                .foregroundStyle(AnalyticsCardColors.primaryText)
+            ProportionalMetricText(value: metric.value, style: numberStyle)
+                .foregroundStyle(numberStyle.color.swiftUIColor)
         }
         .frame(width: 114, height: 80, alignment: .topLeading)
         .accessibilityElement(children: .combine)

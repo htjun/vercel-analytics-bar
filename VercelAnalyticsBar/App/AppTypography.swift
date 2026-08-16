@@ -199,3 +199,74 @@ enum AppTypography {
 }
 
 private final class FontBundleLocator: NSObject {}
+
+@MainActor
+extension NumberStyle {
+    var font: Font {
+        Font(nsFont)
+    }
+
+    var nsFont: NSFont {
+        AppFontRegistry.nsFont(
+            postScriptName: "InterVariable",
+            size: fontSize,
+            variations: [.opticalSize: opticalSize, .weight: fontWeight],
+            openTypeFeatures: openTypeFeatures
+        )
+    }
+
+    var openTypeFeatures: [String] {
+        var features: [String] = []
+        if slashedZero {
+            features.append("zero")
+        }
+        if openFour {
+            features.append("cv02")
+        }
+        if openSix {
+            features.append("cv03")
+        }
+        if flatTopThree {
+            features.append("cv09")
+        }
+        switch commaStyle {
+        case .`default`:
+            break
+        case .round:
+            features.append("ss03")
+        case .square:
+            features.append("ss07")
+        }
+        return features
+    }
+
+    var animation: Animation {
+        switch animationEasing {
+        case .snappy:
+            .snappy(duration: animationDuration)
+        case .linear:
+            .linear(duration: animationDuration)
+        case .easeIn:
+            .easeIn(duration: animationDuration)
+        case .easeOut:
+            .easeOut(duration: animationDuration)
+        case .easeInOut:
+            .easeInOut(duration: animationDuration)
+        }
+    }
+}
+
+extension ChartColor {
+    var swiftUIColor: Color {
+        switch self {
+        case .accent:
+            .accentColor
+        case let .rgb(red, green, blue):
+            Color(
+                red: Double(red) / 255,
+                green: Double(green) / 255,
+                blue: Double(blue) / 255
+            )
+        }
+    }
+}
