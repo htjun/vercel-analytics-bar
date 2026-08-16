@@ -1,8 +1,8 @@
-![Analytics Menu Bar](assets/cover.png)
-
 # Analytics Menu Bar
 
 A macOS menu bar app for Vercel Analytics.
+
+![Analytics Menu Bar](assets/cover.png)
 
 ## Features
 
@@ -11,6 +11,12 @@ A macOS menu bar app for Vercel Analytics.
 - Personal and team project discovery, search, and switching
 - Five-minute refreshes with a local stale-data cache
 - Optional launch at login
+
+## Connect your Vercel account
+
+Create a Vercel access token in [Vercel Account Settings](https://vercel.com/account/tokens), then enter it when the app asks you to connect. Use a token that can access the projects you intend to view. The app sends it directly to Vercel to discover projects and load analytics; it has no intermediary service.
+
+The token is stored only in the macOS data-protection Keychain. To revoke access, delete the token in Vercel Account Settings, then disconnect in the app to remove the local credential, preferences, and cached analytics data.
 
 ## Privacy and security
 
