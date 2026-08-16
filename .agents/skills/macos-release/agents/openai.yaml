@@ -1,0 +1,4 @@
+interface:
+  display_name: "macOS Release"
+  short_description: "Build, notarize, verify, and publish macOS releases"
+  default_prompt: "Use $macos-release to prepare and publish a notarized macOS release from this repository."
