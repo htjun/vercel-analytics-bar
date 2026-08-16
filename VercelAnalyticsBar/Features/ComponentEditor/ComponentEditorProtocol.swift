@@ -149,12 +149,7 @@
         }
 
         func receive(_ message: ComponentEditorIncomingMessage) throws -> ComponentEditorSessionResponse {
-            guard message.protocolVersion == ComponentEditorProtocol.version else {
-                throw ComponentEditorProtocolError.unexpectedProtocolVersion
-            }
-            guard message.source == ComponentEditorProtocol.webSource else {
-                throw ComponentEditorProtocolError.unexpectedSource
-            }
+            try requireExpectedProtocol(message)
 
             let copiedStyleJSON: String?
             let replayedComponent: EditableComponent?
@@ -202,6 +197,15 @@
                 replayedComponent: replayedComponent,
                 numberPreviewValue: updatedNumberPreviewValue
             )
+        }
+
+        private func requireExpectedProtocol(_ message: ComponentEditorIncomingMessage) throws {
+            guard message.protocolVersion == ComponentEditorProtocol.version else {
+                throw ComponentEditorProtocolError.unexpectedProtocolVersion
+            }
+            guard message.source == ComponentEditorProtocol.webSource else {
+                throw ComponentEditorProtocolError.unexpectedSource
+            }
         }
 
         var stateMessage: ComponentEditorStateMessage {

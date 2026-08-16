@@ -230,7 +230,7 @@ extension NumberStyle {
             features.append("cv09")
         }
         switch commaStyle {
-        case .`default`:
+        case .default:
             break
         case .round:
             features.append("ss03")

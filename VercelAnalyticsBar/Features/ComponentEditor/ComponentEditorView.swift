@@ -222,8 +222,8 @@
         var body: some View {
             ProportionalMetricText(value: value, style: style)
                 .foregroundStyle(style.color.swiftUIColor)
-            .padding(24)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .padding(24)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         }
     }
 

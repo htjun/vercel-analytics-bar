@@ -52,6 +52,7 @@ struct ChartStyleTests {
         #expect(VisitorsChart.yAxisValues(for: [1], desiredCount: 4, headroom: 0.1) == [0, 1, 2])
     }
 
+    @MainActor
     @Test func yAxisLabelsUseCompactCountFormatting() {
         #expect(VisitorsChart.yAxisLabel(for: 0) == "0")
         #expect(VisitorsChart.yAxisLabel(for: 500_000_000_000) == "500B")

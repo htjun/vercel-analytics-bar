@@ -223,10 +223,10 @@
             let pageState = ComponentEditorPageState()
 
             #expect(pageState.numberPreviewValue == 325_922)
-            pageState.setNumberPreviewValue(1_006)
-            #expect(pageState.numberPreviewValue == 1_006)
+            pageState.setNumberPreviewValue(1006)
+            #expect(pageState.numberPreviewValue == 1006)
             pageState.setNumberPreviewValue(-1)
-            #expect(pageState.numberPreviewValue == 1_006)
+            #expect(pageState.numberPreviewValue == 1006)
 
             let session = ComponentEditorSession(styleStore: ComponentStyleStore())
             _ = try session.receive(readyMessage)

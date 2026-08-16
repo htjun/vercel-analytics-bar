@@ -93,7 +93,7 @@ import Testing
 
 @MainActor
 @Test func proportionalMetricLayoutIncludesActiveTrackingInWidthReservations() throws {
-    let tokens = ProportionalMetricToken.make(for: 3_159)
+    let tokens = ProportionalMetricToken.make(for: 3159)
     let trackedStyle = try NumberStyle(
         color: .rgb(red: 38, green: 38, blue: 38),
         fontSize: 48,

@@ -53,6 +53,8 @@ struct SystemLaunchAtLoginManager: LaunchAtLoginManaging {
             .enabled
         case .requiresApproval:
             .requiresApproval
+        case .notFound:
+            .unavailable
         @unknown default:
             .unavailable
         }

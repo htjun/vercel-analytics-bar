@@ -8,7 +8,7 @@ enum AnalyticsCountFormatter {
     }
 
     private static let scales = [
-        Scale(divisor: 1_000, suffix: "K"),
+        Scale(divisor: 1000, suffix: "K"),
         Scale(divisor: 1_000_000, suffix: "M"),
         Scale(divisor: 1_000_000_000, suffix: "B"),
         Scale(divisor: 1_000_000_000_000, suffix: "T"),
@@ -17,7 +17,7 @@ enum AnalyticsCountFormatter {
     ]
 
     static func compact(_ value: Int) -> String {
-        guard value >= 1_000 else {
+        guard value >= 1000 else {
             return value.formatted(.number.grouping(.never))
         }
 
@@ -39,7 +39,7 @@ enum AnalyticsCountFormatter {
     private static func selectedScale(for value: Int) -> Scale {
         for (index, scale) in scales.enumerated() where index < scales.count - 1 {
             let nextScale = scales[index + 1]
-            let threshold = nextScale.divisor - nextScale.divisor / 2_000
+            let threshold = nextScale.divisor - nextScale.divisor / 2000
             if value < threshold {
                 return scale
             }

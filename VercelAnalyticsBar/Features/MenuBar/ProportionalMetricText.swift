@@ -63,7 +63,7 @@ enum ProportionalMetricLayout {
     ) -> CGFloat {
         let maximumDigitWidth = (0 ... 9)
             .map { width(for: String($0), style: style) }
-        .max() ?? 0
+            .max() ?? 0
 
         return tokens.reduce(0) { width, token in
             switch token.id {

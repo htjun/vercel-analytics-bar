@@ -867,7 +867,6 @@ struct NumberStyle: Codable, Equatable, Sendable {
     let animationDuration: Double
     let animationEasing: ChartNumberAnimationEasing
 
-    // swiftlint:disable:next function_body_length
     init(
         color: ChartColor,
         fontSize: Double,
