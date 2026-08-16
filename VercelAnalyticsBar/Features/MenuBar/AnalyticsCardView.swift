@@ -97,7 +97,7 @@ struct AnalyticsCardPresentation: Equatable {
         series: fixtureSeries,
         topPages: pageFixtures,
         topReferrers: referralFixtures,
-        updatedText: "Opened 6:38 pm",
+        updatedText: "Updated 6:38 pm",
         dashboardURL: URL(string: "https://vercel.com")
     )
 

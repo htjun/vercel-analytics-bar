@@ -186,7 +186,7 @@ struct MenuBarRootView: View {
 
     private func updatedText(for snapshot: AnalyticsSnapshot) -> String {
         #if MOCK_MODE
-            return "Opened \(openedAt.formatted(date: .omitted, time: .shortened))"
+            return "Updated \(openedAt.formatted(date: .omitted, time: .shortened))"
         #else
             let timestamp = snapshot.refreshedAt.formatted(date: .omitted, time: .shortened)
             return model.snapshotFreshness == .stale ? "Stale · Updated \(timestamp)" : "Updated \(timestamp)"
