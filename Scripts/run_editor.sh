@@ -3,8 +3,8 @@
 set -euo pipefail
 
 REPOSITORY_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-INSPECTOR_ROOT="$REPOSITORY_ROOT/Tools/ChartInspector"
-INSPECTOR_URL="http://127.0.0.1:5173/"
+EDITOR_ROOT="$REPOSITORY_ROOT/Tools/ComponentEditor"
+EDITOR_URL="http://127.0.0.1:5173/"
 FIXTURE_NAME=${1:-ideal}
 DEV_SERVER_PID=""
 
@@ -17,7 +17,7 @@ cleanup() {
 
 trap cleanup EXIT INT TERM
 
-npm --prefix "$INSPECTOR_ROOT" run dev &
+npm --prefix "$EDITOR_ROOT" run dev &
 DEV_SERVER_PID=$!
 
 for _ in {1..100}; do
@@ -25,19 +25,19 @@ for _ in {1..100}; do
         wait "$DEV_SERVER_PID"
     fi
 
-    if curl --silent --fail --max-time 1 "$INSPECTOR_URL" >/dev/null; then
+    if curl --silent --fail --max-time 1 "$EDITOR_URL" >/dev/null; then
         break
     fi
 
     sleep 0.1
 done
 
-if ! curl --silent --fail --max-time 1 "$INSPECTOR_URL" >/dev/null; then
-    echo "Chart Inspector development server did not become ready at $INSPECTOR_URL." >&2
+if ! curl --silent --fail --max-time 1 "$EDITOR_URL" >/dev/null; then
+    echo "Component Editor development server did not become ready at $EDITOR_URL." >&2
     exit 1
 fi
 
-"$REPOSITORY_ROOT/Scripts/run_mock.sh" "$FIXTURE_NAME" --chart-inspector-dev-server
+"$REPOSITORY_ROOT/Scripts/run_mock.sh" "$FIXTURE_NAME" --component-editor-dev-server
 
-echo "Chart Inspector is running with mock fixture '$FIXTURE_NAME' and hot reload. Press Ctrl-C to stop the development server."
+echo "Component Editor is running with mock fixture '$FIXTURE_NAME' and hot reload. Press Ctrl-C to stop the development server."
 wait "$DEV_SERVER_PID"

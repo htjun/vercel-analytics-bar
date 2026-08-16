@@ -1,5 +1,5 @@
 {
-  "name": "vercel-analytics-bar-chart-inspector",
+  "name": "vercel-analytics-bar-component-editor",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -10,8 +10,8 @@
   },
   "scripts": {
     "build": "npm run contract:check && tsc --noEmit && vite build",
-    "contract:check": "node ../../Scripts/generate-chart-inspector-contract.mjs --check",
-    "contract:generate": "node ../../Scripts/generate-chart-inspector-contract.mjs",
+    "contract:check": "node ../../Scripts/generate-component-editor-contract.mjs --check",
+    "contract:generate": "node ../../Scripts/generate-component-editor-contract.mjs",
     "dev": "vite",
     "test": "npm run contract:check && vitest run"
   },

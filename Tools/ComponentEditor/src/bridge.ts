@@ -1,8 +1,8 @@
 import {
   FIRST_STYLE_CHANGE_REVISION,
-  INSPECTOR_PROTOCOL_VERSION,
-  INSPECTOR_SOURCE,
-  MAX_INSPECTOR_REVISION,
+  EDITOR_PROTOCOL_VERSION,
+  EDITOR_SOURCE,
+  MAX_EDITOR_REVISION,
   isNativeStateMessage,
 } from "./generated/contract";
 import type {
@@ -19,7 +19,7 @@ export type ComponentStyleChange =
   | { component: "chart"; values: ChartStyle }
   | { component: "list"; values: BreakdownListStyle };
 
-export class ChartInspectorBridge {
+export class ComponentEditorBridge {
   private currentState: NativeStateMessage | undefined;
   private readonly pendingStyles = new Map<number, ComponentStyleChange>();
   private nextRevision = FIRST_STYLE_CHANGE_REVISION;
@@ -29,9 +29,9 @@ export class ChartInspectorBridge {
 
   postReady(): void {
     this.send({
-      protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+      protocolVersion: EDITOR_PROTOCOL_VERSION,
       type: "ready",
-      source: INSPECTOR_SOURCE,
+      source: EDITOR_SOURCE,
     });
   }
 
@@ -70,7 +70,7 @@ export class ChartInspectorBridge {
     if (this.currentState.component !== change.component) {
       return false;
     }
-    if (this.nextRevision > MAX_INSPECTOR_REVISION) {
+    if (this.nextRevision > MAX_EDITOR_REVISION) {
       return false;
     }
 
@@ -85,18 +85,18 @@ export class ChartInspectorBridge {
     const revision = this.nextRevision;
     if (change.component === "chart") {
       this.send({
-        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        protocolVersion: EDITOR_PROTOCOL_VERSION,
         type: "styleChanged",
-        source: INSPECTOR_SOURCE,
+        source: EDITOR_SOURCE,
         revision,
         component: "chart",
         values: change.values,
       });
     } else {
       this.send({
-        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        protocolVersion: EDITOR_PROTOCOL_VERSION,
         type: "styleChanged",
-        source: INSPECTOR_SOURCE,
+        source: EDITOR_SOURCE,
         revision,
         component: "list",
         values: change.values,
@@ -132,16 +132,16 @@ export class ChartInspectorBridge {
       return;
     }
     this.send({
-      protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+      protocolVersion: EDITOR_PROTOCOL_VERSION,
       type,
-      source: INSPECTOR_SOURCE,
+      source: EDITOR_SOURCE,
       component: this.currentState.component,
     });
   }
 }
 
-export function createBrowserBridge(): ChartInspectorBridge {
-  return new ChartInspectorBridge((message) => {
+export function createBrowserBridge(): ComponentEditorBridge {
+  return new ComponentEditorBridge((message) => {
     window.webkit?.messageHandlers?.chartStyle?.postMessage(message);
   });
 }
@@ -183,7 +183,7 @@ function serializeStyle(style: ChartStyle): string {
 
 declare global {
   interface Window {
-    __chartInspectorReceiveState?: (message: unknown) => void;
+    __componentEditorReceiveState?: (message: unknown) => void;
     webkit?: {
       messageHandlers?: {
         chartStyle?: {

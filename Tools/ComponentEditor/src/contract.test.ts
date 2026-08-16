@@ -6,14 +6,14 @@ import {
   ANIMATION_EASING_VALUES,
   BORDER_STYLE_VALUES,
   FIRST_STYLE_CHANGE_REVISION,
-  INSPECTOR_PROTOCOL_VERSION,
-  INSPECTOR_SOURCE,
+  EDITOR_PROTOCOL_VERSION,
+  EDITOR_SOURCE,
   GRID_LINE_STYLE_VALUES,
   LINE_CAP_VALUES,
   INTERPOLATION_VALUES,
   LINE_JOIN_VALUES,
-  MAX_INSPECTOR_REVISION,
-  MIN_INSPECTOR_REVISION,
+  MAX_EDITOR_REVISION,
+  MIN_EDITOR_REVISION,
   NATIVE_SOURCE,
   NATIVE_STATE_MESSAGE,
   isBreakdownListStyle,
@@ -22,23 +22,23 @@ import {
 } from "./generated/contract";
 import type { BreakdownListStyle, ChartStyle } from "./generated/contract";
 import {
-  CHART_STYLE_INSPECTOR_FIELDS,
-  LIST_STYLE_INSPECTOR_FIELDS,
+  CHART_STYLE_EDITOR_FIELDS,
+  LIST_STYLE_EDITOR_FIELDS,
   chartFieldConfig,
   chartDialValuesFromStyle,
   chartStyleFromDialValues,
   listDialValuesFromStyle,
   listStyleFromDialValues,
-} from "./generated/inspector-adapter";
+} from "./generated/component-editor-adapter";
 
-describe("generated Chart Inspector contract", () => {
+describe("generated Component Editor contract", () => {
   it("preserves the canonical protocol identity", () => {
     expect({
-      version: INSPECTOR_PROTOCOL_VERSION,
-      minimumRevision: MIN_INSPECTOR_REVISION,
+      version: EDITOR_PROTOCOL_VERSION,
+      minimumRevision: MIN_EDITOR_REVISION,
       firstStyleChangeRevision: FIRST_STYLE_CHANGE_REVISION,
-      maximumRevision: MAX_INSPECTOR_REVISION,
-      webSource: INSPECTOR_SOURCE,
+      maximumRevision: MAX_EDITOR_REVISION,
+      webSource: EDITOR_SOURCE,
       nativeSource: NATIVE_SOURCE,
       nativeStateMessage: NATIVE_STATE_MESSAGE,
     }).toEqual({
@@ -46,7 +46,7 @@ describe("generated Chart Inspector contract", () => {
       minimumRevision: 0,
       firstStyleChangeRevision: 1,
       maximumRevision: 1_000_000_000,
-      webSource: "chart-inspector",
+      webSource: "component-editor",
       nativeSource: "vercel-analytics-bar",
       nativeStateMessage: "state",
     });
@@ -144,7 +144,7 @@ describe("generated Chart Inspector contract", () => {
   });
 
   it("generates one DialKit control for every chart field", () => {
-    expect(CHART_STYLE_INSPECTOR_FIELDS).toEqual([
+    expect(CHART_STYLE_EDITOR_FIELDS).toEqual([
       { name: "lineColor", path: "line.color", control: "color" },
       { name: "lineWidth", path: "line.width", control: "range" },
       { name: "lineCap", path: "line.cap", control: "select" },
@@ -363,9 +363,9 @@ describe("generated Chart Inspector contract", () => {
     expect(isBreakdownListStyle(style)).toBe(true);
     expect(isBreakdownListStyle({ ...BREAKDOWN_LIST_STYLE_DEFAULT, rowHeight: 20 })).toBe(false);
     expect(listStyleFromDialValues(listDialValuesFromStyle(style))).toEqual(style);
-    expect(LIST_STYLE_INSPECTOR_FIELDS).toHaveLength(23);
+    expect(LIST_STYLE_EDITOR_FIELDS).toHaveLength(23);
     expect(isNativeStateMessage({
-      protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+      protocolVersion: EDITOR_PROTOCOL_VERSION,
       type: NATIVE_STATE_MESSAGE,
       source: NATIVE_SOURCE,
       revision: 1,
@@ -373,7 +373,7 @@ describe("generated Chart Inspector contract", () => {
       values: style,
     })).toBe(true);
     expect(isNativeStateMessage({
-      protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+      protocolVersion: EDITOR_PROTOCOL_VERSION,
       type: NATIVE_STATE_MESSAGE,
       source: NATIVE_SOURCE,
       revision: 1,

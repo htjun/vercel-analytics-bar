@@ -11,6 +11,6 @@ build/
 *.xcuserstate
 xcuserdata/
 .mint/
-Tools/ChartInspector/dist/
-Tools/ChartInspector/node_modules/
+Tools/ComponentEditor/dist/
+Tools/ComponentEditor/node_modules/
 Config/Local.xcconfig

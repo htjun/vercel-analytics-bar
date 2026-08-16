@@ -1,7 +1,7 @@
 import AppKit
 import VercelAnalyticsCore
 
-#if CHART_INSPECTOR
+#if COMPONENT_EDITOR
     enum ComponentEditorWindowConfiguration {
         static let title = "Component Editor"
         static let defaultContentSize = CGSize(width: 1000, height: 700)
@@ -15,8 +15,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let componentStyle: ComponentStyleStore
     private var statusBarController: StatusBarController?
     private var settingsWindowController: HostedWindowController?
-    #if CHART_INSPECTOR
-        private var chartInspectorWindowController: HostedWindowController?
+    #if COMPONENT_EDITOR
+        private var componentEditorWindowController: HostedWindowController?
     #endif
 
     override init() {
@@ -60,17 +60,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusBarController?.tearDown()
         statusBarController = nil
         settingsWindowController = nil
-        #if CHART_INSPECTOR
-            chartInspectorWindowController = nil
+        #if COMPONENT_EDITOR
+            componentEditorWindowController = nil
         #endif
         model.stopRefreshLoop()
     }
 
     private func makeSettingsWindowController() -> HostedWindowController {
-        let showsChartInspector = isChartInspectorEnabled
+        let showsComponentEditor = isComponentEditorEnabled
         let contentSize = CGSize(
             width: SettingsLayout.contentWidth,
-            height: SettingsLayout.contentHeight(showsChartInspector: showsChartInspector)
+            height: SettingsLayout.contentHeight(showsComponentEditor: showsComponentEditor)
         )
         return HostedWindowController(
             title: "\(ProductInfo.name) Settings",
@@ -78,35 +78,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             titleVisibility: .hidden,
             rootView: SettingsRootView(
                 model: model,
-                isChartInspectorEnabled: showsChartInspector,
-                onOpenChartInspector: { [weak self] in
-                    self?.presentChartInspector()
+                isComponentEditorEnabled: showsComponentEditor,
+                onOpenComponentEditor: { [weak self] in
+                    self?.presentComponentEditor()
                 }
             )
         )
     }
 
-    private func presentChartInspector() {
-        #if CHART_INSPECTOR
-            guard isChartInspectorEnabled else { return }
-            if chartInspectorWindowController == nil {
-                chartInspectorWindowController = HostedWindowController(
+    private func presentComponentEditor() {
+        #if COMPONENT_EDITOR
+            guard isComponentEditorEnabled else { return }
+            if componentEditorWindowController == nil {
+                componentEditorWindowController = HostedWindowController(
                     title: ComponentEditorWindowConfiguration.title,
                     contentSize: ComponentEditorWindowConfiguration.defaultContentSize,
                     minimumContentSize: ComponentEditorWindowConfiguration.minimumContentSize,
                     isResizable: true,
-                    rootView: ChartInspectorView(
+                    rootView: ComponentEditorView(
                         styleStore: componentStyle
                     )
                 )
             }
-            chartInspectorWindowController?.present()
+            componentEditorWindowController?.present()
         #endif
     }
 
-    private var isChartInspectorEnabled: Bool {
-        #if CHART_INSPECTOR
-            ChartInspectorSource.isInspectorEnabled()
+    private var isComponentEditorEnabled: Bool {
+        #if COMPONENT_EDITOR
+            ComponentEditorSource.isEditorEnabled()
         #else
             false
         #endif

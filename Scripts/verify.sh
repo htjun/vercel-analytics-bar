@@ -5,7 +5,7 @@ set -euo pipefail
 REPOSITORY_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 HOST_ARCHITECTURE=$(uname -m)
 DERIVED_DATA_PATH="$REPOSITORY_ROOT/.build/VerifyDerivedData"
-INSPECTOR_ROOT="$REPOSITORY_ROOT/Tools/ChartInspector"
+EDITOR_ROOT="$REPOSITORY_ROOT/Tools/ComponentEditor"
 SWIFTFORMAT_PACKAGE=nicklockwood/SwiftFormat@0.58.5
 SWIFTLINT_PACKAGE=realm/SwiftLint@0.59.1
 
@@ -37,21 +37,21 @@ if [[ "$KEYCHAIN_ACCESS_GROUP" != "$EXPECTED_KEYCHAIN_ACCESS_GROUP" ]] \
     exit 1
 fi
 
-npm --prefix "$INSPECTOR_ROOT" test
-INSPECTOR_BUNDLE="$REPOSITORY_ROOT/VercelAnalyticsBar/Resources/ChartInspector"
-INSPECTOR_HASH_BEFORE=$(find "$INSPECTOR_BUNDLE" -type f -exec shasum -a 256 {} + | LC_ALL=C sort)
-npm --prefix "$INSPECTOR_ROOT" run build
-INSPECTOR_HASH_AFTER=$(find "$INSPECTOR_BUNDLE" -type f -exec shasum -a 256 {} + | LC_ALL=C sort)
-if [[ "$INSPECTOR_HASH_BEFORE" != "$INSPECTOR_HASH_AFTER" ]]; then
-    echo "The bundled Chart Inspector is stale. Run 'make inspector-build'." >&2
+npm --prefix "$EDITOR_ROOT" test
+EDITOR_BUNDLE="$REPOSITORY_ROOT/VercelAnalyticsBar/Resources/ComponentEditor"
+EDITOR_HASH_BEFORE=$(find "$EDITOR_BUNDLE" -type f -exec shasum -a 256 {} + | LC_ALL=C sort)
+npm --prefix "$EDITOR_ROOT" run build
+EDITOR_HASH_AFTER=$(find "$EDITOR_BUNDLE" -type f -exec shasum -a 256 {} + | LC_ALL=C sort)
+if [[ "$EDITOR_HASH_BEFORE" != "$EDITOR_HASH_AFTER" ]]; then
+    echo "The bundled Component Editor is stale. Run 'make editor-build'." >&2
     exit 1
 fi
 
-if ! grep -Fq "default-src 'none'" "$INSPECTOR_BUNDLE/index.html"; then
-    echo "The bundled Chart Inspector is missing its Content Security Policy." >&2
+if ! grep -Fq "default-src 'none'" "$EDITOR_BUNDLE/index.html"; then
+    echo "The bundled Component Editor is missing its Content Security Policy." >&2
     exit 1
 fi
-if ! find "$INSPECTOR_BUNDLE/assets" -type f -exec /usr/bin/ruby -e '
+if ! find "$EDITOR_BUNDLE/assets" -type f -exec /usr/bin/ruby -e '
     allowed = [
         "http://www.w3.org/1998/Math/MathML",
         "http://www.w3.org/1999/xlink",
@@ -64,7 +64,7 @@ if ! find "$INSPECTOR_BUNDLE/assets" -type f -exec /usr/bin/ruby -e '
         abort("Remote URL in #{path}") if content.match?(%r{https?://})
     end
 ' {} +; then
-    echo "The bundled Chart Inspector contains a remote URL." >&2
+    echo "The bundled Component Editor contains a remote URL." >&2
     exit 1
 fi
 
@@ -80,8 +80,8 @@ xcodebuild \
     test
 
 DEBUG_APP_PATH="$DERIVED_DATA_PATH/Build/Products/Debug/VercelAnalyticsBar.app"
-if [[ ! -f "$DEBUG_APP_PATH/Contents/Resources/ChartInspector/index.html" ]]; then
-    echo "The Debug app is missing bundled Chart Inspector resources." >&2
+if [[ ! -f "$DEBUG_APP_PATH/Contents/Resources/ComponentEditor/index.html" ]]; then
+    echo "The Debug app is missing bundled Component Editor resources." >&2
     exit 1
 fi
 
@@ -106,8 +106,8 @@ for configuration in Release-Direct Release-AppStore; do
         build
 
     RELEASE_APP_PATH="$DERIVED_DATA_PATH/Build/Products/$configuration/VercelAnalyticsBar.app"
-    if [[ -e "$RELEASE_APP_PATH/Contents/Resources/ChartInspector" ]]; then
-        echo "$configuration unexpectedly contains Chart Inspector resources." >&2
+    if [[ -e "$RELEASE_APP_PATH/Contents/Resources/ComponentEditor" ]]; then
+        echo "$configuration unexpectedly contains Component Editor resources." >&2
         exit 1
     fi
     if [[ -e "$RELEASE_APP_PATH/Contents/Resources/DemoFixture.json" ]]; then
@@ -115,8 +115,8 @@ for configuration in Release-Direct Release-AppStore; do
         exit 1
     fi
     if strings "$RELEASE_APP_PATH/Contents/MacOS/VercelAnalyticsBar" \
-        | grep -Eq "chart-inspector|Chart Inspector|CHART_INSPECTOR_DEV_SERVER"; then
-        echo "$configuration unexpectedly contains Chart Inspector runtime strings." >&2
+        | grep -Eq "component-editor|Component Editor|COMPONENT_EDITOR_DEV_SERVER"; then
+        echo "$configuration unexpectedly contains Component Editor runtime strings." >&2
         exit 1
     fi
     if strings "$RELEASE_APP_PATH/Contents/MacOS/VercelAnalyticsBar" \

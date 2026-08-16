@@ -1,13 +1,13 @@
-#if CHART_INSPECTOR
+#if COMPONENT_EDITOR
     import Foundation
 
-    struct ChartInspectorIncomingMessage: Decodable {
+    struct ComponentEditorIncomingMessage: Decodable {
         private enum CodingKeys: String, CodingKey {
             case protocolVersion, type, source, revision, component, values
         }
 
         let protocolVersion: Int
-        let type: ChartInspectorIncomingMessageType
+        let type: ComponentEditorIncomingMessageType
         let source: String
         let revision: Int?
         let component: EditableComponent?
@@ -15,7 +15,7 @@
 
         init(
             protocolVersion: Int,
-            type: ChartInspectorIncomingMessageType,
+            type: ComponentEditorIncomingMessageType,
             source: String,
             revision: Int?,
             component: EditableComponent? = nil,
@@ -29,18 +29,18 @@
             self.values = values.map(ComponentStyle.chart)
         }
 
-        static func decode(body: Any) throws -> ChartInspectorIncomingMessage {
+        static func decode(body: Any) throws -> ComponentEditorIncomingMessage {
             guard JSONSerialization.isValidJSONObject(body) else {
-                throw ChartInspectorProtocolError.invalidBody
+                throw ComponentEditorProtocolError.invalidBody
             }
             let data = try JSONSerialization.data(withJSONObject: body)
-            return try JSONDecoder().decode(ChartInspectorIncomingMessage.self, from: data)
+            return try JSONDecoder().decode(ComponentEditorIncomingMessage.self, from: data)
         }
 
         init(from decoder: any Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             protocolVersion = try container.decode(Int.self, forKey: .protocolVersion)
-            type = try container.decode(ChartInspectorIncomingMessageType.self, forKey: .type)
+            type = try container.decode(ComponentEditorIncomingMessageType.self, forKey: .type)
             source = try container.decode(String.self, forKey: .source)
             revision = try container.decodeIfPresent(Int.self, forKey: .revision)
             component = try container.decodeIfPresent(EditableComponent.self, forKey: .component)
@@ -58,14 +58,14 @@
         }
     }
 
-    struct ChartInspectorStateMessage: Encodable, Equatable {
+    struct ComponentEditorStateMessage: Encodable, Equatable {
         private enum CodingKeys: String, CodingKey {
             case protocolVersion, type, source, revision, component, values
         }
 
-        let protocolVersion = ChartInspectorProtocol.version
-        let type = ChartInspectorProtocol.nativeStateMessage
-        let source = ChartInspectorProtocol.nativeSource
+        let protocolVersion = ComponentEditorProtocol.version
+        let type = ComponentEditorProtocol.nativeStateMessage
+        let source = ComponentEditorProtocol.nativeSource
         let revision: Int
         let component: EditableComponent
         let values: ComponentStyle
@@ -88,19 +88,19 @@
         func jsonObject() throws -> [String: Any] {
             let data = try JSONEncoder().encode(self)
             guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                throw ChartInspectorProtocolError.invalidBody
+                throw ComponentEditorProtocolError.invalidBody
             }
             return object
         }
     }
 
-    struct ChartInspectorSessionResponse: Equatable {
-        let state: ChartInspectorStateMessage
+    struct ComponentEditorSessionResponse: Equatable {
+        let state: ComponentEditorStateMessage
         let copiedStyleJSON: String?
         let replayedComponent: EditableComponent?
     }
 
-    enum ChartInspectorProtocolError: Error, Equatable {
+    enum ComponentEditorProtocolError: Error, Equatable {
         case invalidBody
         case unexpectedProtocolVersion
         case unexpectedSource
@@ -113,10 +113,10 @@
     }
 
     @MainActor
-    final class ChartInspectorSession {
+    final class ComponentEditorSession {
         private let styleStore: ComponentStyleStore
         private(set) var isReady = false
-        private(set) var revision = ChartInspectorProtocol.minimumRevision
+        private(set) var revision = ComponentEditorProtocol.minimumRevision
         private(set) var selectedComponent: EditableComponent = .chart
 
         init(styleStore: ComponentStyleStore) {
@@ -131,16 +131,16 @@
             selectedComponent = component
         }
 
-        func receive(body: Any) throws -> ChartInspectorSessionResponse {
-            try receive(ChartInspectorIncomingMessage.decode(body: body))
+        func receive(body: Any) throws -> ComponentEditorSessionResponse {
+            try receive(ComponentEditorIncomingMessage.decode(body: body))
         }
 
-        func receive(_ message: ChartInspectorIncomingMessage) throws -> ChartInspectorSessionResponse {
-            guard message.protocolVersion == ChartInspectorProtocol.version else {
-                throw ChartInspectorProtocolError.unexpectedProtocolVersion
+        func receive(_ message: ComponentEditorIncomingMessage) throws -> ComponentEditorSessionResponse {
+            guard message.protocolVersion == ComponentEditorProtocol.version else {
+                throw ComponentEditorProtocolError.unexpectedProtocolVersion
             }
-            guard message.source == ChartInspectorProtocol.webSource else {
-                throw ChartInspectorProtocolError.unexpectedSource
+            guard message.source == ComponentEditorProtocol.webSource else {
+                throw ComponentEditorProtocolError.unexpectedSource
             }
 
             let copiedStyleJSON: String?
@@ -156,8 +156,8 @@
                 replayedComponent = nil
             case .reset:
                 try requireSelectedComponent(message)
-                guard revision < ChartInspectorProtocol.maximumRevision else {
-                    throw ChartInspectorProtocolError.invalidRevision
+                guard revision < ComponentEditorProtocol.maximumRevision else {
+                    throw ComponentEditorProtocolError.invalidRevision
                 }
                 styleStore.reset(selectedComponent)
                 revision += 1
@@ -173,15 +173,15 @@
                 replayedComponent = selectedComponent
             }
 
-            return ChartInspectorSessionResponse(
+            return ComponentEditorSessionResponse(
                 state: stateMessage,
                 copiedStyleJSON: copiedStyleJSON,
                 replayedComponent: replayedComponent
             )
         }
 
-        var stateMessage: ChartInspectorStateMessage {
-            ChartInspectorStateMessage(
+        var stateMessage: ComponentEditorStateMessage {
+            ComponentEditorStateMessage(
                 revision: revision,
                 component: selectedComponent,
                 values: styleStore.style(for: selectedComponent)
@@ -190,35 +190,35 @@
 
         private func requireReady() throws {
             guard isReady else {
-                throw ChartInspectorProtocolError.notReady
+                throw ComponentEditorProtocolError.notReady
             }
         }
 
-        private func requireSelectedComponent(_ message: ChartInspectorIncomingMessage) throws {
+        private func requireSelectedComponent(_ message: ComponentEditorIncomingMessage) throws {
             try requireReady()
             guard let component = message.component else {
-                throw ChartInspectorProtocolError.missingComponent
+                throw ComponentEditorProtocolError.missingComponent
             }
             guard component == selectedComponent else {
-                throw ChartInspectorProtocolError.unexpectedComponent
+                throw ComponentEditorProtocolError.unexpectedComponent
             }
         }
 
-        private func applyStyleChange(_ message: ChartInspectorIncomingMessage) throws {
+        private func applyStyleChange(_ message: ComponentEditorIncomingMessage) throws {
             try requireSelectedComponent(message)
             guard let style = message.values else {
-                throw ChartInspectorProtocolError.missingStyle
+                throw ComponentEditorProtocolError.missingStyle
             }
             guard style.component == selectedComponent else {
-                throw ChartInspectorProtocolError.unexpectedComponent
+                throw ComponentEditorProtocolError.unexpectedComponent
             }
             guard let incomingRevision = message.revision,
-                  ChartInspectorProtocol.styleChangeRevisionRange.contains(incomingRevision)
+                  ComponentEditorProtocol.styleChangeRevisionRange.contains(incomingRevision)
             else {
-                throw ChartInspectorProtocolError.invalidRevision
+                throw ComponentEditorProtocolError.invalidRevision
             }
             guard incomingRevision > revision else {
-                throw ChartInspectorProtocolError.staleRevision
+                throw ComponentEditorProtocolError.staleRevision
             }
             styleStore.update(style)
             revision = incomingRevision
@@ -234,22 +234,22 @@
                 try encoder.encode(style)
             }
             guard let json = String(data: data, encoding: .utf8) else {
-                throw ChartInspectorProtocolError.invalidBody
+                throw ComponentEditorProtocolError.invalidBody
             }
             return json
         }
     }
 
-    struct ChartInspectorSource: Equatable {
+    struct ComponentEditorSource: Equatable {
         enum Kind: Equatable {
             case bundled(rootURL: URL)
             case developmentServer
         }
 
         static let developmentURL = URL(string: "http://127.0.0.1:5173/")!
-        static let inspectorArgument = "--chart-inspector"
-        static let developmentEnvironmentKey = "CHART_INSPECTOR_DEV_SERVER"
-        static let developmentArgument = "--chart-inspector-dev-server"
+        static let editorArgument = "--component-editor"
+        static let developmentEnvironmentKey = "COMPONENT_EDITOR_DEV_SERVER"
+        static let developmentArgument = "--component-editor-dev-server"
 
         let entryURL: URL
         let kind: Kind
@@ -258,29 +258,29 @@
             environment: [String: String] = ProcessInfo.processInfo.environment,
             arguments: [String] = ProcessInfo.processInfo.arguments,
             bundle: Bundle = .main
-        ) throws -> ChartInspectorSource {
+        ) throws -> ComponentEditorSource {
             if usesDevelopmentServer(environment: environment, arguments: arguments) {
-                return ChartInspectorSource(entryURL: developmentURL, kind: .developmentServer)
+                return ComponentEditorSource(entryURL: developmentURL, kind: .developmentServer)
             }
 
             guard let entryURL = bundle.url(
                 forResource: "index",
                 withExtension: "html",
-                subdirectory: "ChartInspector"
+                subdirectory: "ComponentEditor"
             ) else {
-                throw ChartInspectorSourceError.missingBundledInspector
+                throw ComponentEditorSourceError.missingBundledEditor
             }
-            return ChartInspectorSource(
+            return ComponentEditorSource(
                 entryURL: entryURL,
                 kind: .bundled(rootURL: entryURL.deletingLastPathComponent())
             )
         }
 
-        static func isInspectorEnabled(
+        static func isEditorEnabled(
             environment: [String: String] = ProcessInfo.processInfo.environment,
             arguments: [String] = ProcessInfo.processInfo.arguments
         ) -> Bool {
-            arguments.contains(inspectorArgument) || usesDevelopmentServer(
+            arguments.contains(editorArgument) || usesDevelopmentServer(
                 environment: environment,
                 arguments: arguments
             )
@@ -334,7 +334,7 @@
         }
     }
 
-    enum ChartInspectorSourceError: Error, Equatable {
-        case missingBundledInspector
+    enum ComponentEditorSourceError: Error, Equatable {
+        case missingBundledEditor
     }
 #endif

@@ -60,7 +60,7 @@ An `errSecItemNotFound` result means there is no legacy credential to remove. Cu
 
 ```sh
 make run-mock                    # local demo data
-make run-inspector               # Component Editor with local demo data and hot reload
+make run-editor               # Component Editor with local demo data and hot reload
 make probe                       # sanitized Vercel API capability probe
 ```
 

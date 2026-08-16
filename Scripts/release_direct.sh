@@ -218,12 +218,12 @@ if [[ "$EXPORTED_ARCHITECTURES" != *arm64* || "$EXPORTED_ARCHITECTURES" != *x86_
     fail "The exported app is not universal."
 fi
 
-if [[ -e "$APP_PATH/Contents/Resources/ChartInspector" ]] \
+if [[ -e "$APP_PATH/Contents/Resources/ComponentEditor" ]] \
     || [[ -e "$APP_PATH/Contents/Resources/DemoFixture.json" ]]; then
     fail "The exported app contains debug-only resources."
 fi
 
-if strings "$APP_EXECUTABLE" | grep -Eq 'chart-inspector|Chart Inspector|CHART_INSPECTOR_DEV_SERVER|DemoFixture|demo fixture|MOCK_MODE'; then
+if strings "$APP_EXECUTABLE" | grep -Eq 'component-editor|Component Editor|COMPONENT_EDITOR_DEV_SERVER|DemoFixture|demo fixture|MOCK_MODE'; then
     fail "The exported app contains debug-only runtime code."
 fi
 

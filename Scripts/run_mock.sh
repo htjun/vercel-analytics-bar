@@ -16,7 +16,7 @@ LAUNCH_ARGUMENT=""
 case ${2:-} in
     "")
         ;;
-    --chart-inspector | --chart-inspector-dev-server)
+    --component-editor | --component-editor-dev-server)
         LAUNCH_ARGUMENT=$2
         ;;
     *)

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { chartConfig, listConfig } from "./ChartInspector";
+import { chartConfig, listConfig } from "./ComponentEditor";
 
-describe("Chart Inspector sections", () => {
+describe("Component Editor sections", () => {
   it("opens only Actions and places it after Intro Animation", () => {
     const sectionNames = Object.keys(chartConfig);
 

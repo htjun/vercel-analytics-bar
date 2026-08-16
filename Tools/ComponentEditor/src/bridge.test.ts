@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { ChartInspectorBridge } from "./bridge";
+import { ComponentEditorBridge } from "./bridge";
 import {
   BREAKDOWN_LIST_STYLE_DEFAULT,
-  INSPECTOR_PROTOCOL_VERSION,
-  MAX_INSPECTOR_REVISION,
+  EDITOR_PROTOCOL_VERSION,
+  MAX_EDITOR_REVISION,
   NATIVE_SOURCE,
 } from "./generated/contract";
 import type { ChartStyle } from "./generated/contract";
@@ -60,30 +60,30 @@ const defaultStyle: ChartStyle = {
   chartBorderDashCap: "round",
 };
 
-describe("ChartInspectorBridge", () => {
+describe("ComponentEditorBridge", () => {
   it("posts ready with the expected protocol identity", () => {
     const messages: unknown[] = [];
-    const bridge = new ChartInspectorBridge((message) => messages.push(message));
+    const bridge = new ComponentEditorBridge((message) => messages.push(message));
 
     bridge.postReady();
 
     expect(messages).toEqual([
       {
-        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        protocolVersion: EDITOR_PROTOCOL_VERSION,
         type: "ready",
-        source: "chart-inspector",
+        source: "component-editor",
       },
     ]);
   });
 
   it("does not post style before valid native hydration", () => {
     const messages: unknown[] = [];
-    const bridge = new ChartInspectorBridge((message) => messages.push(message));
+    const bridge = new ComponentEditorBridge((message) => messages.push(message));
 
     expect(bridge.postStyleChanged({ ...defaultStyle, lineWidth: 3 })).toBe(false);
     expect(
       bridge.receiveState({
-        protocolVersion: INSPECTOR_PROTOCOL_VERSION + 1,
+        protocolVersion: EDITOR_PROTOCOL_VERSION + 1,
         type: "state",
   source: NATIVE_SOURCE,
   revision: 0,
@@ -97,12 +97,12 @@ describe("ChartInspectorBridge", () => {
   it("hydrates, revisions, and deduplicates style changes", () => {
     const messages: unknown[] = [];
     const received: unknown[] = [];
-    const bridge = new ChartInspectorBridge((message) => messages.push(message));
+    const bridge = new ComponentEditorBridge((message) => messages.push(message));
     bridge.subscribe((message) => received.push(message));
 
     expect(
       bridge.receiveState({
-        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        protocolVersion: EDITOR_PROTOCOL_VERSION,
         type: "state",
         source: NATIVE_SOURCE,
         revision: 7,
@@ -112,7 +112,7 @@ describe("ChartInspectorBridge", () => {
     ).toBe(true);
     expect(received).toEqual([
       {
-        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        protocolVersion: EDITOR_PROTOCOL_VERSION,
         type: "state",
         source: NATIVE_SOURCE,
         revision: 7,
@@ -127,9 +127,9 @@ describe("ChartInspectorBridge", () => {
     expect(bridge.postStyleChanged(changedStyle)).toBe(false);
     expect(messages).toEqual([
       {
-        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        protocolVersion: EDITOR_PROTOCOL_VERSION,
         type: "styleChanged",
-        source: "chart-inspector",
+        source: "component-editor",
         revision: 8,
         component: "chart",
         values: changedStyle,
@@ -138,10 +138,10 @@ describe("ChartInspectorBridge", () => {
   });
 
   it("rejects stale and out-of-range native revisions", () => {
-    const bridge = new ChartInspectorBridge(() => undefined);
+    const bridge = new ComponentEditorBridge(() => undefined);
     expect(
       bridge.receiveState({
-        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        protocolVersion: EDITOR_PROTOCOL_VERSION,
         type: "state",
         source: NATIVE_SOURCE,
         revision: 8,
@@ -151,7 +151,7 @@ describe("ChartInspectorBridge", () => {
     ).toBe(true);
     expect(
       bridge.receiveState({
-        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        protocolVersion: EDITOR_PROTOCOL_VERSION,
         type: "state",
         source: NATIVE_SOURCE,
         revision: 7,
@@ -161,10 +161,10 @@ describe("ChartInspectorBridge", () => {
     ).toBe(false);
     expect(
       bridge.receiveState({
-        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        protocolVersion: EDITOR_PROTOCOL_VERSION,
         type: "state",
         source: NATIVE_SOURCE,
-        revision: MAX_INSPECTOR_REVISION + 1,
+        revision: MAX_EDITOR_REVISION + 1,
         component: "chart",
         values: defaultStyle,
       }),
@@ -173,9 +173,9 @@ describe("ChartInspectorBridge", () => {
 
   it("treats the displayed system accent as equivalent until edited", () => {
     const messages: unknown[] = [];
-    const bridge = new ChartInspectorBridge((message) => messages.push(message));
+    const bridge = new ComponentEditorBridge((message) => messages.push(message));
     bridge.receiveState({
-      protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+      protocolVersion: EDITOR_PROTOCOL_VERSION,
       type: "state",
       source: NATIVE_SOURCE,
       revision: 0,
@@ -189,7 +189,7 @@ describe("ChartInspectorBridge", () => {
 
   it("posts replay, reset, and copy only after hydration", () => {
     const messages: unknown[] = [];
-    const bridge = new ChartInspectorBridge((message) => messages.push(message));
+    const bridge = new ComponentEditorBridge((message) => messages.push(message));
 
     bridge.postReplayAnimation();
     bridge.postReset();
@@ -197,7 +197,7 @@ describe("ChartInspectorBridge", () => {
     expect(messages).toEqual([]);
 
     bridge.receiveState({
-      protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+      protocolVersion: EDITOR_PROTOCOL_VERSION,
       type: "state",
       source: NATIVE_SOURCE,
       revision: 3,
@@ -210,21 +210,21 @@ describe("ChartInspectorBridge", () => {
 
     expect(messages).toEqual([
       {
-        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        protocolVersion: EDITOR_PROTOCOL_VERSION,
         type: "replayAnimation",
-        source: "chart-inspector",
+        source: "component-editor",
         component: "chart",
       },
       {
-        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        protocolVersion: EDITOR_PROTOCOL_VERSION,
         type: "reset",
-        source: "chart-inspector",
+        source: "component-editor",
         component: "chart",
       },
       {
-        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        protocolVersion: EDITOR_PROTOCOL_VERSION,
         type: "copyStyle",
-        source: "chart-inspector",
+        source: "component-editor",
         component: "chart",
       },
     ]);
@@ -232,7 +232,7 @@ describe("ChartInspectorBridge", () => {
 
   it("scopes edits and commands to the native-selected List component", () => {
     const messages: unknown[] = [];
-    const bridge = new ChartInspectorBridge((message) => messages.push(message));
+    const bridge = new ComponentEditorBridge((message) => messages.push(message));
     const listStyle = {
       ...BREAKDOWN_LIST_STYLE_DEFAULT,
       visibleRowCount: 4,
@@ -242,7 +242,7 @@ describe("ChartInspectorBridge", () => {
     };
 
     expect(bridge.receiveState({
-      protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+      protocolVersion: EDITOR_PROTOCOL_VERSION,
       type: "state",
       source: NATIVE_SOURCE,
       revision: 3,
@@ -258,29 +258,29 @@ describe("ChartInspectorBridge", () => {
 
     expect(messages).toEqual([
       {
-        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        protocolVersion: EDITOR_PROTOCOL_VERSION,
         type: "styleChanged",
-        source: "chart-inspector",
+        source: "component-editor",
         revision: 4,
         component: "list",
         values: listStyle,
       },
       {
-        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        protocolVersion: EDITOR_PROTOCOL_VERSION,
         type: "replayAnimation",
-        source: "chart-inspector",
+        source: "component-editor",
         component: "list",
       },
       {
-        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        protocolVersion: EDITOR_PROTOCOL_VERSION,
         type: "reset",
-        source: "chart-inspector",
+        source: "component-editor",
         component: "list",
       },
       {
-        protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+        protocolVersion: EDITOR_PROTOCOL_VERSION,
         type: "copyStyle",
-        source: "chart-inspector",
+        source: "component-editor",
         component: "list",
       },
     ]);
@@ -340,10 +340,10 @@ describe("ChartInspectorBridge", () => {
     ];
 
     for (const invalidValue of invalidValues) {
-      const bridge = new ChartInspectorBridge(() => undefined);
+      const bridge = new ComponentEditorBridge(() => undefined);
       expect(
         bridge.receiveState({
-          protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+          protocolVersion: EDITOR_PROTOCOL_VERSION,
           type: "state",
           source: NATIVE_SOURCE,
           revision: 0,

@@ -31,7 +31,7 @@ The repository already has the important product-side release foundations:
 
 - `Release-Direct` and `Release-AppStore` configurations exist, and the shared scheme's Archive
   action uses `Release-Direct`.
-- `Release-Direct` enables the Hardened Runtime and removes the Debug-only Chart Inspector and demo
+- `Release-Direct` enables the Hardened Runtime and removes the Debug-only Component Editor and demo
   code.
 - The app is a universal `arm64` + `x86_64` build with a macOS 14 minimum.
 - The app uses App Sandbox with only outgoing network access and a canonical Keychain access group.

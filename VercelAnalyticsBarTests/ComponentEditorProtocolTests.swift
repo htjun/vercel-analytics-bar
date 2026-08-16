@@ -1,4 +1,4 @@
-#if CHART_INSPECTOR
+#if COMPONENT_EDITOR
     // swiftlint:disable file_length
     import Foundation
     import Testing
@@ -7,10 +7,10 @@
 
     // swiftlint:disable type_body_length
     @MainActor
-    @Suite("Chart Inspector protocol")
-    struct ChartInspectorProtocolTests {
+    @Suite("Component Editor protocol")
+    struct ComponentEditorProtocolTests {
         @Test func readyHydratesTheWebPanelFromCanonicalNativeState() throws {
-            let session = ChartInspectorSession(styleStore: ComponentStyleStore())
+            let session = ComponentEditorSession(styleStore: ComponentStyleStore())
 
             let response = try session.receive(readyMessage)
 
@@ -22,17 +22,17 @@
 
         @Test func styleChangeRequiresHydrationAndANewerRevision() throws {
             let store = ComponentStyleStore()
-            let session = ChartInspectorSession(styleStore: store)
-            let changedStyle = try makeInspectorStyle(lineWidth: 4)
-            let styleChange = ChartInspectorIncomingMessage(
+            let session = ComponentEditorSession(styleStore: store)
+            let changedStyle = try makeEditorStyle(lineWidth: 4)
+            let styleChange = ComponentEditorIncomingMessage(
                 protocolVersion: 7,
                 type: .styleChanged,
-                source: "chart-inspector",
+                source: "component-editor",
                 revision: 1,
                 values: changedStyle
             )
 
-            #expect(throws: ChartInspectorProtocolError.notReady) {
+            #expect(throws: ComponentEditorProtocolError.notReady) {
                 try session.receive(styleChange)
             }
 
@@ -41,44 +41,44 @@
             #expect(store.chartStyle == changedStyle)
             #expect(state.revision == 1)
 
-            #expect(throws: ChartInspectorProtocolError.staleRevision) {
+            #expect(throws: ComponentEditorProtocolError.staleRevision) {
                 try session.receive(styleChange)
             }
 
-            let invalidRevision = ChartInspectorIncomingMessage(
+            let invalidRevision = ComponentEditorIncomingMessage(
                 protocolVersion: 7,
                 type: .styleChanged,
-                source: "chart-inspector",
-                revision: ChartInspectorProtocol.maximumRevision + 1,
+                source: "component-editor",
+                revision: ComponentEditorProtocol.maximumRevision + 1,
                 values: changedStyle
             )
-            #expect(throws: ChartInspectorProtocolError.invalidRevision) {
+            #expect(throws: ComponentEditorProtocolError.invalidRevision) {
                 try session.receive(invalidRevision)
             }
         }
 
         @Test func maximumRevisionCannotOverflowDuringReset() throws {
             let store = ComponentStyleStore()
-            let session = ChartInspectorSession(styleStore: store)
+            let session = ComponentEditorSession(styleStore: store)
             _ = try session.receive(readyMessage)
             _ = try session.receive(
-                ChartInspectorIncomingMessage(
+                ComponentEditorIncomingMessage(
                     protocolVersion: 7,
                     type: .styleChanged,
-                    source: "chart-inspector",
-                    revision: ChartInspectorProtocol.maximumRevision,
+                    source: "component-editor",
+                    revision: ComponentEditorProtocol.maximumRevision,
                     values: .default
                 )
             )
 
-            #expect(throws: ChartInspectorProtocolError.invalidRevision) {
+            #expect(throws: ComponentEditorProtocolError.invalidRevision) {
                 try session.receive(commandMessage(.reset))
             }
         }
 
         @Test func resetCopyAndRehydrationUseCanonicalNativeState() throws {
-            let store = try ComponentStyleStore(chartStyle: makeInspectorStyle(lineWidth: 5))
-            let session = ChartInspectorSession(styleStore: store)
+            let store = try ComponentStyleStore(chartStyle: makeEditorStyle(lineWidth: 5))
+            let session = ComponentEditorSession(styleStore: store)
             _ = try session.receive(readyMessage)
 
             let copiedResponse = try session.receive(commandMessage(.copyStyle))
@@ -91,34 +91,34 @@
             #expect(resetResponse.state.values == .chart(.default))
             #expect(resetResponse.state.revision == 1)
 
-            let reopenedSession = ChartInspectorSession(styleStore: store)
+            let reopenedSession = ComponentEditorSession(styleStore: store)
             let reopenedState = try reopenedSession.receive(readyMessage).state
             #expect(reopenedState.values == .chart(.default))
         }
 
         @Test func onlyAnimationCommandRequestsPreviewReplay() throws {
             let store = ComponentStyleStore()
-            let session = ChartInspectorSession(styleStore: store)
+            let session = ComponentEditorSession(styleStore: store)
             _ = try session.receive(readyMessage)
 
             let lineWidthResponse = try session.receive(
-                ChartInspectorIncomingMessage(
+                ComponentEditorIncomingMessage(
                     protocolVersion: 7,
                     type: .styleChanged,
-                    source: "chart-inspector",
+                    source: "component-editor",
                     revision: 1,
-                    values: makeInspectorStyle(lineWidth: 4)
+                    values: makeEditorStyle(lineWidth: 4)
                 )
             )
             #expect(lineWidthResponse.replayedComponent == nil)
 
             let timingResponse = try session.receive(
-                ChartInspectorIncomingMessage(
+                ComponentEditorIncomingMessage(
                     protocolVersion: 7,
                     type: .styleChanged,
-                    source: "chart-inspector",
+                    source: "component-editor",
                     revision: 2,
-                    values: makeInspectorStyle(lineWidth: 4, lineRevealDuration: 1.4)
+                    values: makeEditorStyle(lineWidth: 4, lineRevealDuration: 1.4)
                 )
             )
             #expect(timingResponse.replayedComponent == nil)
@@ -134,7 +134,7 @@
         }
 
         @Test func nativeComponentSelectionRehydratesAtTheCurrentRevision() throws {
-            let session = ChartInspectorSession(styleStore: ComponentStyleStore())
+            let session = ComponentEditorSession(styleStore: ComponentStyleStore())
             _ = try session.receive(readyMessage)
 
             let chartState = session.stateMessage
@@ -154,13 +154,13 @@
         }
 
         @Test func listActionsOnlyAffectTheSelectedComponent() throws {
-            let chart = try makeInspectorStyle(lineWidth: 5)
+            let chart = try makeEditorStyle(lineWidth: 5)
             let store = ComponentStyleStore(chartStyle: chart)
-            let session = ChartInspectorSession(styleStore: store)
+            let session = ComponentEditorSession(styleStore: store)
             _ = try session.receive(readyMessage)
             session.select(.list)
 
-            let list = try makeInspectorListStyle(visibleRowCount: 4)
+            let list = try makeEditorListStyle(visibleRowCount: 4)
             let response = try session.receive(body: styleChangeBody(
                 component: .list,
                 values: list,
@@ -184,10 +184,10 @@
         }
 
         @Test func styleChangesRejectAComponentMismatch() throws {
-            let session = ChartInspectorSession(styleStore: ComponentStyleStore())
+            let session = ComponentEditorSession(styleStore: ComponentStyleStore())
             _ = try session.receive(readyMessage)
 
-            #expect(throws: ChartInspectorProtocolError.unexpectedComponent) {
+            #expect(throws: ComponentEditorProtocolError.unexpectedComponent) {
                 try session.receive(body: styleChangeBody(
                     component: .list,
                     values: BreakdownListStyle.default,
@@ -205,22 +205,22 @@
         }
 
         @Test func protocolIdentityAndBodyValidationRejectUnexpectedMessages() throws {
-            let session = ChartInspectorSession(styleStore: ComponentStyleStore())
+            let session = ComponentEditorSession(styleStore: ComponentStyleStore())
 
-            #expect(throws: ChartInspectorProtocolError.unexpectedProtocolVersion) {
+            #expect(throws: ComponentEditorProtocolError.unexpectedProtocolVersion) {
                 try session.receive(
-                    ChartInspectorIncomingMessage(
+                    ComponentEditorIncomingMessage(
                         protocolVersion: 8,
                         type: .ready,
-                        source: "chart-inspector",
+                        source: "component-editor",
                         revision: nil,
                         values: nil
                     )
                 )
             }
-            #expect(throws: ChartInspectorProtocolError.unexpectedSource) {
+            #expect(throws: ComponentEditorProtocolError.unexpectedSource) {
                 try session.receive(
-                    ChartInspectorIncomingMessage(
+                    ComponentEditorIncomingMessage(
                         protocolVersion: 7,
                         type: .ready,
                         source: "unexpected",
@@ -235,51 +235,51 @@
         }
 
         @Test func sourceSelectionDefaultsToBundleAndRequiresExplicitDevelopmentMode() throws {
-            let bundled = try ChartInspectorSource.resolve(environment: [:], arguments: [])
+            let bundled = try ComponentEditorSource.resolve(environment: [:], arguments: [])
             guard case .bundled = bundled.kind else {
-                Issue.record("Expected bundled Inspector source")
+                Issue.record("Expected bundled Editor source")
                 return
             }
-            #expect(!ChartInspectorSource.isInspectorEnabled(environment: [:], arguments: []))
+            #expect(!ComponentEditorSource.isEditorEnabled(environment: [:], arguments: []))
 
-            let bundledInspector = try ChartInspectorSource.resolve(
+            let bundledEditor = try ComponentEditorSource.resolve(
                 environment: [:],
-                arguments: [ChartInspectorSource.inspectorArgument]
+                arguments: [ComponentEditorSource.editorArgument]
             )
-            guard case .bundled = bundledInspector.kind else {
-                Issue.record("Expected an explicitly enabled bundled Inspector source")
+            guard case .bundled = bundledEditor.kind else {
+                Issue.record("Expected an explicitly enabled bundled Editor source")
                 return
             }
             #expect(
-                ChartInspectorSource.isInspectorEnabled(
+                ComponentEditorSource.isEditorEnabled(
                     environment: [:],
-                    arguments: [ChartInspectorSource.inspectorArgument]
+                    arguments: [ComponentEditorSource.editorArgument]
                 )
             )
 
-            let development = try ChartInspectorSource.resolve(
-                environment: [ChartInspectorSource.developmentEnvironmentKey: "1"],
+            let development = try ComponentEditorSource.resolve(
+                environment: [ComponentEditorSource.developmentEnvironmentKey: "1"],
                 arguments: []
             )
             #expect(development.kind == .developmentServer)
-            #expect(development.entryURL == ChartInspectorSource.developmentURL)
+            #expect(development.entryURL == ComponentEditorSource.developmentURL)
 
-            let argumentDevelopment = try ChartInspectorSource.resolve(
+            let argumentDevelopment = try ComponentEditorSource.resolve(
                 environment: [:],
-                arguments: [ChartInspectorSource.developmentArgument]
+                arguments: [ComponentEditorSource.developmentArgument]
             )
             #expect(argumentDevelopment.kind == .developmentServer)
             #expect(
-                ChartInspectorSource.isInspectorEnabled(
+                ComponentEditorSource.isEditorEnabled(
                     environment: [:],
-                    arguments: [ChartInspectorSource.developmentArgument]
+                    arguments: [ComponentEditorSource.developmentArgument]
                 )
             )
         }
 
         @Test func developmentSourceRequiresTheExactLoopbackOrigin() throws {
-            let source = ChartInspectorSource(
-                entryURL: ChartInspectorSource.developmentURL,
+            let source = ComponentEditorSource(
+                entryURL: ComponentEditorSource.developmentURL,
                 kind: .developmentServer
             )
             let allowedURL = try #require(URL(string: "http://127.0.0.1:5173/settings"))
@@ -301,23 +301,23 @@
         }
 
         @Test func bundledSourceAllowsOnlyFilesInsideItsResourceRoot() {
-            let rootURL = URL(fileURLWithPath: "/Applications/Test.app/Contents/Resources/ChartInspector")
+            let rootURL = URL(fileURLWithPath: "/Applications/Test.app/Contents/Resources/ComponentEditor")
             let entryURL = rootURL.appendingPathComponent("index.html")
-            let source = ChartInspectorSource(entryURL: entryURL, kind: .bundled(rootURL: rootURL))
+            let source = ComponentEditorSource(entryURL: entryURL, kind: .bundled(rootURL: rootURL))
             let assetURL = rootURL.appendingPathComponent("assets/index.js")
             let siblingURL = rootURL.deletingLastPathComponent()
-                .appendingPathComponent("ChartInspector-copy/index.html")
+                .appendingPathComponent("ComponentEditor-copy/index.html")
 
             #expect(source.allowsNavigation(to: entryURL))
             #expect(source.allowsNavigation(to: assetURL))
             #expect(!source.allowsNavigation(to: siblingURL))
-            #expect(!source.allowsNavigation(to: ChartInspectorSource.developmentURL))
+            #expect(!source.allowsNavigation(to: ComponentEditorSource.developmentURL))
             #expect(source.allowsMessage(frameURL: entryURL, scheme: "file", host: "", port: 0))
             #expect(!source.allowsMessage(frameURL: siblingURL, scheme: "file", host: "", port: 0))
         }
 
         @Test func pageStateOffersARecoverableRetryTransition() {
-            let state = ChartInspectorPageState()
+            let state = ComponentEditorPageState()
             state.fail("Failed")
             #expect(state.phase == .failed("Failed"))
 
@@ -329,24 +329,24 @@
             #expect(state.chartAnimationReplayToken == 1)
         }
 
-        private var readyMessage: ChartInspectorIncomingMessage {
-            ChartInspectorIncomingMessage(
+        private var readyMessage: ComponentEditorIncomingMessage {
+            ComponentEditorIncomingMessage(
                 protocolVersion: 7,
                 type: .ready,
-                source: "chart-inspector",
+                source: "component-editor",
                 revision: nil,
                 values: nil
             )
         }
 
         private func commandMessage(
-            _ type: ChartInspectorIncomingMessageType,
+            _ type: ComponentEditorIncomingMessageType,
             component: EditableComponent = .chart
-        ) -> ChartInspectorIncomingMessage {
-            ChartInspectorIncomingMessage(
+        ) -> ComponentEditorIncomingMessage {
+            ComponentEditorIncomingMessage(
                 protocolVersion: 7,
                 type: type,
-                source: "chart-inspector",
+                source: "component-editor",
                 revision: nil,
                 component: component,
                 values: nil
@@ -363,7 +363,7 @@
             return [
                 "protocolVersion": 7,
                 "type": "styleChanged",
-                "source": "chart-inspector",
+                "source": "component-editor",
                 "revision": revision,
                 "component": component.rawValue,
                 "values": styleValues,
@@ -371,16 +371,16 @@
         }
     }
 
-    extension ChartInspectorProtocolTests {
+    extension ComponentEditorProtocolTests {
         // swiftlint:disable:next function_body_length
         @Test func everyStyleFieldRoundTripsThroughTheCanonicalNativeBoundary() throws {
             let store = ComponentStyleStore()
-            let session = ChartInspectorSession(styleStore: store)
+            let session = ComponentEditorSession(styleStore: store)
             _ = try session.receive(readyMessage)
             let response = try session.receive(body: [
                 "protocolVersion": 7,
                 "type": "styleChanged",
-                "source": "chart-inspector",
+                "source": "component-editor",
                 "revision": 4,
                 "component": "chart",
                 "values": [
@@ -453,7 +453,7 @@
                 from: fixtureRoot.appendingPathComponent("ideal.json")
             )
 
-            #expect(ChartInspectorPreview(analyticsState: .loaded(snapshot)).points == snapshot.series)
+            #expect(ComponentEditorPreview(analyticsState: .loaded(snapshot)).points == snapshot.series)
         }
 
         @Test func previewUsesTheIdealMockSeriesUntilTheModelLoads() throws {
@@ -465,7 +465,7 @@
                 from: fixtureRoot.appendingPathComponent("ideal.json")
             )
 
-            #expect(ChartInspectorPreview().points == snapshot.series)
+            #expect(ComponentEditorPreview().points == snapshot.series)
         }
     }
 
@@ -523,7 +523,7 @@
         #expect(style.chartBorderDashCap == .square)
     }
 
-    private func makeInspectorStyle(
+    private func makeEditorStyle(
         lineWidth: Double,
         lineRevealDuration: Double = ChartStyle.default.lineRevealDuration
     ) throws -> ChartStyle {
@@ -537,7 +537,7 @@
         )
     }
 
-    private func makeInspectorListStyle(visibleRowCount: Int) throws -> BreakdownListStyle {
+    private func makeEditorListStyle(visibleRowCount: Int) throws -> BreakdownListStyle {
         let data = try JSONEncoder().encode(BreakdownListStyle.default)
         var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
         object["visibleRowCount"] = visibleRowCount

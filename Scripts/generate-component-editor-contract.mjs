@@ -5,22 +5,22 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const contractPath = resolve(repositoryRoot, "Contracts/ChartInspectorContract.json");
+const contractPath = resolve(repositoryRoot, "Contracts/ComponentEditorContract.json");
 const outputs = [
   {
     path: resolve(
       repositoryRoot,
-      "VercelAnalyticsBar/Features/ChartInspector/Generated/ChartInspectorContract.generated.swift",
+      "VercelAnalyticsBar/Features/ComponentEditor/Generated/ComponentEditorContract.generated.swift",
     ),
     render: renderSwift,
   },
   {
-    path: resolve(repositoryRoot, "Tools/ChartInspector/src/generated/contract.ts"),
+    path: resolve(repositoryRoot, "Tools/ComponentEditor/src/generated/contract.ts"),
     render: renderTypeScript,
   },
   {
-    path: resolve(repositoryRoot, "Tools/ChartInspector/src/generated/inspector-adapter.ts"),
-    render: renderTypeScriptInspectorAdapter,
+    path: resolve(repositoryRoot, "Tools/ComponentEditor/src/generated/component-editor-adapter.ts"),
+    render: renderTypeScriptEditorAdapter,
   },
 ];
 
@@ -45,7 +45,7 @@ for (const output of outputs) {
 }
 
 if (hasStaleOutput) {
-  console.error("Run `npm --prefix Tools/ChartInspector run contract:generate` and commit the result.");
+  console.error("Run `npm --prefix Tools/ComponentEditor run contract:generate` and commit the result.");
   process.exitCode = 1;
 }
 
@@ -81,7 +81,7 @@ function validateContract(value) {
   }
 
   const names = new Set();
-  const inspectorPaths = new Set();
+  const editorPaths = new Set();
   for (const field of style.fields) {
     if (typeof field.name !== "string" || names.has(field.name)) {
       throw new Error(`Style field names must be unique: ${field.name}`);
@@ -102,19 +102,19 @@ function validateContract(value) {
       }
     }
 
-    const inspector = field.inspector;
+    const editor = field.editor;
     const identifierPattern = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
     if (
-      typeof inspector?.group !== "string" ||
-      !identifierPattern.test(inspector.group) ||
-      typeof inspector?.key !== "string" ||
-      !identifierPattern.test(inspector.key)
+      typeof editor?.group !== "string" ||
+      !identifierPattern.test(editor.group) ||
+      typeof editor?.key !== "string" ||
+      !identifierPattern.test(editor.key)
     ) {
-      throw new Error(`Inspector group and key are required identifiers for ${field.name}.`);
+      throw new Error(`Editor group and key are required identifiers for ${field.name}.`);
     }
-    const inspectorPath = `${inspector.group}.${inspector.key}`;
-    if (!inspectorPaths.add(inspectorPath)) {
-      throw new Error(`Inspector paths must be unique: ${inspectorPath}.`);
+    const editorPath = `${editor.group}.${editor.key}`;
+    if (!editorPaths.add(editorPath)) {
+      throw new Error(`Editor paths must be unique: ${editorPath}.`);
     }
     const expectedControl = {
       boolean: "boolean",
@@ -123,16 +123,16 @@ function validateContract(value) {
       integer: "range",
       number: "range",
     }[field.type];
-    if (inspector.control !== expectedControl) {
-      throw new Error(`Inspector control is incompatible with ${field.name}.`);
+    if (editor.control !== expectedControl) {
+      throw new Error(`Editor control is incompatible with ${field.name}.`);
     }
     if (field.type === "color") {
-      const accentDisplay = inspector.accentDisplay;
+      const accentDisplay = editor.accentDisplay;
       if (typeof accentDisplay !== "string" || !new RegExp(style.color.hexPattern).test(accentDisplay)) {
-        throw new Error(`Inspector accent display color is invalid for ${field.name}.`);
+        throw new Error(`Editor accent display color is invalid for ${field.name}.`);
       }
-    } else if (inspector.accentDisplay !== undefined) {
-      throw new Error(`Inspector accent display is only valid for color fields: ${field.name}.`);
+    } else if (editor.accentDisplay !== undefined) {
+      throw new Error(`Editor accent display is only valid for color fields: ${field.name}.`);
     }
   }
 
@@ -144,7 +144,7 @@ function validateContract(value) {
 
 function validateComponentFields(fields, sharedStyle, componentName) {
   const names = new Set();
-  const inspectorPaths = new Set();
+  const editorPaths = new Set();
   for (const field of fields) {
     if (typeof field.name !== "string" || names.has(field.name)) {
       throw new Error(`${componentName} field names must be unique: ${field.name}`);
@@ -164,19 +164,19 @@ function validateComponentFields(fields, sharedStyle, componentName) {
         throw new Error(`Numeric metadata is invalid for ${field.name}.`);
       }
     }
-    const inspector = field.inspector;
+    const editor = field.editor;
     const identifierPattern = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
     if (
-      typeof inspector?.group !== "string" ||
-      !identifierPattern.test(inspector.group) ||
-      typeof inspector?.key !== "string" ||
-      !identifierPattern.test(inspector.key)
+      typeof editor?.group !== "string" ||
+      !identifierPattern.test(editor.group) ||
+      typeof editor?.key !== "string" ||
+      !identifierPattern.test(editor.key)
     ) {
-      throw new Error(`Inspector group and key are required identifiers for ${field.name}.`);
+      throw new Error(`Editor group and key are required identifiers for ${field.name}.`);
     }
-    const inspectorPath = `${inspector.group}.${inspector.key}`;
-    if (!inspectorPaths.add(inspectorPath)) {
-      throw new Error(`Inspector paths must be unique: ${inspectorPath}.`);
+    const editorPath = `${editor.group}.${editor.key}`;
+    if (!editorPaths.add(editorPath)) {
+      throw new Error(`Editor paths must be unique: ${editorPath}.`);
     }
     const expectedControl = {
       boolean: "boolean",
@@ -185,16 +185,16 @@ function validateComponentFields(fields, sharedStyle, componentName) {
       integer: "range",
       number: "range",
     }[field.type];
-    if (inspector.control !== expectedControl) {
-      throw new Error(`Inspector control is incompatible with ${field.name}.`);
+    if (editor.control !== expectedControl) {
+      throw new Error(`Editor control is incompatible with ${field.name}.`);
     }
     if (field.type === "color") {
-      const accentDisplay = inspector.accentDisplay;
+      const accentDisplay = editor.accentDisplay;
       if (typeof accentDisplay !== "string" || !new RegExp(sharedStyle.color.hexPattern).test(accentDisplay)) {
-        throw new Error(`Inspector accent display color is invalid for ${field.name}.`);
+        throw new Error(`Editor accent display color is invalid for ${field.name}.`);
       }
-    } else if (inspector.accentDisplay !== undefined) {
-      throw new Error(`Inspector accent display is only valid for color fields: ${field.name}.`);
+    } else if (editor.accentDisplay !== undefined) {
+      throw new Error(`Editor accent display is only valid for color fields: ${field.name}.`);
     }
   }
 }
@@ -244,8 +244,8 @@ function renderSwift({ protocol, style }) {
     .join("\n\n");
   const incomingCases = protocol.messages.webIncoming.map((name) => `        case ${name}`).join("\n");
 
-  return `// Generated by Scripts/generate-chart-inspector-contract.mjs.
-// Source: Contracts/ChartInspectorContract.json. Do not edit directly.
+  return `// Generated by Scripts/generate-component-editor-contract.mjs.
+// Source: Contracts/ComponentEditorContract.json. Do not edit directly.
 // swiftlint:disable file_length
 
 import Foundation
@@ -350,8 +350,8 @@ ${decoding}
     }
 }
 
-#if CHART_INSPECTOR
-    enum ChartInspectorProtocol {
+#if COMPONENT_EDITOR
+    enum ComponentEditorProtocol {
         static let version = ${protocol.version}
         static let minimumRevision = ${swiftInteger(protocol.revisions.nativeMinimum)}
         static let firstStyleChangeRevision = ${swiftInteger(protocol.revisions.styleChangeMinimum)}
@@ -362,7 +362,7 @@ ${decoding}
         static let nativeStateMessage = ${swiftString(protocol.messages.nativeState)}
     }
 
-    enum ChartInspectorIncomingMessageType: String, Codable {
+    enum ComponentEditorIncomingMessageType: String, Codable {
 ${incomingCases}
     }
 #endif
@@ -399,14 +399,14 @@ function renderTypeScript({ protocol, style }) {
     (name) => name !== "ready" && name !== "styleChanged",
   );
 
-  return `// Generated by Scripts/generate-chart-inspector-contract.mjs.
-// Source: Contracts/ChartInspectorContract.json. Do not edit directly.
+  return `// Generated by Scripts/generate-component-editor-contract.mjs.
+// Source: Contracts/ComponentEditorContract.json. Do not edit directly.
 
-export const INSPECTOR_PROTOCOL_VERSION = ${protocol.version};
-export const MIN_INSPECTOR_REVISION = ${protocol.revisions.nativeMinimum};
+export const EDITOR_PROTOCOL_VERSION = ${protocol.version};
+export const MIN_EDITOR_REVISION = ${protocol.revisions.nativeMinimum};
 export const FIRST_STYLE_CHANGE_REVISION = ${protocol.revisions.styleChangeMinimum};
-export const MAX_INSPECTOR_REVISION = ${protocol.revisions.maximum};
-export const INSPECTOR_SOURCE = ${JSON.stringify(protocol.sources.web)};
+export const MAX_EDITOR_REVISION = ${protocol.revisions.maximum};
+export const EDITOR_SOURCE = ${JSON.stringify(protocol.sources.web)};
 export const NATIVE_SOURCE = ${JSON.stringify(protocol.sources.native)};
 export const NATIVE_STATE_MESSAGE = ${JSON.stringify(protocol.messages.nativeState)};
 
@@ -492,15 +492,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 `;
 }
 
-function renderTypeScriptInspectorAdapter({ style }) {
-  return renderComponentInspectorAdapter(arguments[0]);
+function renderTypeScriptEditorAdapter({ style }) {
+  return renderComponentEditorAdapter(arguments[0]);
 
   const fields = style.fields;
   const groups = new Map();
   for (const field of fields) {
-    const groupFields = groups.get(field.inspector.group) ?? [];
+    const groupFields = groups.get(field.editor.group) ?? [];
     groupFields.push(field);
-    groups.set(field.inspector.group, groupFields);
+    groups.set(field.editor.group, groupFields);
   }
 
   const valueImports = [
@@ -523,13 +523,13 @@ function renderTypeScriptInspectorAdapter({ style }) {
   const metadata = fields
     .map(
       (field) =>
-        `  { name: ${JSON.stringify(field.name)}, path: ${JSON.stringify(`${field.inspector.group}.${field.inspector.key}`)}, control: ${JSON.stringify(field.inspector.control)} },`,
+        `  { name: ${JSON.stringify(field.name)}, path: ${JSON.stringify(`${field.editor.group}.${field.editor.key}`)}, control: ${JSON.stringify(field.editor.control)} },`,
     )
     .join("\n");
   const configGroups = [...groups]
     .map(([group, groupFields]) => {
       const entries = groupFields
-        .map((field) => `    ${field.inspector.key}: ${typeScriptInspectorControl(field)},`)
+        .map((field) => `    ${field.editor.key}: ${typeScriptEditorControl(field)},`)
         .join("\n");
       return `  ${group}: {\n${entries}\n  },`;
     })
@@ -539,7 +539,7 @@ function renderTypeScriptInspectorAdapter({ style }) {
       const entries = groupFields
         .map(
           (field) =>
-            `      ${field.inspector.key}: ${typeScriptInspectorStyleValue(field, style)},`,
+            `      ${field.editor.key}: ${typeScriptEditorStyleValue(field, style)},`,
         )
         .join("\n");
       return `    ${group}: {\n${entries}\n    },`;
@@ -548,12 +548,12 @@ function renderTypeScriptInspectorAdapter({ style }) {
   const dialToStyleFields = fields
     .map(
       (field) =>
-        `    ${field.name}: ${typeScriptInspectorDialValue(field)},`,
+        `    ${field.name}: ${typeScriptEditorDialValue(field)},`,
     )
     .join("\n");
 
-  return `// Generated by Scripts/generate-chart-inspector-contract.mjs.
-// Source: Contracts/ChartInspectorContract.json. Do not edit directly.
+  return `// Generated by Scripts/generate-component-editor-contract.mjs.
+// Source: Contracts/ComponentEditorContract.json. Do not edit directly.
 
 import type { ResolvedValues } from "dialkit";
 import {
@@ -561,7 +561,7 @@ ${valueImports.map((name) => `  ${name},`).join("\n")}
 } from "./contract";
 import type { ${typeImports.join(", ")} } from "./contract";
 
-export const CHART_STYLE_INSPECTOR_FIELDS = [
+export const CHART_STYLE_EDITOR_FIELDS = [
 ${metadata}
 ] as const;
 
@@ -617,8 +617,8 @@ function renderComponentSwift({ protocol, style, listStyle }) {
     extraErrorCase: "    case layoutOverflow",
   });
 
-  return `// Generated by Scripts/generate-chart-inspector-contract.mjs.
-// Source: Contracts/ChartInspectorContract.json. Do not edit directly.
+  return `// Generated by Scripts/generate-component-editor-contract.mjs.
+// Source: Contracts/ComponentEditorContract.json. Do not edit directly.
 // swiftlint:disable file_length
 
 import Foundation
@@ -684,8 +684,8 @@ enum EditableComponent: String, Codable, CaseIterable, Sendable {
     case list
 }
 
-#if CHART_INSPECTOR
-    enum ChartInspectorProtocol {
+#if COMPONENT_EDITOR
+    enum ComponentEditorProtocol {
         static let version = ${protocol.version}
         static let minimumRevision = ${swiftInteger(protocol.revisions.nativeMinimum)}
         static let firstStyleChangeRevision = ${swiftInteger(protocol.revisions.styleChangeMinimum)}
@@ -696,7 +696,7 @@ enum EditableComponent: String, Codable, CaseIterable, Sendable {
         static let nativeStateMessage = ${swiftString(protocol.messages.nativeState)}
     }
 
-    enum ChartInspectorIncomingMessageType: String, Codable {
+    enum ComponentEditorIncomingMessageType: String, Codable {
 ${protocol.messages.webIncoming.map((name) => `        case ${name}`).join("\n")}
     }
 #endif
@@ -792,14 +792,14 @@ function renderComponentTypeScript({ protocol, style, listStyle }) {
   const list = renderTypeScriptStyle({ style, fields: listStyle.fields, typeName: "BreakdownListStyle", prefix: "BREAKDOWN_LIST_STYLE", includeLayoutCheck: true });
   const commandNames = protocol.messages.webIncoming.filter((name) => name !== "ready" && name !== "styleChanged");
 
-  return `// Generated by Scripts/generate-chart-inspector-contract.mjs.
-// Source: Contracts/ChartInspectorContract.json. Do not edit directly.
+  return `// Generated by Scripts/generate-component-editor-contract.mjs.
+// Source: Contracts/ComponentEditorContract.json. Do not edit directly.
 
-export const INSPECTOR_PROTOCOL_VERSION = ${protocol.version};
-export const MIN_INSPECTOR_REVISION = ${protocol.revisions.nativeMinimum};
+export const EDITOR_PROTOCOL_VERSION = ${protocol.version};
+export const MIN_EDITOR_REVISION = ${protocol.revisions.nativeMinimum};
 export const FIRST_STYLE_CHANGE_REVISION = ${protocol.revisions.styleChangeMinimum};
-export const MAX_INSPECTOR_REVISION = ${protocol.revisions.maximum};
-export const INSPECTOR_SOURCE = ${JSON.stringify(protocol.sources.web)};
+export const MAX_EDITOR_REVISION = ${protocol.revisions.maximum};
+export const EDITOR_SOURCE = ${JSON.stringify(protocol.sources.web)};
 export const NATIVE_SOURCE = ${JSON.stringify(protocol.sources.native)};
 export const NATIVE_STATE_MESSAGE = ${JSON.stringify(protocol.messages.nativeState)};
 
@@ -876,13 +876,13 @@ export function isNativeStateMessage(value: unknown): value is NativeStateMessag
 }
 
 function isValidStateEnvelope(value: Record<string, unknown>): boolean {
-  return value.protocolVersion === INSPECTOR_PROTOCOL_VERSION &&
+  return value.protocolVersion === EDITOR_PROTOCOL_VERSION &&
     value.type === NATIVE_STATE_MESSAGE &&
     value.source === NATIVE_SOURCE &&
     Number.isInteger(value.revision) &&
     typeof value.revision === "number" &&
-    value.revision >= MIN_INSPECTOR_REVISION &&
-    value.revision <= MAX_INSPECTOR_REVISION;
+    value.revision >= MIN_EDITOR_REVISION &&
+    value.revision <= MAX_EDITOR_REVISION;
 }
 
 function isChartColor(value: unknown): value is string {
@@ -948,15 +948,15 @@ ${validations}${layoutCheck}
 }`;
 }
 
-function renderComponentInspectorAdapter({ style, listStyle }) {
-  const chart = renderInspectorAdapterComponent({
+function renderComponentEditorAdapter({ style, listStyle }) {
+  const chart = renderEditorAdapterComponent({
     style,
     fields: style.fields,
     prefix: "chart",
     typeName: "ChartStyle",
     constantPrefix: "CHART_STYLE",
   });
-  const list = renderInspectorAdapterComponent({
+  const list = renderEditorAdapterComponent({
     style,
     fields: listStyle.fields,
     prefix: "list",
@@ -970,8 +970,8 @@ function renderComponentInspectorAdapter({ style, listStyle }) {
     .filter((field) => field.type === "enum")
     .map((field) => typeScriptEnumName(field.enum)));
 
-  return `// Generated by Scripts/generate-chart-inspector-contract.mjs.
-// Source: Contracts/ChartInspectorContract.json. Do not edit directly.
+  return `// Generated by Scripts/generate-component-editor-contract.mjs.
+// Source: Contracts/ComponentEditorContract.json. Do not edit directly.
 
 import type { ResolvedValues } from "dialkit";
 import {
@@ -996,28 +996,28 @@ function dialRange(
 `;
 }
 
-function renderInspectorAdapterComponent({ style, fields, prefix, typeName, constantPrefix }) {
+function renderEditorAdapterComponent({ style, fields, prefix, typeName, constantPrefix }) {
   const groups = new Map();
   for (const field of fields) {
-    const groupFields = groups.get(field.inspector.group) ?? [];
+    const groupFields = groups.get(field.editor.group) ?? [];
     groupFields.push(field);
-    groups.set(field.inspector.group, groupFields);
+    groups.set(field.editor.group, groupFields);
   }
   const pascalPrefix = pascalCase(prefix);
   const metadata = fields
-    .map((field) => `  { name: ${JSON.stringify(field.name)}, path: ${JSON.stringify(`${field.inspector.group}.${field.inspector.key}`)}, control: ${JSON.stringify(field.inspector.control)} },`)
+    .map((field) => `  { name: ${JSON.stringify(field.name)}, path: ${JSON.stringify(`${field.editor.group}.${field.editor.key}`)}, control: ${JSON.stringify(field.editor.control)} },`)
     .join("\n");
   const configGroups = [...groups]
-    .map(([group, groupFields]) => `  ${group}: {\n${groupFields.map((field) => `    ${field.inspector.key}: ${typeScriptInspectorControlFor(field, constantPrefix)},`).join("\n")}\n  },`)
+    .map(([group, groupFields]) => `  ${group}: {\n${groupFields.map((field) => `    ${field.editor.key}: ${typeScriptEditorControlFor(field, constantPrefix)},`).join("\n")}\n  },`)
     .join("\n");
   const styleToDialGroups = [...groups]
-    .map(([group, groupFields]) => `    ${group}: {\n${groupFields.map((field) => `      ${field.inspector.key}: ${typeScriptInspectorStyleValue(field, style)},`).join("\n")}\n    },`)
+    .map(([group, groupFields]) => `    ${group}: {\n${groupFields.map((field) => `      ${field.editor.key}: ${typeScriptEditorStyleValue(field, style)},`).join("\n")}\n    },`)
     .join("\n");
   const dialToStyleFields = fields
-    .map((field) => `    ${field.name}: ${typeScriptInspectorDialValue(field)},`)
+    .map((field) => `    ${field.name}: ${typeScriptEditorDialValue(field)},`)
     .join("\n");
 
-  return `export const ${prefix.toUpperCase()}_STYLE_INSPECTOR_FIELDS = [
+  return `export const ${prefix.toUpperCase()}_STYLE_EDITOR_FIELDS = [
 ${metadata}
 ] as const;
 
@@ -1038,7 +1038,7 @@ ${dialToStyleFields}
 }`;
 }
 
-function typeScriptInspectorControlFor(field, constantPrefix) {
+function typeScriptEditorControlFor(field, constantPrefix) {
   if (field.type === "boolean") return `${constantPrefix}_DEFAULT.${field.name}`;
   if (field.type === "color") return `{ type: "color" as const, default: ${constantPrefix}_DEFAULT.${field.name} }`;
   if (field.type === "enum") {
@@ -1047,7 +1047,7 @@ function typeScriptInspectorControlFor(field, constantPrefix) {
   return `dialRange(${constantPrefix}_DEFAULT.${field.name}, ${constantPrefix}_RANGES.${field.name})`;
 }
 
-function typeScriptInspectorControl(field) {
+function typeScriptEditorControl(field) {
   if (field.type === "boolean") return `CHART_STYLE_DEFAULT.${field.name}`;
   if (field.type === "color") {
     return `{ type: "color" as const, default: CHART_STYLE_DEFAULT.${field.name} }`;
@@ -1058,13 +1058,13 @@ function typeScriptInspectorControl(field) {
   return `dialRange(CHART_STYLE_DEFAULT.${field.name}, CHART_STYLE_RANGES.${field.name})`;
 }
 
-function typeScriptInspectorStyleValue(field, style) {
+function typeScriptEditorStyleValue(field, style) {
   if (field.type !== "color") return `style.${field.name}`;
-  return `style.${field.name} === ${JSON.stringify(style.color.accent)} ? ${JSON.stringify(field.inspector.accentDisplay)} : style.${field.name}`;
+  return `style.${field.name} === ${JSON.stringify(style.color.accent)} ? ${JSON.stringify(field.editor.accentDisplay)} : style.${field.name}`;
 }
 
-function typeScriptInspectorDialValue(field) {
-  const value = `values.${field.inspector.group}.${field.inspector.key}`;
+function typeScriptEditorDialValue(field) {
+  const value = `values.${field.editor.group}.${field.editor.key}`;
   return field.type === "enum" ? `${value} as ${typeScriptEnumName(field.enum)}` : value;
 }
 

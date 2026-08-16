@@ -7,7 +7,7 @@
       "maximum": 1000000000
     },
     "sources": {
-      "web": "chart-inspector",
+      "web": "component-editor",
       "native": "vercel-analytics-bar"
     },
     "messages": {
@@ -69,7 +69,7 @@
         "name": "lineColor",
         "type": "color",
         "default": "#006BFF",
-        "inspector": {
+        "editor": {
           "group": "line",
           "key": "color",
           "control": "color",
@@ -83,7 +83,7 @@
         "minimum": 0.5,
         "maximum": 12,
         "step": 0.5,
-        "inspector": {
+        "editor": {
           "group": "line",
           "key": "width",
           "control": "range"
@@ -94,7 +94,7 @@
         "type": "enum",
         "enum": "lineCap",
         "default": "round",
-        "inspector": {
+        "editor": {
           "group": "line",
           "key": "cap",
           "control": "select"
@@ -105,7 +105,7 @@
         "type": "enum",
         "enum": "lineJoin",
         "default": "round",
-        "inspector": {
+        "editor": {
           "group": "line",
           "key": "join",
           "control": "select"
@@ -116,7 +116,7 @@
         "type": "enum",
         "enum": "interpolation",
         "default": "monotone",
-        "inspector": {
+        "editor": {
           "group": "line",
           "key": "interpolation",
           "control": "select"
@@ -129,7 +129,7 @@
         "minimum": 0,
         "maximum": 1,
         "step": 0.01,
-        "inspector": {
+        "editor": {
           "group": "area",
           "key": "topOpacity",
           "control": "range"
@@ -142,7 +142,7 @@
         "minimum": 0,
         "maximum": 1,
         "step": 0.01,
-        "inspector": {
+        "editor": {
           "group": "area",
           "key": "bottomOpacity",
           "control": "range"
@@ -152,7 +152,7 @@
         "name": "chartIntroAnimationEnabled",
         "type": "boolean",
         "default": true,
-        "inspector": {
+        "editor": {
           "group": "introAnimation",
           "key": "enabled",
           "control": "boolean"
@@ -165,7 +165,7 @@
         "minimum": 0.1,
         "maximum": 3,
         "step": 0.05,
-        "inspector": {
+        "editor": {
           "group": "introAnimation",
           "key": "lineDuration",
           "control": "range"
@@ -176,7 +176,7 @@
         "type": "enum",
         "enum": "animationEasing",
         "default": "easeOut",
-        "inspector": {
+        "editor": {
           "group": "introAnimation",
           "key": "lineEasing",
           "control": "select"
@@ -189,7 +189,7 @@
         "minimum": 0.1,
         "maximum": 2,
         "step": 0.05,
-        "inspector": {
+        "editor": {
           "group": "introAnimation",
           "key": "fillDuration",
           "control": "range"
@@ -202,7 +202,7 @@
         "minimum": -1,
         "maximum": 1,
         "step": 0.05,
-        "inspector": {
+        "editor": {
           "group": "introAnimation",
           "key": "fillDelay",
           "control": "range"
@@ -215,7 +215,7 @@
         "minimum": 80,
         "maximum": 360,
         "step": 1,
-        "inspector": {
+        "editor": {
           "group": "layout",
           "key": "height",
           "control": "range"
@@ -228,7 +228,7 @@
         "minimum": 0,
         "maximum": 64,
         "step": 1,
-        "inspector": {
+        "editor": {
           "group": "layout",
           "key": "sidePadding",
           "control": "range"
@@ -241,7 +241,7 @@
         "minimum": 0,
         "maximum": 64,
         "step": 1,
-        "inspector": {
+        "editor": {
           "group": "layout",
           "key": "topBottomPadding",
           "control": "range"
@@ -254,7 +254,7 @@
         "minimum": 2,
         "maximum": 12,
         "step": 1,
-        "inspector": {
+        "editor": {
           "group": "axes",
           "key": "markCount",
           "control": "range"
@@ -267,7 +267,7 @@
         "minimum": 0,
         "maximum": 1,
         "step": 0.01,
-        "inspector": {
+        "editor": {
           "group": "axes",
           "key": "yScaleHeadroom",
           "control": "range"
@@ -277,7 +277,7 @@
         "name": "showsXAxisLabels",
         "type": "boolean",
         "default": true,
-        "inspector": {
+        "editor": {
           "group": "axes",
           "key": "xLabels",
           "control": "boolean"
@@ -287,7 +287,7 @@
         "name": "showsYAxisLabels",
         "type": "boolean",
         "default": true,
-        "inspector": {
+        "editor": {
           "group": "axes",
           "key": "yLabels",
           "control": "boolean"
@@ -297,7 +297,7 @@
         "name": "showsVerticalGridLines",
         "type": "boolean",
         "default": false,
-        "inspector": {
+        "editor": {
           "group": "verticalGridLines",
           "key": "visible",
           "control": "boolean"
@@ -307,7 +307,7 @@
         "name": "verticalGridLineColor",
         "type": "color",
         "default": "#8E8E93",
-        "inspector": {
+        "editor": {
           "group": "verticalGridLines",
           "key": "color",
           "control": "color",
@@ -321,7 +321,7 @@
         "minimum": 0,
         "maximum": 1,
         "step": 0.01,
-        "inspector": {
+        "editor": {
           "group": "verticalGridLines",
           "key": "opacity",
           "control": "range"
@@ -334,7 +334,7 @@
         "minimum": 0.25,
         "maximum": 4,
         "step": 0.25,
-        "inspector": {
+        "editor": {
           "group": "verticalGridLines",
           "key": "weight",
           "control": "range"
@@ -345,7 +345,7 @@
         "type": "enum",
         "enum": "gridLineStyle",
         "default": "solid",
-        "inspector": {
+        "editor": {
           "group": "verticalGridLines",
           "key": "pattern",
           "control": "select"
@@ -355,7 +355,7 @@
         "name": "showsHorizontalGridLines",
         "type": "boolean",
         "default": true,
-        "inspector": {
+        "editor": {
           "group": "horizontalGridLines",
           "key": "visible",
           "control": "boolean"
@@ -365,7 +365,7 @@
         "name": "horizontalGridLineColor",
         "type": "color",
         "default": "#8E8E93",
-        "inspector": {
+        "editor": {
           "group": "horizontalGridLines",
           "key": "color",
           "control": "color",
@@ -379,7 +379,7 @@
         "minimum": 0,
         "maximum": 1,
         "step": 0.01,
-        "inspector": {
+        "editor": {
           "group": "horizontalGridLines",
           "key": "opacity",
           "control": "range"
@@ -392,7 +392,7 @@
         "minimum": 0.25,
         "maximum": 4,
         "step": 0.25,
-        "inspector": {
+        "editor": {
           "group": "horizontalGridLines",
           "key": "weight",
           "control": "range"
@@ -403,7 +403,7 @@
         "type": "enum",
         "enum": "gridLineStyle",
         "default": "solid",
-        "inspector": {
+        "editor": {
           "group": "horizontalGridLines",
           "key": "pattern",
           "control": "select"
@@ -413,7 +413,7 @@
         "name": "showsVerticalAxisTicks",
         "type": "boolean",
         "default": false,
-        "inspector": {
+        "editor": {
           "group": "verticalAxisTicks",
           "key": "visible",
           "control": "boolean"
@@ -423,7 +423,7 @@
         "name": "verticalAxisTickColor",
         "type": "color",
         "default": "#8E8E93",
-        "inspector": {
+        "editor": {
           "group": "verticalAxisTicks",
           "key": "color",
           "control": "color",
@@ -437,7 +437,7 @@
         "minimum": 0,
         "maximum": 1,
         "step": 0.01,
-        "inspector": {
+        "editor": {
           "group": "verticalAxisTicks",
           "key": "opacity",
           "control": "range"
@@ -450,7 +450,7 @@
         "minimum": 0.25,
         "maximum": 4,
         "step": 0.25,
-        "inspector": {
+        "editor": {
           "group": "verticalAxisTicks",
           "key": "weight",
           "control": "range"
@@ -463,7 +463,7 @@
         "minimum": 1,
         "maximum": 16,
         "step": 1,
-        "inspector": {
+        "editor": {
           "group": "verticalAxisTicks",
           "key": "length",
           "control": "range"
@@ -473,7 +473,7 @@
         "name": "showsHorizontalAxisTicks",
         "type": "boolean",
         "default": false,
-        "inspector": {
+        "editor": {
           "group": "horizontalAxisTicks",
           "key": "visible",
           "control": "boolean"
@@ -483,7 +483,7 @@
         "name": "horizontalAxisTickColor",
         "type": "color",
         "default": "#8E8E93",
-        "inspector": {
+        "editor": {
           "group": "horizontalAxisTicks",
           "key": "color",
           "control": "color",
@@ -497,7 +497,7 @@
         "minimum": 0,
         "maximum": 1,
         "step": 0.01,
-        "inspector": {
+        "editor": {
           "group": "horizontalAxisTicks",
           "key": "opacity",
           "control": "range"
@@ -510,7 +510,7 @@
         "minimum": 0.25,
         "maximum": 4,
         "step": 0.25,
-        "inspector": {
+        "editor": {
           "group": "horizontalAxisTicks",
           "key": "weight",
           "control": "range"
@@ -523,7 +523,7 @@
         "minimum": 1,
         "maximum": 16,
         "step": 1,
-        "inspector": {
+        "editor": {
           "group": "horizontalAxisTicks",
           "key": "length",
           "control": "range"
@@ -533,7 +533,7 @@
         "name": "showsChartBorder",
         "type": "boolean",
         "default": false,
-        "inspector": {
+        "editor": {
           "group": "chartContainer",
           "key": "borderVisible",
           "control": "boolean"
@@ -543,7 +543,7 @@
         "name": "chartBorderColor",
         "type": "color",
         "default": "#8E8E93",
-        "inspector": {
+        "editor": {
           "group": "chartContainer",
           "key": "borderColor",
           "control": "color",
@@ -557,7 +557,7 @@
         "minimum": 0,
         "maximum": 1,
         "step": 0.01,
-        "inspector": {
+        "editor": {
           "group": "chartContainer",
           "key": "borderOpacity",
           "control": "range"
@@ -570,7 +570,7 @@
         "minimum": 0.25,
         "maximum": 8,
         "step": 0.25,
-        "inspector": {
+        "editor": {
           "group": "chartContainer",
           "key": "borderWeight",
           "control": "range"
@@ -581,7 +581,7 @@
         "type": "enum",
         "enum": "borderStyle",
         "default": "dashed",
-        "inspector": {
+        "editor": {
           "group": "chartContainer",
           "key": "borderStyle",
           "control": "select"
@@ -594,7 +594,7 @@
         "minimum": 0,
         "maximum": 64,
         "step": 1,
-        "inspector": {
+        "editor": {
           "group": "chartContainer",
           "key": "radius",
           "control": "range"
@@ -607,7 +607,7 @@
         "minimum": 1,
         "maximum": 32,
         "step": 1,
-        "inspector": {
+        "editor": {
           "group": "borderDash",
           "key": "length",
           "control": "range"
@@ -620,7 +620,7 @@
         "minimum": 1,
         "maximum": 32,
         "step": 1,
-        "inspector": {
+        "editor": {
           "group": "borderDash",
           "key": "gap",
           "control": "range"
@@ -633,7 +633,7 @@
         "minimum": 0,
         "maximum": 64,
         "step": 1,
-        "inspector": {
+        "editor": {
           "group": "borderDash",
           "key": "phase",
           "control": "range"
@@ -644,7 +644,7 @@
         "type": "enum",
         "enum": "lineCap",
         "default": "round",
-        "inspector": {
+        "editor": {
           "group": "borderDash",
           "key": "cap",
           "control": "select"
@@ -661,13 +661,13 @@
         "minimum": 4,
         "maximum": 24,
         "step": 1,
-        "inspector": { "group": "tabs", "key": "spacing", "control": "range" }
+        "editor": { "group": "tabs", "key": "spacing", "control": "range" }
       },
       {
         "name": "tabTextColor",
         "type": "color",
         "default": "#262626",
-        "inspector": { "group": "tabs", "key": "textColor", "control": "color", "accentDisplay": "#007AFF" }
+        "editor": { "group": "tabs", "key": "textColor", "control": "color", "accentDisplay": "#007AFF" }
       },
       {
         "name": "inactiveTabOpacity",
@@ -676,7 +676,7 @@
         "minimum": 0,
         "maximum": 1,
         "step": 0.01,
-        "inspector": { "group": "tabs", "key": "inactiveOpacity", "control": "range" }
+        "editor": { "group": "tabs", "key": "inactiveOpacity", "control": "range" }
       },
       {
         "name": "hoveredTabOpacity",
@@ -685,7 +685,7 @@
         "minimum": 0,
         "maximum": 1,
         "step": 0.01,
-        "inspector": { "group": "tabs", "key": "hoverOpacity", "control": "range" }
+        "editor": { "group": "tabs", "key": "hoverOpacity", "control": "range" }
       },
       {
         "name": "visibleRowCount",
@@ -694,7 +694,7 @@
         "minimum": 1,
         "maximum": 5,
         "step": 1,
-        "inspector": { "group": "rows", "key": "visibleCount", "control": "range" }
+        "editor": { "group": "rows", "key": "visibleCount", "control": "range" }
       },
       {
         "name": "headerToRowsSpacing",
@@ -703,7 +703,7 @@
         "minimum": 4,
         "maximum": 16,
         "step": 1,
-        "inspector": { "group": "layout", "key": "headerSpacing", "control": "range" }
+        "editor": { "group": "layout", "key": "headerSpacing", "control": "range" }
       },
       {
         "name": "rowHeight",
@@ -712,7 +712,7 @@
         "minimum": 16,
         "maximum": 20,
         "step": 1,
-        "inspector": { "group": "layout", "key": "rowHeight", "control": "range" }
+        "editor": { "group": "layout", "key": "rowHeight", "control": "range" }
       },
       {
         "name": "rowSpacing",
@@ -721,7 +721,7 @@
         "minimum": 0,
         "maximum": 8,
         "step": 1,
-        "inspector": { "group": "layout", "key": "rowSpacing", "control": "range" }
+        "editor": { "group": "layout", "key": "rowSpacing", "control": "range" }
       },
       {
         "name": "columnSpacing",
@@ -730,7 +730,7 @@
         "minimum": 0,
         "maximum": 16,
         "step": 1,
-        "inspector": { "group": "layout", "key": "columnSpacing", "control": "range" }
+        "editor": { "group": "layout", "key": "columnSpacing", "control": "range" }
       },
       {
         "name": "countColumnWidth",
@@ -739,13 +739,13 @@
         "minimum": 32,
         "maximum": 64,
         "step": 1,
-        "inspector": { "group": "layout", "key": "countWidth", "control": "range" }
+        "editor": { "group": "layout", "key": "countWidth", "control": "range" }
       },
       {
         "name": "labelColor",
         "type": "color",
         "default": "#262626",
-        "inspector": { "group": "label", "key": "color", "control": "color", "accentDisplay": "#007AFF" }
+        "editor": { "group": "label", "key": "color", "control": "color", "accentDisplay": "#007AFF" }
       },
       {
         "name": "labelFontSize",
@@ -754,14 +754,14 @@
         "minimum": 10,
         "maximum": 14,
         "step": 1,
-        "inspector": { "group": "label", "key": "fontSize", "control": "range" }
+        "editor": { "group": "label", "key": "fontSize", "control": "range" }
       },
       {
         "name": "labelFontWeight",
         "type": "enum",
         "enum": "fontWeight",
         "default": "regular",
-        "inspector": { "group": "label", "key": "fontWeight", "control": "select" }
+        "editor": { "group": "label", "key": "fontWeight", "control": "select" }
       },
       {
         "name": "labelTracking",
@@ -770,13 +770,13 @@
         "minimum": 0,
         "maximum": 1,
         "step": 0.05,
-        "inspector": { "group": "label", "key": "tracking", "control": "range" }
+        "editor": { "group": "label", "key": "tracking", "control": "range" }
       },
       {
         "name": "valueColor",
         "type": "color",
         "default": "#262626",
-        "inspector": { "group": "value", "key": "color", "control": "color", "accentDisplay": "#007AFF" }
+        "editor": { "group": "value", "key": "color", "control": "color", "accentDisplay": "#007AFF" }
       },
       {
         "name": "valueFontSize",
@@ -785,14 +785,14 @@
         "minimum": 10,
         "maximum": 14,
         "step": 1,
-        "inspector": { "group": "value", "key": "fontSize", "control": "range" }
+        "editor": { "group": "value", "key": "fontSize", "control": "range" }
       },
       {
         "name": "valueFontWeight",
         "type": "enum",
         "enum": "fontWeight",
         "default": "medium",
-        "inspector": { "group": "value", "key": "fontWeight", "control": "select" }
+        "editor": { "group": "value", "key": "fontWeight", "control": "select" }
       },
       {
         "name": "valueTracking",
@@ -801,26 +801,26 @@
         "minimum": 0,
         "maximum": 1,
         "step": 0.05,
-        "inspector": { "group": "value", "key": "tracking", "control": "range" }
+        "editor": { "group": "value", "key": "tracking", "control": "range" }
       },
       {
         "name": "emptyStateColor",
         "type": "color",
         "default": "#72777B",
-        "inspector": { "group": "emptyState", "key": "color", "control": "color", "accentDisplay": "#007AFF" }
+        "editor": { "group": "emptyState", "key": "color", "control": "color", "accentDisplay": "#007AFF" }
       },
       {
         "name": "introAnimationEnabled",
         "type": "boolean",
         "default": true,
-        "inspector": { "group": "introAnimation", "key": "enabled", "control": "boolean" }
+        "editor": { "group": "introAnimation", "key": "enabled", "control": "boolean" }
       },
       {
         "name": "introAnimationEasing",
         "type": "enum",
         "enum": "animationEasing",
         "default": "easeOut",
-        "inspector": { "group": "introAnimation", "key": "easing", "control": "select" }
+        "editor": { "group": "introAnimation", "key": "easing", "control": "select" }
       },
       {
         "name": "rowAnimationDuration",
@@ -829,7 +829,7 @@
         "minimum": 0.1,
         "maximum": 1,
         "step": 0.01,
-        "inspector": { "group": "introAnimation", "key": "rowDuration", "control": "range" }
+        "editor": { "group": "introAnimation", "key": "rowDuration", "control": "range" }
       },
       {
         "name": "rowAnimationDelay",
@@ -838,7 +838,7 @@
         "minimum": 0,
         "maximum": 0.25,
         "step": 0.01,
-        "inspector": { "group": "introAnimation", "key": "rowDelay", "control": "range" }
+        "editor": { "group": "introAnimation", "key": "rowDelay", "control": "range" }
       }
     ]
   }

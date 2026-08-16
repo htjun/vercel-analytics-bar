@@ -235,7 +235,7 @@ private func expectPanelFrames(_ controller: AnalyticsPanelController, equalTo g
 }
 
 @MainActor
-@Test func hostedWindowControllerSupportsResizableInspectorWindows() throws {
+@Test func hostedWindowControllerSupportsResizableEditorWindows() throws {
     let contentSize = CGSize(width: 1000, height: 700)
     let controller = HostedWindowController(
         title: "Component Editor",

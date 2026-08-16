@@ -36,7 +36,7 @@ final class ChartIntroPlaybackGate {
 struct ChartIntroPlayback {
     enum PlaybackID: Hashable {
         case panel(UUID)
-        case inspector(Int)
+        case editor(Int)
     }
 
     let id: PlaybackID
@@ -56,9 +56,9 @@ struct ChartIntroPlayback {
         )
     }
 
-    static func inspector(replayToken: Int) -> ChartIntroPlayback {
+    static func editor(replayToken: Int) -> ChartIntroPlayback {
         ChartIntroPlayback(
-            id: .inspector(replayToken),
+            id: .editor(replayToken),
             isEligible: { true },
             claim: { true }
         )

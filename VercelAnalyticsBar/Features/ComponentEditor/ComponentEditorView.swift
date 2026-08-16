@@ -1,16 +1,16 @@
-#if CHART_INSPECTOR
+#if COMPONENT_EDITOR
     import Foundation
     import Observation
     import SwiftUI
     import VercelAnalyticsCore
 
-    struct ChartInspectorView: View {
+    struct ComponentEditorView: View {
         let styleStore: ComponentStyleStore
-        @State private var pageState = ChartInspectorPageState()
+        @State private var pageState = ComponentEditorPageState()
         @State private var selectedComponent: EditableComponent = .chart
 
         var body: some View {
-            let preview = ChartInspectorPreview()
+            let preview = ComponentEditorPreview()
 
             HSplitView {
                 VStack(alignment: .leading, spacing: 0) {
@@ -18,13 +18,13 @@
 
                     switch selectedComponent {
                     case .chart:
-                        ChartInspectorPreviewView(
+                        ComponentEditorPreviewView(
                             preview: preview,
                             style: styleStore.chartStyle,
                             animationReplayToken: pageState.chartAnimationReplayToken
                         )
                     case .list:
-                        ChartInspectorListPreviewView(
+                        ComponentEditorListPreviewView(
                             style: styleStore.listStyle,
                             animationReplayToken: pageState.listAnimationReplayToken
                         )
@@ -32,7 +32,7 @@
                 }
                 .frame(minWidth: 380, idealWidth: 480, maxHeight: .infinity, alignment: .topLeading)
 
-                inspectorPanel
+                editorPanel
                     .frame(minWidth: 340, maxWidth: .infinity, maxHeight: .infinity)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -61,9 +61,9 @@
             .accessibilityAddTraits(isSelected ? .isSelected : [])
         }
 
-        private var inspectorPanel: some View {
+        private var editorPanel: some View {
             ZStack {
-                ChartInspectorWebView(
+                ComponentEditorWebView(
                     styleStore: styleStore,
                     pageState: pageState,
                     selectedComponent: selectedComponent,
@@ -93,8 +93,8 @@
         }
     }
 
-    struct ChartInspectorPreviewView: View {
-        let preview: ChartInspectorPreview
+    struct ComponentEditorPreviewView: View {
+        let preview: ComponentEditorPreview
         let style: ChartStyle
         let animationReplayToken: Int
 
@@ -102,7 +102,7 @@
             VisitorsChart(
                 points: preview.points,
                 style: style,
-                introPlayback: .inspector(replayToken: animationReplayToken)
+                introPlayback: .editor(replayToken: animationReplayToken)
             )
             .padding(16)
             .frame(width: 380, alignment: .leading)
@@ -110,7 +110,7 @@
         }
     }
 
-    struct ChartInspectorListPreviewView: View {
+    struct ComponentEditorListPreviewView: View {
         let style: BreakdownListStyle
         let animationReplayToken: Int
         @State private var selection = AnalyticsBreakdownSelection.pages
@@ -138,7 +138,7 @@
                     rows: rows,
                     selection: selection,
                     style: style,
-                    playback: .inspector()
+                    playback: .editor()
                 ) { row in
                     HStack(spacing: style.columnSpacing) {
                         Text(row.label)
@@ -209,7 +209,7 @@
         }
     }
 
-    struct ChartInspectorPreview: Equatable {
+    struct ComponentEditorPreview: Equatable {
         static let samplePoints: [VercelAnalyticsPoint] = {
             let values = [
                 (15, 60), (23, 84), (34, 130), (24, 93), (28, 106), (20, 78),
@@ -253,7 +253,7 @@
 
     @MainActor
     @Observable
-    final class ChartInspectorPageState {
+    final class ComponentEditorPageState {
         enum Phase: Equatable {
             case loading
             case loaded

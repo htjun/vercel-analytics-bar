@@ -18,7 +18,7 @@ import {
   listDialValuesFromStyle,
   listFieldConfig,
   listStyleFromDialValues,
-} from "./generated/inspector-adapter";
+} from "./generated/component-editor-adapter";
 
 const bridge = createBrowserBridge();
 export const chartConfig = {
@@ -57,17 +57,17 @@ export const listConfig = {
   },
 };
 
-export function ChartInspector() {
+export function ComponentEditor() {
   const [nativeState, setNativeState] = useState<NativeStateMessage>();
 
   useEffect(() => {
-    window.__chartInspectorReceiveState = (message) => bridge.receiveState(message);
+    window.__componentEditorReceiveState = (message) => bridge.receiveState(message);
     const unsubscribe = bridge.subscribe(setNativeState);
     bridge.postReady();
 
     return () => {
       unsubscribe();
-      delete window.__chartInspectorReceiveState;
+      delete window.__componentEditorReceiveState;
     };
   }, []);
 

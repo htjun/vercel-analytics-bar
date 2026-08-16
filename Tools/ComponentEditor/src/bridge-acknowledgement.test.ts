@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { ChartInspectorBridge } from "./bridge";
+import { ComponentEditorBridge } from "./bridge";
 import {
   CHART_STYLE_DEFAULT,
-  INSPECTOR_PROTOCOL_VERSION,
+  EDITOR_PROTOCOL_VERSION,
   NATIVE_SOURCE,
 } from "./generated/contract";
 
 const state = (revision: number, values = CHART_STYLE_DEFAULT) => ({
-  protocolVersion: INSPECTOR_PROTOCOL_VERSION,
+  protocolVersion: EDITOR_PROTOCOL_VERSION,
   type: "state" as const,
   source: NATIVE_SOURCE,
   revision,
@@ -15,10 +15,10 @@ const state = (revision: number, values = CHART_STYLE_DEFAULT) => ({
   values,
 });
 
-describe("ChartInspectorBridge acknowledgements", () => {
+describe("ComponentEditorBridge acknowledgements", () => {
   it("does not republish an equivalent native acknowledgement", () => {
     const received: unknown[] = [];
-    const bridge = new ChartInspectorBridge(() => undefined);
+    const bridge = new ComponentEditorBridge(() => undefined);
     bridge.subscribe((message) => received.push(message));
     bridge.receiveState(state(0));
 
@@ -31,7 +31,7 @@ describe("ChartInspectorBridge acknowledgements", () => {
 
   it("publishes a native correction for a pending revision", () => {
     const received: unknown[] = [];
-    const bridge = new ChartInspectorBridge(() => undefined);
+    const bridge = new ComponentEditorBridge(() => undefined);
     bridge.subscribe((message) => received.push(message));
     bridge.receiveState(state(0));
 
@@ -44,7 +44,7 @@ describe("ChartInspectorBridge acknowledgements", () => {
 
   it("keeps revisions monotonic while rapid changes are awaiting acknowledgement", () => {
     const sentRevisions: number[] = [];
-    const bridge = new ChartInspectorBridge((message) => {
+    const bridge = new ComponentEditorBridge((message) => {
       if ("revision" in message) {
         sentRevisions.push(message.revision);
       }
@@ -64,7 +64,7 @@ describe("ChartInspectorBridge acknowledgements", () => {
 
   it("allows a rapid change to return to an earlier pending value", () => {
     const sentRevisions: number[] = [];
-    const bridge = new ChartInspectorBridge((message) => {
+    const bridge = new ComponentEditorBridge((message) => {
       if ("revision" in message) {
         sentRevisions.push(message.revision);
       }

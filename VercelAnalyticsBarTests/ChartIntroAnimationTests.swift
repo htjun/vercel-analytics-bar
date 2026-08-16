@@ -29,7 +29,7 @@ struct ChartIntroAnimationTests {
     @Test func animatorClaimsEachPlaybackOnlyOnce() async {
         var claimCount = 0
         let playback = ChartIntroPlayback(
-            id: .inspector(0),
+            id: .editor(0),
             isEligible: { true },
             claim: {
                 claimCount += 1

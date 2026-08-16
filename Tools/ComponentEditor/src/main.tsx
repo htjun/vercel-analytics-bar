@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
-import { ChartInspector } from "./ChartInspector";
+import { ComponentEditor } from "./ComponentEditor";
 import { installSliderPointerGuard } from "./slider-pointer-guard";
 import "./styles.css";
 
@@ -9,4 +9,4 @@ if (rootElement === null) {
 }
 
 installSliderPointerGuard(document);
-createRoot(rootElement).render(<ChartInspector />);
+createRoot(rootElement).render(<ComponentEditor />);

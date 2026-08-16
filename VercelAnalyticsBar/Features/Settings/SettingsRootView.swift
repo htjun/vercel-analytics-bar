@@ -22,12 +22,12 @@ enum SettingsLayout {
     static let loginToActionsSpacing: CGFloat = 24
     static let actionSpacing: CGFloat = 8
     static let actionSize = CGSize(width: 112, height: 32)
-    static let actionsToInspectorSpacing: CGFloat = 12
-    static let inspectorSize = CGSize(width: 352, height: 32)
+    static let actionsToEditorSpacing: CGFloat = 12
+    static let editorSize = CGSize(width: 352, height: 32)
     static let bottomPadding: CGFloat = 24
 
-    static func contentHeight(showsChartInspector: Bool) -> CGFloat {
-        showsChartInspector ? developerHeight : productionHeight
+    static func contentHeight(showsComponentEditor: Bool) -> CGFloat {
+        showsComponentEditor ? developerHeight : productionHeight
     }
 }
 
@@ -73,8 +73,8 @@ private enum SettingsAlert: Identifiable {
 
 struct SettingsRootView: View {
     let model: AppModel
-    let isChartInspectorEnabled: Bool
-    let onOpenChartInspector: () -> Void
+    let isComponentEditorEnabled: Bool
+    let onOpenComponentEditor: () -> Void
 
     @State private var presentedAlert: SettingsAlert?
 
@@ -108,7 +108,7 @@ struct SettingsRootView: View {
 
             actions
 
-            chartInspector
+            componentEditor
 
             Spacer()
                 .frame(height: SettingsLayout.bottomPadding)
@@ -116,7 +116,7 @@ struct SettingsRootView: View {
         .padding(.horizontal, SettingsLayout.horizontalPadding)
         .frame(
             width: SettingsLayout.contentWidth,
-            height: SettingsLayout.contentHeight(showsChartInspector: isChartInspectorEnabled),
+            height: SettingsLayout.contentHeight(showsComponentEditor: isComponentEditorEnabled),
             alignment: .topLeading
         )
         .background(Color(nsColor: .windowBackgroundColor))
@@ -264,16 +264,16 @@ struct SettingsRootView: View {
     }
 
     @ViewBuilder
-    private var chartInspector: some View {
-        #if CHART_INSPECTOR
-            if isChartInspectorEnabled {
+    private var componentEditor: some View {
+        #if COMPONENT_EDITOR
+            if isComponentEditorEnabled {
                 Spacer()
-                    .frame(height: SettingsLayout.actionsToInspectorSpacing)
+                    .frame(height: SettingsLayout.actionsToEditorSpacing)
 
                 SettingsActionButton(
                     title: "Component Editor",
-                    width: SettingsLayout.inspectorSize.width,
-                    action: onOpenChartInspector
+                    width: SettingsLayout.editorSize.width,
+                    action: onOpenComponentEditor
                 )
             }
         #endif

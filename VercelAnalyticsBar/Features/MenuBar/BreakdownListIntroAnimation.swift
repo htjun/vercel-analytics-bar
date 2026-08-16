@@ -52,7 +52,7 @@ struct BreakdownListIntroPlayback {
         )
     }
 
-    static func inspector() -> BreakdownListIntroPlayback {
+    static func editor() -> BreakdownListIntroPlayback {
         BreakdownListIntroPlayback(
             isEligible: { _ in true },
             claim: { _ in true }

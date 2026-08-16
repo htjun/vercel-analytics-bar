@@ -15,9 +15,9 @@ import VercelAnalyticsCore
     #expect(SettingsLayout.projectRowHeight == 26)
     #expect(SettingsLayout.actionSize == CGSize(width: 112, height: 32))
     #expect(SettingsLayout.actionSpacing == 8)
-    #expect(SettingsLayout.inspectorSize == CGSize(width: 352, height: 32))
-    #expect(SettingsLayout.contentHeight(showsChartInspector: false) == 528)
-    #expect(SettingsLayout.contentHeight(showsChartInspector: true) == 572)
+    #expect(SettingsLayout.editorSize == CGSize(width: 352, height: 32))
+    #expect(SettingsLayout.contentHeight(showsComponentEditor: false) == 528)
+    #expect(SettingsLayout.contentHeight(showsComponentEditor: true) == 572)
 }
 
 @Test func settingsIdentityFormatsAvailableAccountNames() {
@@ -113,12 +113,12 @@ import VercelAnalyticsCore
 
     try renderSettingsFixture(
         model: model,
-        showsChartInspector: false,
+        showsComponentEditor: false,
         outputName: "settings-populated-current.png"
     )
     try renderSettingsFixture(
         model: model,
-        showsChartInspector: true,
+        showsComponentEditor: true,
         outputName: "settings-developer-current.png"
     )
 }
@@ -176,18 +176,18 @@ private func makeSettingsModel(
 @MainActor
 private func renderSettingsFixture(
     model: AppModel,
-    showsChartInspector: Bool = false,
+    showsComponentEditor: Bool = false,
     outputName: String
 ) throws {
     AppFontRegistry.registerBundledFonts()
     let size = CGSize(
         width: SettingsLayout.contentWidth,
-        height: SettingsLayout.contentHeight(showsChartInspector: showsChartInspector)
+        height: SettingsLayout.contentHeight(showsComponentEditor: showsComponentEditor)
     )
     let hostingView = NSHostingView(rootView: SettingsRootView(
         model: model,
-        isChartInspectorEnabled: showsChartInspector,
-        onOpenChartInspector: {}
+        isComponentEditorEnabled: showsComponentEditor,
+        onOpenComponentEditor: {}
     )
     .environment(\.controlActiveState, .key))
     let window = NSWindow(

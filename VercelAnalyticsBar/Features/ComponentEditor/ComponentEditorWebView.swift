@@ -1,11 +1,11 @@
-#if CHART_INSPECTOR
+#if COMPONENT_EDITOR
     import AppKit
     import SwiftUI
     import WebKit
 
-    struct ChartInspectorWebView: NSViewRepresentable {
+    struct ComponentEditorWebView: NSViewRepresentable {
         let styleStore: ComponentStyleStore
-        let pageState: ChartInspectorPageState
+        let pageState: ComponentEditorPageState
         let selectedComponent: EditableComponent
         let reloadToken: Int
 
@@ -14,7 +14,7 @@
                 styleStore: styleStore,
                 pageState: pageState,
                 selectedComponent: selectedComponent,
-                source: Result { try ChartInspectorSource.resolve() }
+                source: Result { try ComponentEditorSource.resolve() }
             )
         }
 
@@ -54,18 +54,18 @@
             static let messageHandlerName = "chartStyle"
 
             weak var webView: WKWebView?
-            private let session: ChartInspectorSession
-            private let pageState: ChartInspectorPageState
-            private let source: Result<ChartInspectorSource, any Error>
+            private let session: ComponentEditorSession
+            private let pageState: ComponentEditorPageState
+            private let source: Result<ComponentEditorSource, any Error>
             private var loadedReloadToken: Int?
 
             init(
                 styleStore: ComponentStyleStore,
-                pageState: ChartInspectorPageState,
+                pageState: ComponentEditorPageState,
                 selectedComponent: EditableComponent,
-                source: Result<ChartInspectorSource, any Error>
+                source: Result<ComponentEditorSource, any Error>
             ) {
-                session = ChartInspectorSession(styleStore: styleStore)
+                session = ComponentEditorSession(styleStore: styleStore)
                 session.select(selectedComponent)
                 self.pageState = pageState
                 self.source = source
@@ -176,12 +176,12 @@
                 )
             }
 
-            private func send(_ state: ChartInspectorStateMessage) {
+            private func send(_ state: ComponentEditorStateMessage) {
                 guard let webView, let payload = try? state.jsonObject() else { return }
 
                 Task { @MainActor in
                     _ = try? await webView.callAsyncJavaScript(
-                        "window.__chartInspectorReceiveState?.(message)",
+                        "window.__componentEditorReceiveState?.(message)",
                         arguments: ["message": payload],
                         in: nil,
                         contentWorld: .page

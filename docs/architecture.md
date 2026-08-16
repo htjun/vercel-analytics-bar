@@ -12,14 +12,14 @@ App lifecycle and SwiftUI presentation
   -> VercelAnalyticsCore public provider and domain boundaries
   -> Vercel public HTTP API
 
-Chart Inspector adapters
+Component Editor adapters
   -> generated Swift and TypeScript contract declarations
-  -> Contracts/ChartInspectorContract.json
+  -> Contracts/ComponentEditorContract.json
 ```
 
 The Core package has no dependency on the application target. The native chart has no dependency on
-the Debug-only web Inspector. Release configurations compile the shared chart style but exclude the
-Inspector scene, bridge identity, runtime strings, and web resources.
+the Debug-only web Editor. Release configurations compile the shared chart style but exclude the
+Editor scene, bridge identity, runtime strings, and web resources.
 
 `AnalyticsSnapshotProviding` is the public Analytics acquisition interface. Overview and aggregate
 requests, interval conversion, request fan-out, and response assembly remain inside the Vercel
@@ -34,7 +34,7 @@ adapter implementation.
 | Project catalog | `ProjectCatalog` plus the versioned account selection record | Account/project orchestration supplies discovered projects and selection intents; the catalog persists committed selection through `ProjectSelectionPersisting` and exposes reconciled selection and filtered views. | Stable sorting, inaccessible-selection removal, non-empty selection when projects exist, deterministic current fallback, search, duplicate-name metadata, save-before-commit selection transactions, rollback on persistence failure, and legacy migration. |
 | Snapshot refresh | `SnapshotRefreshCoordinator` | `SnapshotRefreshRequest` and an `AnalyticsSnapshotProviding` adapter drive one observable `SnapshotRefreshState`. | Coherent content, freshness, messaging, and retry availability; cache-before-live presentation, request identity, coalescing, supersession, cancellation, persistence, stale fallback, retry limits, rate-limit backoff, and one five-minute schedule. |
 | Analytics panel | `AnalyticsPanelController` | Status-item code supplies an anchor and owned companion windows, then calls present, dismiss, or teardown. | Session identity, one immutable frame per presentation session, hosted content, initial placement, visibility, highlighting, load task, local/global monitor pair, owned-window rules, transient-child Escape handling, child-first dismissal, and cleanup. |
-| Inspector contract | `Contracts/ChartInspectorContract.json` | The local generator emits checked-in Swift declarations plus TypeScript declarations and a DialKit field adapter consumed by the native session, browser bridge, and Inspector. | Protocol identity, message names, revision bounds, ordered style fields, Inspector paths and controls, enum values, defaults, ranges, steps, color syntax, deterministic generation, and stale-output detection. |
+| Editor contract | `Contracts/ComponentEditorContract.json` | The local generator emits checked-in Swift declarations plus TypeScript declarations and a DialKit field adapter consumed by the native session, browser bridge, and Editor. | Protocol identity, message names, revision bounds, ordered style fields, Editor paths and controls, enum values, defaults, ranges, steps, color syntax, deterministic generation, and stale-output detection. |
 
 ## Application composition
 
@@ -59,27 +59,27 @@ outside-click policy of its own.
 - Disconnect clears credential, account selection/preferences, active refresh state, and snapshot
   cache through their injected boundaries.
 
-## Chart Inspector generation and release boundary
+## Component Editor generation and release boundary
 
-Edit `Contracts/ChartInspectorContract.json`, then regenerate both checked-in adapters:
+Edit `Contracts/ComponentEditorContract.json`, then regenerate both checked-in adapters:
 
 ```sh
-npm --prefix Tools/ChartInspector run contract:generate
+npm --prefix Tools/ComponentEditor run contract:generate
 ```
 
 Do not edit these generated files directly:
 
-- `VercelAnalyticsBar/Features/ChartInspector/Generated/ChartInspectorContract.generated.swift`
-- `Tools/ChartInspector/src/generated/contract.ts`
-- `Tools/ChartInspector/src/generated/inspector-adapter.ts`
+- `VercelAnalyticsBar/Features/ComponentEditor/Generated/ComponentEditorContract.generated.swift`
+- `Tools/ComponentEditor/src/generated/contract.ts`
+- `Tools/ComponentEditor/src/generated/component-editor-adapter.ts`
 
-Inspector test and build commands run the freshness check before compiling. The Debug build bundles
+Editor test and build commands run the freshness check before compiling. The Debug build bundles
 the generated web application. Direct and App Store release builds must contain neither a
-`ChartInspector` resource directory nor Inspector runtime strings; `Scripts/verify.sh` enforces both
+`ComponentEditor` resource directory nor Editor runtime strings; `Scripts/verify.sh` enforces both
 conditions.
 
 ## Verification boundary
 
 `Scripts/verify.sh` is the repository quality gate. It checks the English-only policy, diff hygiene,
 Swift formatting and lint, generated-contract freshness, web behavior and bundle freshness, Core
-tests, app tests, Debug resource inclusion, both release builds, and release Inspector exclusion.
+tests, app tests, Debug resource inclusion, both release builds, and release Editor exclusion.

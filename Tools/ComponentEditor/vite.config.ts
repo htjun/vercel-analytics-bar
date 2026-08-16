@@ -31,7 +31,7 @@ function supportBundledWebView(): Plugin {
 export default defineConfig({
   base: "./",
   build: {
-    outDir: "../../VercelAnalyticsBar/Resources/ChartInspector",
+    outDir: "../../VercelAnalyticsBar/Resources/ComponentEditor",
     emptyOutDir: true,
     modulePreload: false,
     rollupOptions: {
