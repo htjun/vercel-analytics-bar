@@ -241,7 +241,8 @@ DMG_FILENAME="$ARTIFACT_NAME-$MARKETING_VERSION.dmg"
 CHECKSUM_FILENAME="$DMG_FILENAME.sha256"
 DMG_PATH="$PUBLISH_DIRECTORY/$DMG_FILENAME"
 CHECKSUM_PATH="$PUBLISH_DIRECTORY/$CHECKSUM_FILENAME"
-STAGED_APP_PATH="$DISK_IMAGE_ROOT/$EXECUTABLE_NAME.app"
+DISTRIBUTED_APP_NAME="$APP_DISPLAY_NAME.app"
+STAGED_APP_PATH="$DISK_IMAGE_ROOT/$DISTRIBUTED_APP_NAME"
 
 mkdir -p "$DISK_IMAGE_ROOT" "$PUBLISH_DIRECTORY"
 ditto "$APP_PATH" "$STAGED_APP_PATH"
@@ -307,7 +308,7 @@ hdiutil attach \
     -readonly \
     -mountpoint "$MOUNT_PATH" \
     "$DMG_PATH" >/dev/null
-MOUNTED_APP_PATH="$MOUNT_PATH/$EXECUTABLE_NAME.app"
+MOUNTED_APP_PATH="$MOUNT_PATH/$DISTRIBUTED_APP_NAME"
 [[ -d "$MOUNTED_APP_PATH" ]] || fail "The mounted disk image is missing the app bundle."
 [[ -L "$MOUNT_PATH/Applications" ]] || fail "The mounted disk image is missing the Applications-folder alias."
 spctl --assess --type execute --verbose=4 "$MOUNTED_APP_PATH"
